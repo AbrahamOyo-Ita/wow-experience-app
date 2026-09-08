@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Field, SelectInput, TextArea, TextInput } from "@/components/ui/field";
 import { Drawer } from "@/components/admin/drawer";
 import { PageHeader } from "@/components/admin/page-header";
-import { PlaceholderQr } from "@/components/admin/placeholder-qr";
+import { AttendanceQr } from "@/components/admin/attendance-qr";
 import { useEdition } from "@/components/admin/edition-context";
 import { useAdminData } from "@/components/admin/admin-data";
 import { editions } from "@/data/editions";
@@ -247,28 +246,7 @@ export default function AdminEventsPage() {
         description="Print this mark for stewards. It opens the public check-in page."
       >
         {qr ? (
-          <div className="grid gap-4">
-            <PlaceholderQr />
-            <Link href={`/attend/${qr.year}`} className="text-sm font-semibold text-red">
-              Open /attend/{qr.year}
-            </Link>
-            <Button
-              type="button"
-              variant="outlineDark"
-              onClick={() => {
-                const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#d8d0d0"/><text x="8" y="112" font-size="8" fill="#111">/attend/${qr.year}</text></svg>`;
-                const blob = new Blob([svg], { type: "image/svg+xml" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `wow-checkin-${qr.year}.svg`;
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-            >
-              Download SVG
-            </Button>
-          </div>
+          <AttendanceQr edition={qr} />
         ) : null}
       </Drawer>
     </div>

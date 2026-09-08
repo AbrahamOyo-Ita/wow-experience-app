@@ -144,10 +144,14 @@ export function RsvpModal({ pathname }: { pathname: string }) {
   return (
     <dialog
       ref={dialogRef}
-      className="w-[min(34rem,calc(100%-1.5rem))] rounded-lg border-0 bg-white p-0 text-ink shadow-2xl backdrop:bg-ink/60"
+      className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 m-0 w-[min(34rem,calc(100%-1.5rem))] max-h-[90vh] overflow-y-auto rounded-lg border-0 bg-white p-0 text-ink shadow-2xl backdrop:bg-ink/60"
+      style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", margin: 0 }}
       onCancel={(event) => {
         event.preventDefault();
         dismiss();
+      }}
+      onClick={(event) => {
+        if (event.target === dialogRef.current) dismiss();
       }}
       aria-labelledby="rsvp-title"
     >

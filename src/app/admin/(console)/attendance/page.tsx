@@ -7,6 +7,7 @@ import { BarList, HourlyBars } from "@/components/admin/chart";
 import { DataTable, type DataTableColumn } from "@/components/admin/data-table";
 import { Drawer } from "@/components/admin/drawer";
 import { Metric, PageHeader, Surface } from "@/components/admin/page-header";
+import { AttendanceQr } from "@/components/admin/attendance-qr";
 import { useEdition } from "@/components/admin/edition-context";
 import { useAdminData } from "@/components/admin/admin-data";
 import { adminCheckIn } from "@/actions/admin";
@@ -133,6 +134,10 @@ export default function AdminAttendancePage() {
         <Metric label="Attending RSVPs" value={attending} hint="Intent only" />
         <Metric label="Duplicates" value={rows.filter((row) => row.duplicate).length} />
       </div>
+
+      <Surface>
+        <AttendanceQr edition={edition} />
+      </Surface>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Surface title="Occupation breakdown">
