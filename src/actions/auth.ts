@@ -84,7 +84,7 @@ export async function sendAdminMagicLink(formData: FormData) {
     redirect(sentUrl);
   }
 
-  const appUrl = process.env.APP_URL || "http://localhost:3000";
+  const appUrl = process.env.APP_URL || "https://wow-experience-app.vercel.app";
   const supabase = await createClient();
   await supabase.auth.signInWithOtp({
     email,

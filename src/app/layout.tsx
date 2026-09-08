@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Bebas_Neue, Manrope, Syne } from "next/font/google";
+import { Manrope, Syne } from "next/font/google";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -14,15 +14,8 @@ const syne = Syne({
   display: "swap",
 });
 
-const bebasNeue = Bebas_Neue({
-  subsets: ["latin"],
-  weight: "400",
-  variable: "--font-bebas",
-  display: "swap",
-});
-
 export const metadata: Metadata = {
-  metadataBase: new URL("https://wondersofworship.local"),
+  metadataBase: new URL(process.env.APP_URL || "https://wow-experience-app.vercel.app"),
   title: {
     default: "Wonders of Worship Experience 2026",
     template: "%s | Wonders of Worship Experience",
@@ -41,7 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${syne.variable} ${bebasNeue.variable} h-full antialiased`}
+      className={`${manrope.variable} ${syne.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-white font-sans text-ink">{children}</body>
     </html>
