@@ -105,6 +105,7 @@ html,
 body {
   background: var(--white);
   color: var(--ink);
+  overflow-x: hidden;
 }
 
 body {

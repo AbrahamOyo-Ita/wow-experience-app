@@ -196,7 +196,7 @@ export function DataTable<T extends { id?: string }>({
           </table>
         </div>
       )}
-      <div className="flex items-center justify-between gap-3 px-3 py-3 text-sm text-muted">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-3 text-sm text-muted">
         <p>
           {sorted.length} records
         </p>

@@ -43,9 +43,9 @@ export function HourlyBars({
   }
   const max = Math.max(...items.map((item) => item.value), 1);
   return (
-    <div className="flex h-36 items-end gap-2" role="img" aria-label="Hourly attendance bars">
+    <div className="flex h-36 items-end gap-2 overflow-x-auto pb-2" role="img" aria-label="Hourly attendance bars">
       {items.map((item) => (
-        <div key={item.label} className="flex min-w-0 flex-1 flex-col items-center gap-2">
+        <div key={item.label} className="flex min-w-[2.5rem] flex-1 flex-col items-center gap-2">
           <div className="flex h-28 w-full items-end bg-paper">
             <div
               className="w-full bg-ink"
