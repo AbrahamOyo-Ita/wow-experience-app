@@ -10,10 +10,8 @@ const DEFAULT_PROD_URL = "https://wow-experience-app.vercel.app";
 
 function absoluteTarget(path: string) {
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  const base =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.APP_URL ||
-    DEFAULT_PROD_URL;
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
+  const base = envUrl && !envUrl.includes("localhost") ? envUrl : DEFAULT_PROD_URL;
   return new URL(path.startsWith("/") ? path : `/${path}`, base).toString();
 }
 
