@@ -35,10 +35,9 @@ export function AttendanceQr({ edition }: { edition: EventEdition }) {
 
     QRCode.toString(targetUrl, {
       type: "svg",
-      margin: 2,
-      width: 768,
+      margin: 1,
       color: {
-        dark: "#241415",
+        dark: "#111111",
         light: "#ffffff",
       },
     })
@@ -67,11 +66,11 @@ export function AttendanceQr({ edition }: { edition: EventEdition }) {
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-[minmax(180px,240px)_1fr] md:items-center">
-      <div className="aspect-square w-full max-w-60 border border-border bg-white p-3">
+    <div className="grid gap-6 md:grid-cols-[minmax(180px,220px)_1fr] md:items-center">
+      <div className="aspect-square w-full max-w-[220px] overflow-hidden rounded-lg border border-border bg-white p-2.5 shadow-sm [&_svg]:h-auto [&_svg]:w-full [&_svg]:max-w-full">
         {svg ? (
           <div
-            className="h-full w-full"
+            className="flex h-full w-full items-center justify-center [&_svg]:h-auto [&_svg]:w-full [&_svg]:max-w-full"
             aria-label={`QR code for ${edition.shortName} attendance check-in`}
             role="img"
             dangerouslySetInnerHTML={{ __html: svg }}
