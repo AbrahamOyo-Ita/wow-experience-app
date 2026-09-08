@@ -6,10 +6,15 @@ import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
 import type { EventEdition } from "@/types";
 
+const DEFAULT_PROD_URL = "https://wow-experience-app.vercel.app";
+
 function absoluteTarget(path: string) {
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  if (typeof window === "undefined") return path;
-  return new URL(path.startsWith("/") ? path : `/${path}`, window.location.origin).toString();
+  const base =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    DEFAULT_PROD_URL;
+  return new URL(path.startsWith("/") ? path : `/${path}`, base).toString();
 }
 
 function downloadText(filename: string, text: string, type: string) {
