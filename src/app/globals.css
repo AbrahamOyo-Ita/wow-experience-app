@@ -58,7 +58,7 @@
   --color-background: #ffffff;
   --color-foreground: #111111;
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-bebas), "Bebas Neue", "Syne", ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bebas), "Bebas Neue", ui-sans-serif, system-ui, sans-serif;
   --radius-sm: 2px;
   --radius-md: 4px;
   --radius-pill: 999px;
@@ -202,6 +202,9 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
   }
   html {
     @apply font-sans;

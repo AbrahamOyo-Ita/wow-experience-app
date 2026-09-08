@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope, Syne } from "next/font/google";
+import { Manrope, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -8,9 +8,10 @@ const manrope = Manrope({
   display: "swap",
 });
 
-const syne = Syne({
+const bebas = Bebas_Neue({
+  weight: "400",
   subsets: ["latin"],
-  variable: "--font-syne",
+  variable: "--font-bebas",
   display: "swap",
 });
 
@@ -34,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${syne.variable} h-full antialiased`}
+      className={`${manrope.variable} ${bebas.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-white font-sans text-ink">{children}</body>
     </html>
