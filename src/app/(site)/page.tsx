@@ -5,6 +5,7 @@ import {
   HomeRsvp,
   InsightPreview,
   MinistersPreview,
+  SoundRisingSection,
   VolunteerCall,
 } from "@/components/home/sections";
 
@@ -13,6 +14,7 @@ export default function HomePage() {
     <main>
       <HomeHero />
       <PurposeBand />
+      <SoundRisingSection />
       <EditionBlock />
       <MinistersPreview />
       <ExperiencePreview />
@@ -22,3 +24,4 @@ export default function HomePage() {
     </main>
   );
 }
+

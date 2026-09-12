@@ -8,6 +8,8 @@ import type {
   ContactService,
   EditionService,
   MockSubmitResult,
+  NewsletterService,
+  NewsletterSubscribeInput,
   PublicServices,
   RsvpInput,
   RsvpService,
@@ -18,7 +20,7 @@ import type {
 import { attendance, campaigns, contacts, templates, automations, volunteerApplications, whatsappSession } from "@/data/operations";
 import { editions } from "@/data/editions";
 import type { AttendanceInput, EnquiryInput, UnsubscribeInput } from "@/services/contracts";
-import type { AttendanceRecord, Rsvp, VolunteerApplication } from "@/types";
+import type { AttendanceRecord, Newsletter, NewsletterSubscriber, Rsvp, VolunteerApplication } from "@/types";
 
 const LATENCY = 700;
 
@@ -36,6 +38,8 @@ function isOffline() {
 const rsvpStore: Rsvp[] = [...rsvps];
 const volunteerStore: VolunteerApplication[] = [...volunteerApplications];
 const attendanceStore: AttendanceRecord[] = [...attendance];
+const newsletterStore: Newsletter[] = [];
+const subscriberStore: NewsletterSubscriber[] = [];
 
 export const rsvpService: RsvpService = {
   async submit(input: RsvpInput) {
@@ -276,6 +280,34 @@ export const campaignService: CampaignService = {
   },
 };
 
+export const newsletterService: NewsletterService = {
+  async subscribe(input: NewsletterSubscribeInput) {
+    await sleep(500);
+    if (!isValidEmail(input.email)) {
+      return { status: "validation", errors: [{ field: "email", message: "Enter a valid email address." }] };
+    }
+    const emailNormalized = normalizeEmail(input.email);
+    const existing = subscriberStore.find((row) => row.emailNormalized === emailNormalized);
+    if (existing) return { status: "existing", data: existing };
+    const created: NewsletterSubscriber = {
+      id: `sub-${Date.now()}`,
+      email: emailNormalized,
+      emailNormalized,
+      name: input.name ?? null,
+      status: "granted",
+      source: input.source ?? "footer",
+      subscribedAt: new Date().toISOString(),
+      unsubscribedAt: null,
+    };
+    subscriberStore.unshift(created);
+    return { status: "success", data: created };
+  },
+  async list() {
+    await sleep(200);
+    return newsletterStore.filter((row) => row.status === "published");
+  },
+};
+
 export const sessionService: SessionService = {
   async get() {
     await sleep(150);
@@ -290,6 +322,7 @@ export const services: PublicServices = {
   contacts: contactService,
   editions: editionService,
   campaigns: campaignService,
+  newsletters: newsletterService,
   session: sessionService,
 };
 

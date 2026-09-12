@@ -104,6 +104,58 @@ export const unsubscribeSchema = z
     }
   });
 
+export const newsletterSubscribeSchema = z.object({
+  email: z.string().trim().email("Enter a valid email address."),
+  name: z.string().trim().max(120, "Keep the name under 120 characters.").optional(),
+  source: z.string().trim().max(80).optional(),
+});
+
+export const campaignScheduleSchema = z
+  .object({
+    eventId: z.string().trim().min(1, "Choose an edition."),
+    name: z.string().trim().min(2, "Enter a campaign title."),
+    subject: z.string().trim().max(180, "Keep the subject under 180 characters.").optional(),
+    channelMode: z.enum(["whatsapp", "email", "both", "fallback"]),
+    audienceLabel: z.string().trim().min(2, "Choose an audience."),
+    whatsappBody: z.string().trim().optional(),
+    emailBody: z.string().trim().optional(),
+    scheduledAt: z.string().trim().optional(),
+    targetContactIds: z.array(z.string().uuid()).optional(),
+    sendNow: z.boolean().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.channelMode !== "email" && !value.whatsappBody) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["whatsappBody"],
+        message: "Write a WhatsApp message for this channel.",
+      });
+    }
+    if (value.channelMode !== "whatsapp" && !value.emailBody) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["emailBody"],
+        message: "Write an email body for this channel.",
+      });
+    }
+    if (value.channelMode !== "whatsapp" && !value.subject) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["subject"],
+        message: "Add a subject for email delivery.",
+      });
+    }
+  });
+
+export const newsletterPublishSchema = z.object({
+  id: z.string().uuid().optional(),
+  title: z.string().trim().min(2, "Enter a newsletter title."),
+  subject: z.string().trim().min(2, "Enter an email subject.").max(180),
+  excerpt: z.string().trim().max(240).optional(),
+  body: z.string().trim().min(12, "Write the newsletter body."),
+  publish: z.boolean().optional(),
+});
+
 export function flattenZodErrors(error: z.ZodError) {
   const out: Record<string, string> = {};
   for (const issue of error.issues) {

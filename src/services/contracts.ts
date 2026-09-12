@@ -7,6 +7,8 @@ import type {
   FieldError,
   MessageTemplate,
   MockErrorCode,
+  Newsletter,
+  NewsletterSubscriber,
   Rsvp,
   VolunteerApplication,
   VolunteerStatus,
@@ -65,6 +67,12 @@ export interface UnsubscribeInput {
   channel: "email" | "whatsapp" | "both";
 }
 
+export interface NewsletterSubscribeInput {
+  email: string;
+  name?: string;
+  source?: string;
+}
+
 export type MockSubmitResult<T> =
   | { status: "success"; data: T }
   | { status: "existing"; data: T }
@@ -115,6 +123,11 @@ export interface CampaignService {
   schedule(campaign: Partial<Campaign>): Promise<MockSubmitResult<Campaign>>;
 }
 
+export interface NewsletterService {
+  subscribe(input: NewsletterSubscribeInput): Promise<MockSubmitResult<NewsletterSubscriber>>;
+  list(): Promise<Newsletter[]>;
+}
+
 export interface SessionService {
   get(): Promise<WhatsAppSession>;
 }
@@ -126,5 +139,6 @@ export interface PublicServices {
   contacts: ContactService;
   editions: EditionService;
   campaigns: CampaignService;
+  newsletters: NewsletterService;
   session: SessionService;
 }

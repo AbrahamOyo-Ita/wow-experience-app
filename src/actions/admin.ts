@@ -1,7 +1,14 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { checkInAttendance } from "@/actions/public";
+import {
+  processCampaignQueue,
+  processNewsletterBroadcast,
+  processNotificationQueue,
+} from "@/lib/notifications/process";
+import { campaignScheduleSchema, newsletterPublishSchema } from "@/lib/validation";
 import type { AttendanceInput, MockSubmitResult } from "@/services/contracts";
 import type {
   AdminUser,
@@ -13,6 +20,8 @@ import type {
   ContactConsent,
   EventEdition,
   MessageTemplate,
+  Newsletter,
+  NewsletterSubscriber,
   Rsvp,
   VolunteerApplication,
   VolunteerStatus,
@@ -27,6 +36,8 @@ export type AdminBundle = {
   attendance: AttendanceRecord[];
   volunteers: VolunteerApplication[];
   campaigns: Campaign[];
+  newsletters: Newsletter[];
+  newsletterSubscribers: NewsletterSubscriber[];
   templates: MessageTemplate[];
   automations: AutomationRule[];
   auditLogs: AuditLog[];
@@ -98,6 +109,8 @@ function emptyBundle(error?: string): AdminBundle {
     attendance: [],
     volunteers: [],
     campaigns: [],
+    newsletters: [],
+    newsletterSubscribers: [],
     templates: [],
     automations: [],
     auditLogs: [],
@@ -123,6 +136,8 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
     attendanceRes,
     volunteersRes,
     campaignsRes,
+    newslettersRes,
+    newsletterSubscribersRes,
     templatesRes,
     automationsRes,
     auditRes,
@@ -139,6 +154,8 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
     supabase.from("attendance_records").select("*").order("checked_in_at", { ascending: false }),
     supabase.from("volunteer_applications").select("*, volunteer_teams(team_key)").order("created_at", { ascending: false }),
     supabase.from("campaigns").select("*").order("created_at", { ascending: false }),
+    supabase.from("newsletters").select("*").order("created_at", { ascending: false }),
+    supabase.from("newsletter_subscribers").select("*").order("subscribed_at", { ascending: false }),
     supabase.from("message_templates").select("*").order("name"),
     supabase.from("automation_rules").select("*"),
     supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(100),
@@ -252,6 +269,31 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
       completedAt: row.completed_at ? String(row.completed_at) : null,
       createdBy: row.created_by ? String(row.created_by) : undefined,
       createdAt: String(row.created_at),
+      targetContactIds: Array.isArray(row.target_contact_ids) ? (row.target_contact_ids as string[]) : [],
+      attachments: Array.isArray(row.attachments) ? (row.attachments as Campaign["attachments"]) : [],
+    })),
+    newsletters: ((newslettersRes.data as Record<string, unknown>[] | null) ?? []).map((row) => ({
+      id: String(row.id),
+      slug: String(row.slug),
+      title: String(row.title),
+      subject: String(row.subject),
+      excerpt: String(row.excerpt ?? ""),
+      body: String(row.body),
+      status: row.status as Newsletter["status"],
+      publishedAt: row.published_at ? String(row.published_at) : null,
+      createdBy: row.created_by ? String(row.created_by) : null,
+      createdAt: String(row.created_at),
+      updatedAt: String(row.updated_at),
+    })),
+    newsletterSubscribers: ((newsletterSubscribersRes.data as Record<string, unknown>[] | null) ?? []).map((row) => ({
+      id: String(row.id),
+      email: String(row.email),
+      emailNormalized: String(row.email_normalized),
+      name: row.name ? String(row.name) : null,
+      status: row.status as NewsletterSubscriber["status"],
+      source: String(row.source ?? "footer"),
+      subscribedAt: String(row.subscribed_at),
+      unsubscribedAt: row.unsubscribed_at ? String(row.unsubscribed_at) : null,
     })),
     templates: ((templatesRes.data as Record<string, unknown>[] | null) ?? []).map((row) => ({
       id: String(row.id),
@@ -401,14 +443,32 @@ export async function saveEditionAction(edition: EventEdition) {
 }
 
 export async function scheduleCampaignAction(campaign: Partial<Campaign>) {
+  const parsed = campaignScheduleSchema.safeParse({
+    ...campaign,
+    targetContactIds: campaign.targetContactIds ?? [],
+    sendNow: !campaign.scheduledAt,
+  });
+  if (!parsed.success) {
+    return {
+      status: "validation" as const,
+      errors: parsed.error.issues.map((issue) => ({
+        field: String(issue.path[0] ?? "form"),
+        message: issue.message,
+      })),
+    };
+  }
+
   const supabase = await createClient();
   const { data: claimsData } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub as string | undefined;
+  if (!userId) return { status: "error" as const, message: "Sign in required." };
+
+  const input = parsed.data;
   const { data: edition } = await supabase
     .from("event_editions")
     .select("id, legacy_key")
     .or(
-      `legacy_key.eq.${campaign.eventId},slug.eq.${campaign.eventId},year.eq.${campaign.eventId}`,
+      `legacy_key.eq.${input.eventId},slug.eq.${input.eventId},year.eq.${input.eventId}`,
     )
     .maybeSingle();
 
@@ -418,24 +478,33 @@ export async function scheduleCampaignAction(campaign: Partial<Campaign>) {
 
   const insert = {
     edition_id: edition.id,
-    name: campaign.name ?? "Untitled campaign",
+    name: input.name,
     type: "broadcast",
-    status: "scheduled",
-    channel_mode: campaign.channelMode ?? "both",
-    audience_label: campaign.audienceLabel ?? "Selected segment",
-    subject: campaign.subject ?? null,
-    whatsapp_body: campaign.whatsappBody ?? "",
-    email_body: campaign.emailBody ?? "",
-    scheduled_at: campaign.scheduledAt ?? new Date().toISOString(),
-    eligible_count: campaign.eligibleCount ?? 0,
-    excluded_count: campaign.excludedCount ?? 0,
-    created_by: userId ?? null,
+    status: "scheduled" as const,
+    channel_mode: input.channelMode,
+    audience_label: input.audienceLabel,
+    subject: input.subject ?? null,
+    whatsapp_body: input.whatsappBody ?? "",
+    email_body: input.emailBody ?? "",
+    scheduled_at: input.sendNow ? new Date().toISOString() : input.scheduledAt,
+    target_contact_ids: input.targetContactIds ?? [],
+    attachments: campaign.attachments ?? [],
+    eligible_count: 0,
+    excluded_count: 0,
+    created_by: userId,
   };
 
   const { data, error } = await supabase.from("campaigns").insert(insert).select("*").maybeSingle();
   if (error || !data) {
     return { status: "error" as const, message: error?.message ?? "Could not schedule campaign." };
   }
+
+  if (input.sendNow) {
+    await processCampaignQueue(10);
+    await processNotificationQueue(50);
+  }
+
+  revalidatePath("/admin/campaigns");
 
   return {
     status: "success" as const,
@@ -457,7 +526,80 @@ export async function scheduleCampaignAction(campaign: Partial<Campaign>) {
       deliveredCount: data.delivered_count,
       failedCount: data.failed_count,
       createdAt: data.created_at,
+      targetContactIds: data.target_contact_ids ?? [],
+      attachments: data.attachments ?? [],
     } as Campaign,
+  };
+}
+
+export async function saveNewsletterAction(input: Partial<Newsletter> & { publish?: boolean }) {
+  const parsed = newsletterPublishSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      status: "validation" as const,
+      errors: parsed.error.issues.map((issue) => ({
+        field: String(issue.path[0] ?? "form"),
+        message: issue.message,
+      })),
+    };
+  }
+
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub as string | undefined;
+  if (!userId) return { status: "error" as const, message: "Sign in required." };
+
+  const payload = parsed.data;
+  const slugBase = payload.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80) || "newsletter";
+
+  const row = {
+    title: payload.title,
+    slug: slugBase,
+    subject: payload.subject,
+    excerpt: payload.excerpt ?? "",
+    body: payload.body,
+    status: payload.publish ? "published" : "draft",
+    published_at: payload.publish ? new Date().toISOString() : null,
+    created_by: userId,
+  };
+
+  const request = payload.id
+    ? supabase.from("newsletters").update(row).eq("id", payload.id).select("*").maybeSingle()
+    : supabase.from("newsletters").insert(row).select("*").maybeSingle();
+
+  const { data, error } = await request;
+  if (error || !data) {
+    return { status: "error" as const, message: error?.message ?? "Could not save newsletter." };
+  }
+
+  if (payload.publish) {
+    await processNewsletterBroadcast(String(data.id));
+    await processNotificationQueue(50);
+  }
+
+  revalidatePath("/admin/content");
+  revalidatePath("/newsletters");
+  revalidatePath(`/newsletters/${data.slug}`);
+
+  return {
+    status: "success" as const,
+    data: {
+      id: String(data.id),
+      slug: String(data.slug),
+      title: String(data.title),
+      subject: String(data.subject),
+      excerpt: String(data.excerpt ?? ""),
+      body: String(data.body),
+      status: data.status,
+      publishedAt: data.published_at,
+      createdBy: data.created_by,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    } as Newsletter,
   };
 }
 

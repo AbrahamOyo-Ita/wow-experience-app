@@ -9,6 +9,8 @@ import {
 import {
   checkInAttendance,
   declineRsvp,
+  listPublishedNewsletters,
+  subscribeNewsletter,
   submitEnquiry,
   submitRsvp,
   submitVolunteer,
@@ -19,6 +21,7 @@ import type {
   CampaignService,
   ContactService,
   EditionService,
+  NewsletterService,
   PublicServices,
   RsvpService,
   SessionService,
@@ -105,6 +108,11 @@ export const campaignService: CampaignService = {
   schedule: scheduleCampaignAction,
 };
 
+export const newsletterService: NewsletterService = {
+  subscribe: subscribeNewsletter,
+  list: listPublishedNewsletters,
+};
+
 export const sessionService: SessionService = {
   async get() {
     const bundle = await loadAdminBundle();
@@ -132,5 +140,6 @@ export const services: PublicServices = {
   contacts: contactService,
   editions: editionService,
   campaigns: campaignService,
+  newsletters: newsletterService,
   session: sessionService,
 };

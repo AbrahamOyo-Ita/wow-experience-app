@@ -102,3 +102,32 @@ export async function signOut() {
   await supabase.auth.signOut();
   redirect("/admin/login");
 }
+
+export async function updateAccountPassword(formData: FormData) {
+  const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  if (!password || password.length < 6) {
+    redirect("/admin/set-password?error=short");
+  }
+
+  if (password !== confirmPassword) {
+    redirect("/admin/set-password?error=mismatch");
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/admin/login?error=invalid");
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    redirect(`/admin/set-password?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect("/admin?success=password_updated");
+}
+

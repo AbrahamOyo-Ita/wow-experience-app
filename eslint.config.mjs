@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "_IGNORE_session/**",
+    "_IGNORE_session_copy/**",
+    "scratch/**",
+    "open-wa-session*.json",
+    "reports/**",
   ]),
 ]);
 

@@ -49,6 +49,8 @@ export type WhatsAppSessionStatus =
 
 export type ContentStatus = "draft" | "scheduled" | "published" | "archived";
 
+export type NewsletterStatus = "draft" | "published" | "archived";
+
 export type AdminRole =
   | "super_admin"
   | "event_admin"
@@ -188,7 +190,7 @@ export interface Contact {
 export interface ContactConsent {
   id: string;
   contactId: string;
-  purpose: "event_reminders" | "volunteer_updates" | "enquiry";
+  purpose: "event_reminders" | "volunteer_updates" | "enquiry" | "attendance" | "newsletter";
   channel: "whatsapp" | "email";
   status: ConsentStatus;
   source: string;
@@ -280,6 +282,41 @@ export interface Campaign {
   completedAt?: string | null;
   createdBy?: string;
   createdAt: string;
+  targetContactIds?: string[];
+  attachments?: MessageAttachment[];
+}
+
+export interface MessageAttachment {
+  name: string;
+  contentType: string;
+  dataUrl?: string;
+  url?: string;
+  size?: number;
+}
+
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  emailNormalized: string;
+  name: string | null;
+  status: ConsentStatus;
+  source: string;
+  subscribedAt: string;
+  unsubscribedAt: string | null;
+}
+
+export interface Newsletter {
+  id: string;
+  slug: string;
+  title: string;
+  subject: string;
+  excerpt: string;
+  body: string;
+  status: NewsletterStatus;
+  publishedAt: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AutomationRule {

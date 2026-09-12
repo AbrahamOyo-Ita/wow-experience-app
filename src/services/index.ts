@@ -10,6 +10,7 @@ export const attendanceService = useLive ? live.attendanceService : mock.attenda
 export const contactService = useLive ? live.contactService : mock.contactService;
 export const editionService = useLive ? live.editionService : mock.editionService;
 export const campaignService = useLive ? live.campaignService : mock.campaignService;
+export const newsletterService = useLive ? live.newsletterService : mock.newsletterService;
 export const sessionService = useLive ? live.sessionService : mock.sessionService;
 export const enquiryService = useLive ? live.enquiryService : mock.enquiryService;
 export const unsubscribeService = useLive ? live.unsubscribeService : mock.unsubscribeService;

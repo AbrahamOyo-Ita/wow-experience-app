@@ -60,6 +60,24 @@ export default function AdminSettingsPage() {
         </ul>
       </Surface>
 
+      <Surface title="Account Security & Password">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-ink">Set or Update Password</p>
+            <p className="text-sm text-muted">
+              Update your admin password to sign in directly without needing a magic link.
+            </p>
+          </div>
+          <a
+            href="/admin/set-password"
+            className="inline-flex h-9 items-center justify-center rounded-md bg-ink px-4 text-xs font-semibold text-white transition hover:bg-ink/90"
+          >
+            Set New Password
+          </a>
+        </div>
+      </Surface>
+
+
       <div className="grid gap-4 lg:grid-cols-2">
         <Surface title="Verified email sender (mock)">
           <dl className="grid gap-2 text-sm">
