@@ -32,14 +32,14 @@ export default function VolunteerPage() {
     <PageShell>
       {/* Intro Header Section */}
       <section className="container-site grid gap-10 py-16 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:py-20">
-        <ScaleIn className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-paper shadow-md">
+        <ScaleIn className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-paper shadow-md">
           <Image
-            src="/images/volunteer-serve.jpg"
-            alt="Volunteers preparing the hall"
+            src="/images/WOW Workforce Design4.png"
+            alt="Join the Workforce Flyer"
             fill
             priority
             sizes="(max-width: 1024px) 100vw, 45vw"
-            className="object-cover"
+            className="object-contain"
           />
         </ScaleIn>
         

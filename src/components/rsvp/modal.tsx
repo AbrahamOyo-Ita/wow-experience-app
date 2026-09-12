@@ -144,8 +144,14 @@ export function RsvpModal({ pathname }: { pathname: string }) {
   return (
     <dialog
       ref={dialogRef}
-      className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 m-0 w-[min(34rem,calc(100%-1.5rem))] max-h-[90vh] overflow-y-auto rounded-lg border-0 bg-white p-0 text-ink shadow-2xl backdrop:bg-ink/60"
-      style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", margin: 0 }}
+      className="fixed inset-0 z-50 m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-2xl border border-border/80 bg-white p-0 text-ink shadow-2xl backdrop:bg-ink/70 backdrop:backdrop-blur-xs"
+      style={{
+        position: "fixed",
+        inset: 0,
+        margin: "auto",
+        maxHeight: "90vh",
+        width: "min(32rem, calc(100vw - 2rem))",
+      }}
       onCancel={(event) => {
         event.preventDefault();
         dismiss();

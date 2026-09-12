@@ -6,6 +6,7 @@ import {
   InsightPreview,
   MinistersPreview,
   SoundRisingSection,
+  SupportSection,
   VolunteerCall,
 } from "@/components/home/sections";
 
@@ -19,6 +20,7 @@ export default function HomePage() {
       <MinistersPreview />
       <ExperiencePreview />
       <VolunteerCall />
+      <SupportSection />
       <InsightPreview />
       <HomeRsvp />
     </main>

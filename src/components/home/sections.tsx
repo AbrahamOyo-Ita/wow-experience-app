@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Countdown } from "@/components/site/countdown";
@@ -35,7 +38,6 @@ export function SoundRisingSection() {
           </blockquote>
         </SlideUp>
 
-
         <FadeIn delay={0.4}>
           <div className="mt-10 flex items-center justify-center gap-4">
             <HoverCard scale={1.04} lift={-2}>
@@ -63,7 +65,7 @@ export function EditionBlock() {
                 Upcoming Edition
               </span>
               <h2 className="mt-2 font-display text-4xl font-bold leading-tight sm:text-6xl text-ink">
-                {edition.year} Gathering in <span className="text-red">{edition.venue.city}</span>
+                WOW Experience <span className="text-red">5.0</span>
               </h2>
             </div>
             <div className="flex items-center gap-4">
@@ -98,21 +100,17 @@ export function EditionBlock() {
               </dl>
             </div>
 
-            {/* Right side: Red Countdown Box */}
-            <div className="lg:col-span-5">
-              <div className="rounded-2xl bg-gradient-to-br from-red-deep via-red to-red-deep p-6 sm:p-8 text-white shadow-md">
-                <div className="flex items-center justify-between mb-4">
+            {/* Right side: Bold Red Countdown Box */}
+            <div className="lg:col-span-5 h-full flex flex-col">
+              <div className="flex-1 rounded-2xl bg-gradient-to-br from-red-deep via-red to-red-deep p-6 sm:p-8 text-white shadow-md flex flex-col justify-between gap-6">
+                <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-widest text-white/90">
                     Countdown to {edition.year}
                   </span>
-                  <Link href="/experiences" className="text-xs font-semibold text-white/90 hover:text-white underline">
-                    Past editions &rarr;
-                  </Link>
                 </div>
-                <Countdown edition={edition} variant="dark" />
-                <p className="mt-4 text-center text-xs text-white/80 font-medium">
-                  Free RSVP required for venue access
-                </p>
+                <div className="py-2">
+                  <Countdown edition={edition} variant="dark" size="lg" />
+                </div>
               </div>
             </div>
           </div>
@@ -216,33 +214,127 @@ export function ExperiencePreview() {
 }
 
 export function VolunteerCall() {
+  const workforceRoles = [
+    "Media",
+    "Prayer",
+    "Publicity",
+    "Protocol",
+    "Ushering",
+    "Registration",
+    "Content Creators",
+  ];
+
   return (
     <section className="bg-white py-20 sm:py-28">
-      <div className="container-site grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+      <div className="container-site grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
         <SlideUp>
           <span className="text-xs font-bold uppercase tracking-widest text-red">
-            Join the Service Team
+            Join the Team
           </span>
-          <h2 className="mt-3 font-display text-4xl font-bold leading-tight sm:text-6xl text-ink">
-            Serve the <span className="text-red">Movement</span>
+          <h2 className="mt-3 font-display text-4xl font-bold leading-tight sm:text-6xl text-ink uppercase">
+            Join the <span className="text-red">Workforce</span>
           </h2>
-          <p className="mt-5 max-w-xl text-lg text-muted font-light leading-relaxed">
-            Our volunteer teams anchor hospitality, logistics, prayer, and media across editions. If you are passionate about serving God’s people with excellence, join a team.
+          <p className="mt-5 max-w-xl text-base text-muted font-light leading-relaxed">
+            We are calling on passionate hearts, willing hands, and dedicated individuals to join the team for WOW EXPERIENCE — a powerful worship gathering created to glorify God, inspire lives, and create an unforgettable encounter with Him. Let&rsquo;s serve together. Let&rsquo;s build together. Let&rsquo;s make an eternal impact.
           </p>
+
+          <div className="mt-6">
+            <p className="text-xs font-bold uppercase tracking-wider text-ink mb-3">
+              Volunteers Needed For:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {workforceRoles.map((role) => (
+                <span
+                  key={role}
+                  className="rounded-full border border-red/30 bg-red/10 px-3.5 py-1 text-xs font-bold text-red"
+                >
+                  ✓ {role}
+                </span>
+              ))}
+            </div>
+          </div>
+
           <div className="mt-8">
             <HoverCard scale={1.03} className="inline-block">
-              <Button href="/volunteer">Apply to volunteer</Button>
+              <Button href="/volunteer">Apply to Join Workforce</Button>
             </HoverCard>
           </div>
         </SlideUp>
 
-        <ScaleIn delay={0.2} className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-paper shadow-md">
+        <ScaleIn delay={0.2} className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-border bg-paper shadow-md">
           <Image
-            src="/images/volunteer-serve.jpg"
-            alt="Volunteers preparing the hall"
+            src="/images/WOW Workforce Design4.png"
+            alt="Join the Workforce Flyer"
             fill
             sizes="(max-width: 1024px) 100vw, 45vw"
-            className="object-cover"
+            className="object-contain"
+          />
+        </ScaleIn>
+      </div>
+    </section>
+  );
+}
+
+export function SupportSection() {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText("8101654190");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 3000);
+  };
+
+  return (
+    <section className="relative overflow-hidden bg-[#7D0A0A] py-24 sm:py-32 text-white border-y border-black/10">
+      <div className="container-site relative z-10 grid gap-12 lg:grid-cols-12 lg:items-center">
+        <SlideUp className="lg:col-span-7">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3.5 py-1 text-xs font-bold uppercase tracking-widest text-white backdrop-blur-md">
+            <span>Financial Partnership</span>
+          </div>
+          <h2 className="mt-4 font-display text-4xl font-bold leading-tight sm:text-6xl text-white uppercase">
+            Partner With <span className="text-[#FFD700]">WOW Experience</span>
+          </h2>
+          <p className="mt-5 text-lg text-white/90 font-light leading-relaxed max-w-xl">
+            Your generous financial contribution enables us to prepare an unhurried atmosphere of worship, host thousands of worshippers, support venue logistics, and extend outreach across Akwa Ibom State and beyond.
+          </p>
+
+          {/* Clean White Transfer Card (No Shadow) */}
+          <div className="mt-8 rounded-3xl bg-white p-6 sm:p-8 text-ink border border-white/20 max-w-lg">
+            <p className="text-xs font-bold uppercase tracking-widest text-red-deep">Direct Transfer Details</p>
+            <dl className="mt-5 grid gap-4 text-sm">
+              <div className="flex justify-between border-b border-border/60 pb-3">
+                <dt className="text-muted font-medium">Bank / Provider</dt>
+                <dd className="font-bold text-ink text-base">OPay</dd>
+              </div>
+              <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                <dt className="text-muted font-medium">Account Number</dt>
+                <dd className="flex items-center gap-3">
+                  <span className="font-display text-3xl font-bold text-red-deep tracking-wider">8101654190</span>
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    className="rounded-lg border border-red/30 bg-red-soft px-3 py-1.5 text-xs font-bold text-red-deep transition hover:bg-red hover:text-white"
+                  >
+                    {copied ? "Copied!" : "Copy"}
+                  </button>
+                </dd>
+              </div>
+              <div className="flex justify-between pt-1">
+                <dt className="text-muted font-medium">Account Name</dt>
+                <dd className="font-bold text-ink text-base">PATIENCE SOLOMON TIM</dd>
+              </div>
+            </dl>
+          </div>
+        </SlideUp>
+
+        {/* Flyer Container (No Shadow) */}
+        <ScaleIn delay={0.2} className="lg:col-span-5 relative aspect-[4/5] overflow-hidden rounded-3xl">
+          <Image
+            src="/images/WOW CTA Flyer_122739.png"
+            alt="Call for Support Flyer"
+            fill
+            sizes="(max-width: 1024px) 100vw, 40vw"
+            className="object-contain"
           />
         </ScaleIn>
       </div>
