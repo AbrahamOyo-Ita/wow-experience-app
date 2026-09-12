@@ -51,52 +51,71 @@ export function SoundRisingSection() {
 }
 
 export function EditionBlock() {
-
   const edition = getCurrentEdition();
   return (
-    <section className="relative overflow-hidden bg-paper py-20 sm:py-24 border-y border-border/40">
-      <div className="container-site grid gap-12 lg:grid-cols-[1fr_1fr] lg:items-center">
-        <SlideUp>
-          <div className="inline-flex items-center gap-2 rounded-full border border-red/20 bg-red/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-red">
-            <span>Upcoming Edition</span>
+    <section className="relative overflow-hidden bg-paper py-20 sm:py-28 border-y border-border/40">
+      <div className="container-site">
+        <SlideUp className="overflow-hidden rounded-3xl border border-border/80 bg-white p-8 sm:p-12 shadow-xs">
+          {/* Top Header Row */}
+          <div className="flex flex-col gap-4 border-b border-border/60 pb-8 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-widest text-red">
+                Upcoming Edition
+              </span>
+              <h2 className="mt-2 font-display text-4xl font-bold leading-tight sm:text-6xl text-ink">
+                {edition.year} Gathering in <span className="text-red">{edition.venue.city}</span>
+              </h2>
+            </div>
+            <div className="flex items-center gap-4">
+              <OpenRsvpButton>Reserve Your Space</OpenRsvpButton>
+            </div>
           </div>
-          <h2 className="mt-4 font-display text-4xl font-bold leading-tight sm:text-6xl text-ink">
-            {edition.year} Gathering in <span className="text-red">{edition.venue.city}</span>
-          </h2>
-          <dl className="mt-8 grid gap-6 text-sm sm:grid-cols-2">
-            <div className="rounded-xl border border-border/80 bg-white p-4 shadow-2xs">
-              <dt className="text-xs uppercase tracking-wider text-muted font-medium">Date</dt>
-              <dd className="mt-1 text-lg font-bold text-ink">
-                {formatLongDate(edition.startsAt, edition.timezone)}
-              </dd>
-            </div>
-            <div className="rounded-xl border border-border/80 bg-white p-4 shadow-2xs">
-              <dt className="text-xs uppercase tracking-wider text-muted font-medium">Time</dt>
-              <dd className="mt-1 text-lg font-bold text-ink">
-                {formatTime(edition.startsAt, edition.timezone)} WAT (Doors open 8:00 AM)
-              </dd>
-            </div>
-            <div className="sm:col-span-2 rounded-xl border border-border/80 bg-white p-4 shadow-2xs">
-              <dt className="text-xs uppercase tracking-wider text-muted font-medium">Venue Location</dt>
-              <dd className="mt-1 text-base font-semibold text-ink">
-                {edition.venue.name} &bull; {edition.venue.address}
-              </dd>
-            </div>
-          </dl>
-        </SlideUp>
 
-        <ScaleIn delay={0.2} className="rounded-2xl border border-border bg-white p-8 shadow-sm">
-          <p className="mb-4 text-xs uppercase tracking-widest font-bold text-red">
-            Countdown to {edition.year}
-          </p>
-          <Countdown edition={edition} />
-          <div className="mt-6 pt-6 border-t border-border flex items-center justify-between text-xs text-muted">
-            <span>Free RSVP required for venue access</span>
-            <Link href="/experiences" className="font-semibold text-red hover:underline">
-              View past editions &rarr;
-            </Link>
+          {/* Details & Countdown Layout Grid */}
+          <div className="mt-8 grid gap-8 lg:grid-cols-12 lg:items-center">
+            {/* Left side: Clean specs list with accent indicators */}
+            <div className="lg:col-span-7">
+              <dl className="grid gap-6 sm:grid-cols-2">
+                <div className="border-l-2 border-red/40 pl-4 py-1">
+                  <dt className="text-xs font-bold uppercase tracking-widest text-muted">Date</dt>
+                  <dd className="mt-1 text-xl font-bold text-ink">
+                    {formatLongDate(edition.startsAt, edition.timezone)}
+                  </dd>
+                </div>
+                <div className="border-l-2 border-red/40 pl-4 py-1">
+                  <dt className="text-xs font-bold uppercase tracking-widest text-muted">Time</dt>
+                  <dd className="mt-1 text-xl font-bold text-ink">
+                    {formatTime(edition.startsAt, edition.timezone)} WAT <span className="text-xs font-normal text-muted">(Doors 8:00 AM)</span>
+                  </dd>
+                </div>
+                <div className="sm:col-span-2 border-l-2 border-red/40 pl-4 py-1">
+                  <dt className="text-xs font-bold uppercase tracking-widest text-muted">Venue Location</dt>
+                  <dd className="mt-1 text-lg font-semibold text-ink leading-snug">
+                    {edition.venue.name} <span className="text-muted font-normal">&bull; {edition.venue.address}</span>
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            {/* Right side: Embedded Countdown */}
+            <div className="lg:col-span-5">
+              <div className="rounded-2xl border border-border/80 bg-paper/60 p-6 sm:p-8">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-bold uppercase tracking-widest text-red">
+                    Countdown to {edition.year}
+                  </span>
+                  <Link href="/experiences" className="text-xs font-semibold text-red hover:underline">
+                    Past editions &rarr;
+                  </Link>
+                </div>
+                <Countdown edition={edition} />
+                <p className="mt-4 text-center text-xs text-muted font-medium">
+                  Free RSVP required for venue access
+                </p>
+              </div>
+            </div>
           </div>
-        </ScaleIn>
+        </SlideUp>
       </div>
     </section>
   );
