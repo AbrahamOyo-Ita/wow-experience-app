@@ -214,62 +214,57 @@ export function ExperiencePreview() {
 }
 
 export function VolunteerCall() {
-  const workforceRoles = [
-    "Media",
-    "Prayer",
-    "Publicity",
-    "Protocol",
-    "Ushering",
-    "Registration",
-    "Content Creators",
+  const workforceTeams = [
+    { title: "Media", desc: "Audio, lighting, screens & live production" },
+    { title: "Prayer & Intercession", desc: "Pre-event prayer & altar ministry" },
+    { title: "Publicity & Outreach", desc: "Campus & digital community awareness" },
+    { title: "Protocol & Order", desc: "Minister reception & venue decorum" },
+    { title: "Ushering & Hospitality", desc: "Warm guest reception & seating" },
+    { title: "Registration & Check-In", desc: "QR check-in & desk assistance" },
+    { title: "Content Creators", desc: "Social highlights, reels & photography" },
   ];
 
   return (
     <section className="bg-white py-20 sm:py-28">
-      <div className="container-site grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-        <SlideUp>
-          <span className="text-xs font-bold uppercase tracking-widest text-red">
-            Join the Team
-          </span>
-          <h2 className="mt-3 font-display text-4xl font-bold leading-tight sm:text-6xl text-ink uppercase">
-            Join the <span className="text-red">Workforce</span>
-          </h2>
-          <p className="mt-5 max-w-xl text-base text-muted font-light leading-relaxed">
-            We are calling on passionate hearts, willing hands, and dedicated individuals to join the team for WOW EXPERIENCE — a powerful worship gathering created to glorify God, inspire lives, and create an unforgettable encounter with Him. Let&rsquo;s serve together. Let&rsquo;s build together. Let&rsquo;s make an eternal impact.
-          </p>
-
-          <div className="mt-6">
-            <p className="text-xs font-bold uppercase tracking-wider text-ink mb-3">
-              Volunteers Needed For:
+      <div className="container-site">
+        <div className="max-w-3xl">
+          <SlideUp>
+            <span className="text-xs font-bold uppercase tracking-widest text-red">
+              Join the Service Team
+            </span>
+            <h2 className="mt-3 font-display text-4xl font-bold leading-tight sm:text-6xl text-ink uppercase">
+              Join the <span className="text-red">Workforce</span>
+            </h2>
+            <p className="mt-4 text-base sm:text-lg text-muted font-light leading-relaxed">
+              We are calling on passionate hearts, willing hands, and dedicated individuals to join the team for WOW EXPERIENCE — a powerful worship gathering created to glorify God, inspire lives, and create an unforgettable encounter with Him. Let&rsquo;s serve together. Let&rsquo;s build together. Let&rsquo;s make an eternal impact.
             </p>
-            <div className="flex flex-wrap gap-2">
-              {workforceRoles.map((role) => (
-                <span
-                  key={role}
-                  className="rounded-full border border-red/30 bg-red/10 px-3.5 py-1 text-xs font-bold text-red"
-                >
-                  ✓ {role}
-                </span>
-              ))}
-            </div>
-          </div>
+          </SlideUp>
+        </div>
 
-          <div className="mt-8">
-            <HoverCard scale={1.03} className="inline-block">
-              <Button href="/volunteer">Apply to Join Workforce</Button>
-            </HoverCard>
-          </div>
-        </SlideUp>
+        {/* Professional Grid for Workforce Teams */}
+        <StaggerContainer staggerDelay={0.08} className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {workforceTeams.map((team) => (
+            <StaggerItem key={team.title}>
+              <HoverCard lift={-3} className="h-full rounded-2xl border border-border/80 bg-paper/60 p-6 transition-colors hover:border-red/40 hover:bg-white">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-red/10 text-xs font-bold text-red">
+                    ✓
+                  </span>
+                  <h3 className="font-display text-xl font-bold text-ink">{team.title}</h3>
+                </div>
+                <p className="mt-2 text-xs text-muted leading-relaxed pl-10">
+                  {team.desc}
+                </p>
+              </HoverCard>
+            </StaggerItem>
+          ))}
+        </StaggerContainer>
 
-        <ScaleIn delay={0.2} className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-border bg-paper shadow-md">
-          <Image
-            src="/images/WOW Workforce Design4.png"
-            alt="Join the Workforce Flyer"
-            fill
-            sizes="(max-width: 1024px) 100vw, 45vw"
-            className="object-contain"
-          />
-        </ScaleIn>
+        <FadeIn delay={0.3} className="mt-10">
+          <HoverCard scale={1.03} className="inline-block">
+            <Button href="/volunteer">Apply to Join Workforce &rarr;</Button>
+          </HoverCard>
+        </FadeIn>
       </div>
     </section>
   );
@@ -285,41 +280,44 @@ export function SupportSection() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-r from-red-deep via-red to-red-deep py-20 sm:py-28 text-white border-y border-red-deep/40">
-      <div className="container-narrow relative z-10 text-center">
-        <SlideUp>
+    <section className="relative overflow-hidden bg-gradient-to-r from-red-deep via-red to-red-deep py-16 sm:py-20 text-white border-y border-red-deep/40">
+      <div className="container-site relative z-10 grid gap-10 lg:grid-cols-12 lg:items-center">
+        {/* Left Column: Left-aligned Text */}
+        <SlideUp className="lg:col-span-7 text-left">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3.5 py-1 text-xs font-bold uppercase tracking-widest text-white backdrop-blur-md">
             <span>Financial Partnership</span>
           </div>
-          <h2 className="mt-4 font-display text-4xl font-bold leading-tight sm:text-6xl text-white uppercase">
+          <h2 className="mt-3 font-display text-4xl font-bold leading-tight sm:text-6xl text-white uppercase">
             Partner With <span className="text-white">WOW Experience</span>
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-base sm:text-lg text-white/90 font-light leading-relaxed">
+          <p className="mt-4 text-base sm:text-lg text-white/90 font-light leading-relaxed max-w-xl">
             Your generous financial contribution enables us to prepare an unhurried atmosphere of worship, host thousands of worshippers, support venue logistics, and extend outreach across Akwa Ibom State and beyond.
           </p>
+        </SlideUp>
 
-          {/* Clean Centered White Transfer Card (No Shadow) */}
-          <div className="mx-auto mt-8 max-w-lg rounded-3xl bg-white p-6 sm:p-8 text-ink text-left border border-white/20">
+        {/* Right Column: Direct Transfer Details Card */}
+        <SlideUp delay={0.15} className="lg:col-span-5">
+          <div className="rounded-3xl bg-white p-6 sm:p-8 text-ink border border-white/20">
             <p className="text-xs font-bold uppercase tracking-widest text-red-deep">Direct Transfer Details</p>
-            <dl className="mt-5 grid gap-4 text-sm">
-              <div className="flex justify-between border-b border-border/60 pb-3">
+            <dl className="mt-4 grid gap-3.5 text-sm">
+              <div className="flex justify-between border-b border-border/60 pb-2.5">
                 <dt className="text-muted font-medium">Bank / Provider</dt>
                 <dd className="font-bold text-ink text-base">OPay</dd>
               </div>
-              <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <div className="flex items-center justify-between border-b border-border/60 pb-2.5">
                 <dt className="text-muted font-medium">Account Number</dt>
                 <dd className="flex items-center gap-3">
                   <span className="font-display text-3xl font-bold text-red-deep tracking-wider">8101654190</span>
                   <button
                     type="button"
                     onClick={handleCopy}
-                    className="rounded-lg border border-red/30 bg-red-soft px-3 py-1.5 text-xs font-bold text-red-deep transition hover:bg-red hover:text-white"
+                    className="rounded-lg border border-red/30 bg-red-soft px-3 py-1 text-xs font-bold text-red-deep transition hover:bg-red hover:text-white"
                   >
                     {copied ? "Copied!" : "Copy"}
                   </button>
                 </dd>
               </div>
-              <div className="flex justify-between pt-1">
+              <div className="flex justify-between pt-0.5">
                 <dt className="text-muted font-medium">Account Name</dt>
                 <dd className="font-bold text-ink text-base">PATIENCE SOLOMON TIM</dd>
               </div>

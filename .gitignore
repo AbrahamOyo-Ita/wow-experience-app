@@ -36,4 +36,7 @@ next-env.d.ts
 **.data.json
 **.node-persist**
 **_IGNORE_**
+scratch/
+config.json
+open-wa-session*
 # end managed
