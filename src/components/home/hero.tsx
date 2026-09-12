@@ -50,7 +50,7 @@ export function HomeHero() {
             fill
             priority
             sizes="100vw"
-            className="object-cover"
+            className="object-cover grayscale contrast-110 opacity-70"
           />
         </motion.div>
       </AnimatePresence>

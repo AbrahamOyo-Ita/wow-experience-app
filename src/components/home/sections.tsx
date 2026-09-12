@@ -90,26 +90,27 @@ export function EditionBlock() {
                 </div>
                 <div className="sm:col-span-2 border-l-2 border-red/40 pl-4 py-1">
                   <dt className="text-xs font-bold uppercase tracking-widest text-muted">Venue Location</dt>
-                  <dd className="mt-1 text-lg font-semibold text-ink leading-snug">
-                    {edition.venue.name} <span className="text-muted font-normal">&bull; {edition.venue.address}</span>
+                  <dd className="mt-1">
+                    <p className="text-lg font-bold text-ink leading-snug">{edition.venue.name}</p>
+                    <p className="text-sm font-normal text-muted mt-0.5">{edition.venue.address}</p>
                   </dd>
                 </div>
               </dl>
             </div>
 
-            {/* Right side: Embedded Countdown */}
+            {/* Right side: Red Countdown Box */}
             <div className="lg:col-span-5">
-              <div className="rounded-2xl border border-border/80 bg-paper/60 p-6 sm:p-8">
+              <div className="rounded-2xl bg-gradient-to-br from-red-deep via-red to-red-deep p-6 sm:p-8 text-white shadow-md">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs font-bold uppercase tracking-widest text-red">
+                  <span className="text-xs font-bold uppercase tracking-widest text-white/90">
                     Countdown to {edition.year}
                   </span>
-                  <Link href="/experiences" className="text-xs font-semibold text-red hover:underline">
+                  <Link href="/experiences" className="text-xs font-semibold text-white/90 hover:text-white underline">
                     Past editions &rarr;
                   </Link>
                 </div>
-                <Countdown edition={edition} />
-                <p className="mt-4 text-center text-xs text-muted font-medium">
+                <Countdown edition={edition} variant="dark" />
+                <p className="mt-4 text-center text-xs text-white/80 font-medium">
                   Free RSVP required for venue access
                 </p>
               </div>
