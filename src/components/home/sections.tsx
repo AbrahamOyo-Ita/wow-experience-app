@@ -285,21 +285,21 @@ export function SupportSection() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-[#7D0A0A] py-24 sm:py-32 text-white border-y border-black/10">
-      <div className="container-site relative z-10 grid gap-12 lg:grid-cols-12 lg:items-center">
-        <SlideUp className="lg:col-span-7">
+    <section className="relative overflow-hidden bg-gradient-to-r from-red-deep via-red to-red-deep py-20 sm:py-28 text-white border-y border-red-deep/40">
+      <div className="container-narrow relative z-10 text-center">
+        <SlideUp>
           <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3.5 py-1 text-xs font-bold uppercase tracking-widest text-white backdrop-blur-md">
             <span>Financial Partnership</span>
           </div>
           <h2 className="mt-4 font-display text-4xl font-bold leading-tight sm:text-6xl text-white uppercase">
-            Partner With <span className="text-[#FFD700]">WOW Experience</span>
+            Partner With <span className="text-white">WOW Experience</span>
           </h2>
-          <p className="mt-5 text-lg text-white/90 font-light leading-relaxed max-w-xl">
+          <p className="mx-auto mt-4 max-w-xl text-base sm:text-lg text-white/90 font-light leading-relaxed">
             Your generous financial contribution enables us to prepare an unhurried atmosphere of worship, host thousands of worshippers, support venue logistics, and extend outreach across Akwa Ibom State and beyond.
           </p>
 
-          {/* Clean White Transfer Card (No Shadow) */}
-          <div className="mt-8 rounded-3xl bg-white p-6 sm:p-8 text-ink border border-white/20 max-w-lg">
+          {/* Clean Centered White Transfer Card (No Shadow) */}
+          <div className="mx-auto mt-8 max-w-lg rounded-3xl bg-white p-6 sm:p-8 text-ink text-left border border-white/20">
             <p className="text-xs font-bold uppercase tracking-widest text-red-deep">Direct Transfer Details</p>
             <dl className="mt-5 grid gap-4 text-sm">
               <div className="flex justify-between border-b border-border/60 pb-3">
@@ -326,17 +326,6 @@ export function SupportSection() {
             </dl>
           </div>
         </SlideUp>
-
-        {/* Flyer Container (No Shadow) */}
-        <ScaleIn delay={0.2} className="lg:col-span-5 relative aspect-[4/5] overflow-hidden rounded-3xl">
-          <Image
-            src="/images/WOW CTA Flyer_122739.png"
-            alt="Call for Support Flyer"
-            fill
-            sizes="(max-width: 1024px) 100vw, 40vw"
-            className="object-contain"
-          />
-        </ScaleIn>
       </div>
     </section>
   );
