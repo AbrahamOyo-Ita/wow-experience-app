@@ -76,23 +76,43 @@ export function FlyerPromoSection() {
         </SlideUp>
 
         <ScaleIn delay={0.2} className="lg:col-span-6 flex justify-center">
-          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border/80 bg-white p-6 shadow-md">
-            <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-ink">
-              <Image
-                src="/images/WOW CTA Flyer_122739.png"
-                alt="Wonders of Worship Experience Attendance Flyer"
-                fill
-                sizes="(max-width: 1024px) 100vw, 40vw"
-                className="object-contain p-2"
-              />
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border bg-ink p-6 text-white shadow-xl">
+            <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-b from-ink via-ink/90 to-ink p-6 flex flex-col justify-between text-center">
+              <div>
+                <p className="text-[0.65rem] font-bold uppercase tracking-widest text-red-soft">
+                  Wonders of Worship Experience 2026
+                </p>
+                <h3 className="mt-2 font-display text-2xl font-bold tracking-tight text-white uppercase">
+                  I Will Be <span className="text-red">Attending</span>
+                </h3>
+              </div>
+
+              {/* Dummy Photo Avatar Frame Preview */}
+              <div className="my-auto mx-auto flex flex-col items-center">
+                <div className="relative h-28 w-28 overflow-hidden rounded-full border-2 border-red bg-white/10 p-1 shadow-lg flex items-center justify-center">
+                  <div className="flex h-full w-full items-center justify-center rounded-full bg-white/15 text-white/60">
+                    <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                </div>
+                <p className="mt-3 text-sm font-bold text-white tracking-wide">YOUR NAME HERE</p>
+                <p className="text-[0.7rem] font-medium text-white/70">Attending from Your City</p>
+              </div>
+
+              <div className="border-t border-white/15 pt-3">
+                <p className="text-[0.68rem] font-semibold text-white/80 uppercase tracking-widest">
+                  October 18, 2026 • Doors Open 8:00 AM
+                </p>
+              </div>
             </div>
             <div className="mt-4 flex items-center justify-between">
               <div>
-                <p className="text-sm font-bold text-ink">Flyer Studio 2026</p>
-                <p className="text-xs text-muted">Personalized PNG Download</p>
+                <p className="text-sm font-bold text-white">Attendance Flyer Studio</p>
+                <p className="text-xs text-white/60">Generate your personalized PNG flyer</p>
               </div>
-              <Button href="/flyer" variant="outlineDark" size="sm">
-                Open Studio
+              <Button href="/flyer" variant="inverse" size="sm">
+                Create Yours &rarr;
               </Button>
             </div>
           </div>

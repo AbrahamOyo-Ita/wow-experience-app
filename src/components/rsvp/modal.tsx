@@ -202,11 +202,10 @@ export function RsvpModal({ pathname }: { pathname: string }) {
             noValidate
           >
             <h2 id="rsvp-title" className="font-display text-3xl font-bold">
-              Send me reminders
+              Reserve Your Space
             </h2>
             <p className="mt-2 text-sm text-muted">
-              We will only use this information for event reminders on the
-              channels you approve.
+              Enter your details to confirm your reservation and receive venue directions and event updates.
             </p>
             {formError ? (
               <p className="mt-4 rounded-md bg-red-soft px-3 py-2 text-sm text-red-deep" role="alert">
@@ -247,7 +246,10 @@ export function RsvpModal({ pathname }: { pathname: string }) {
                 />
               </Field>
               <fieldset>
-                <legend className="text-sm font-semibold">Preferred reminder</legend>
+                <legend className="text-sm font-semibold">Event updates channel</legend>
+                <p className="mt-1 text-xs text-muted">
+                  Choose how you want to receive your confirmation, venue directions, and event updates.
+                </p>
                 <div className="mt-3 grid gap-2 sm:grid-cols-3">
                   {(["whatsapp", "email", "both"] as Channel[]).map((option) => (
                     <label
@@ -278,7 +280,7 @@ export function RsvpModal({ pathname }: { pathname: string }) {
                     onChange={(event) => setWhatsappConsent(event.target.checked)}
                   />
                   <span>
-                    I agree to receive event reminders on WhatsApp.
+                    I agree to receive event confirmations & updates on WhatsApp.
                     {errors.whatsappConsent ? (
                       <span className="mt-1 block text-red">{errors.whatsappConsent}</span>
                     ) : null}
@@ -294,7 +296,7 @@ export function RsvpModal({ pathname }: { pathname: string }) {
                     onChange={(event) => setEmailConsent(event.target.checked)}
                   />
                   <span>
-                    I agree to receive event reminders by email.
+                    I agree to receive event confirmations & updates by email.
                     {errors.emailConsent ? (
                       <span className="mt-1 block text-red">{errors.emailConsent}</span>
                     ) : null}
@@ -302,7 +304,7 @@ export function RsvpModal({ pathname }: { pathname: string }) {
                 </label>
               ) : null}
               <Button type="submit" disabled={submitting}>
-                {submitting ? "Sending…" : "Send me reminders"}
+                {submitting ? "Reserving Space…" : "Confirm My Space"}
               </Button>
             </div>
           </form>

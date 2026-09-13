@@ -85,10 +85,10 @@ export function HomeHero() {
               </HoverCard>
               <HoverCard lift={-2} scale={1.02}>
                 <Link
-                  href="/experiences"
+                  href="/volunteer"
                   className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/5 px-6 py-3 text-sm font-medium text-white backdrop-blur-sm transition hover:border-white hover:bg-white/15"
                 >
-                  Explore all editions
+                  Be a volunteer
                 </Link>
               </HoverCard>
             </div>

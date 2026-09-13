@@ -49,12 +49,15 @@ export function SiteHeader({ inverted = false }: { inverted?: boolean }) {
         </nav>
         <div className="flex items-center gap-3">
           <div className="hidden sm:block">
-            <OpenRsvpButton
-              variant={onDark ? "inverse" : "primary"}
-              className="px-5 py-2.5"
+            <Link
+              href="/experiences"
+              className={cn(
+                "inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold tracking-tight transition duration-200 ease-out active:scale-[0.98]",
+                onDark ? "bg-white text-ink hover:bg-white/90" : "bg-red text-white hover:bg-red-deep",
+              )}
             >
-              Reserve Spot
-            </OpenRsvpButton>
+              Explore all editions
+            </Link>
           </div>
           <button
             type="button"
@@ -122,9 +125,13 @@ export function SiteHeader({ inverted = false }: { inverted?: boolean }) {
                 transition={{ delay: 0.4, duration: 0.3 }}
                 className="pt-6"
               >
-                <OpenRsvpButton variant="inverse" className="w-full text-center">
-                  Reserve Spot
-                </OpenRsvpButton>
+                <Link
+                  href="/experiences"
+                  onClick={() => setOpen(false)}
+                  className="block rounded-full bg-white px-6 py-3.5 text-center text-sm font-semibold text-ink transition-colors hover:bg-white/90"
+                >
+                  Explore all editions
+                </Link>
               </motion.div>
             </nav>
           </motion.div>
