@@ -151,6 +151,12 @@ export function SiteFooter() {
                 <Link href="/gallery" className="transition-colors hover:text-red">Photo Gallery</Link>
               </li>
               <li>
+                <Link href="/flyer" className="transition-colors hover:text-red">Attending Flyer</Link>
+              </li>
+              <li>
+                <Link href="/polo" className="transition-colors hover:text-red">Official Polo</Link>
+              </li>
+              <li>
                 <Link href="/insights" className="transition-colors hover:text-red">Insights & Essays</Link>
               </li>
               <li>

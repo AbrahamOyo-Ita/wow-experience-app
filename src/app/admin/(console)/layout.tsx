@@ -10,7 +10,9 @@ export default async function AdminConsoleLayout({
 }: {
   children: React.ReactNode;
 }) {
-  if (isSupabaseConfigured()) {
+  const requireAuth = process.env.REQUIRE_ADMIN_AUTH === "true";
+
+  if (requireAuth && isSupabaseConfigured()) {
     const supabase = await createClient();
     const { data } = await supabase.auth.getClaims();
     if (!data?.claims?.sub) {

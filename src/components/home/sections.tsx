@@ -171,15 +171,49 @@ export function MinistersPreview() {
   );
 }
 
+export function MerchPromo() {
+  return (
+    <section className="bg-white py-16 sm:py-20">
+      <div className="container-site grid gap-8 rounded-3xl border border-border bg-paper p-6 shadow-xs sm:p-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+        <div className="relative mx-auto aspect-[4/5] w-full max-w-xs overflow-hidden rounded-2xl bg-white">
+          <Image
+            src="/images/WOW_RESOUND POLO BLACK.png"
+            alt="WOW T-Shirt merch mockup"
+            fill
+            sizes="(max-width: 1024px) 80vw, 28vw"
+            className="object-contain p-5"
+          />
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-red">
+            Official Merch
+          </p>
+          <h2 className="mt-3 font-display text-4xl font-bold leading-none text-ink sm:text-6xl">
+            Get the WOW T-Shirt
+          </h2>
+          <p className="mt-4 max-w-xl text-base leading-relaxed text-muted">
+            Pick your color and size, then send your order directly on WhatsApp.
+          </p>
+          <div className="mt-7">
+            <Button href="/polo" size="lg">
+              View Merch
+            </Button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function ExperiencePreview() {
   return (
     <section className="relative min-h-[75vh] overflow-hidden bg-ink text-white">
       <Image
-        src="/images/experience-stage.jpg"
-        alt="Worship musicians on stage"
+        src="/images/THE WHY BEHIND WOW.jpeg"
+        alt="The why behind WOW Experience"
         fill
         sizes="100vw"
-        className="object-cover opacity-65"
+        className="object-cover object-[center_28%] opacity-65"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-transparent" />
       <div className="relative z-10 flex min-h-[75vh] items-end">

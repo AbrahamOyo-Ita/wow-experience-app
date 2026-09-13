@@ -317,6 +317,14 @@ export function RsvpModal({ pathname }: { pathname: string }) {
               {dateLabel}. {edition.venue.name}. Reminders will follow on the
               channels you chose.
             </p>
+            <div className="mt-5 rounded-xl border border-red/20 bg-red-soft p-4">
+              <p className="text-sm font-semibold text-red-deep">
+                Generate your personalized I&apos;ll Be Attending flyer to share with friends.
+              </p>
+              <Button href="/flyer" className="mt-3 w-full" onClick={() => setOpen(false)}>
+                Create my flyer
+              </Button>
+            </div>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button type="button" onClick={() => downloadIcs(edition)}>
                 Add to calendar

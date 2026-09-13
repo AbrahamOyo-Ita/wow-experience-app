@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Field, PhoneField, TextInput } from "@/components/ui/field";
 import { attendanceService } from "@/services";
 import { flattenZodErrors, attendanceSchema } from "@/lib/validation";
-import { formatEventDate, formatEventTime } from "@/lib/utils";
+import { cn, formatEventDate, formatEventTime } from "@/lib/utils";
 import type { EventEdition } from "@/types";
 
 type UiState =
@@ -147,6 +147,7 @@ export function CheckInForm({ edition }: { edition: EventEdition }) {
           body={`Welcome, ${fullName || "friend"}. Thank you for being part of ${edition.shortName}. Please follow the ushers inside.`}
           actionLabel="Check in another guest"
           onAction={resetToForm}
+          flyerHref="/flyer"
         />
       ) : null}
 
@@ -208,6 +209,9 @@ export function CheckInForm({ edition }: { edition: EventEdition }) {
               Scan at the door. This records presence. It is not an RSVP.
             </p>
             <p className="mt-1 text-sm text-muted">{when}</p>
+            <Button href="/flyer" variant="outlineDark" size="sm" className="mt-4">
+              Create attending flyer
+            </Button>
           </div>
 
           {formError && ui === "ready" ? (
@@ -326,19 +330,33 @@ function ResultPanel({
   body,
   actionLabel,
   onAction,
+  flyerHref,
 }: {
   title: string;
   body: string;
   actionLabel: string;
   onAction: () => void;
+  flyerHref?: string;
 }) {
   return (
     <div>
       <h1 className="font-display text-3xl font-bold text-ink">{title}</h1>
       <p className="mt-3 text-muted">{body}</p>
+      {flyerHref ? (
+        <Button
+          href={flyerHref}
+          className="mt-8 h-12 w-full bg-red text-white hover:bg-red-deep"
+          size="lg"
+        >
+          Create my attending flyer
+        </Button>
+      ) : null}
       <Button
         type="button"
-        className="mt-8 h-12 w-full bg-ink text-white hover:bg-ink/90"
+        className={cn(
+          "h-12 w-full bg-ink text-white hover:bg-ink/90",
+          flyerHref ? "mt-3" : "mt-8",
+        )}
         size="lg"
         onClick={onAction}
       >

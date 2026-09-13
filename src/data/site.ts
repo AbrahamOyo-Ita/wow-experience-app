@@ -7,7 +7,40 @@ export const SITE: SitePlaceholders = {
   contactPhone: "+234 800 000 0000",
   instagram: "https://instagram.com/wonderexperience",
   youtube: "https://youtube.com/@wonderexperience",
-  whatsappDisplay: "+234 800 000 0000",
+  whatsappDisplay: "+234 907 012 5173",
+  whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "+234 907 012 5173",
+  polo: {
+    name: "Official WOW Experience Resound Polo",
+    price: 6000,
+    currency: "NGN",
+    colors: [
+      {
+        name: "Purple",
+        slug: "purple",
+        imageSrc: "/images/WOW_RESOUND POLO PURPLE.png",
+        swatchClass: "bg-[#4b256f]",
+      },
+      {
+        name: "Red",
+        slug: "red",
+        imageSrc: "/images/WOW_RESOUND POLO RED.png",
+        swatchClass: "bg-red",
+      },
+      {
+        name: "Black",
+        slug: "black",
+        imageSrc: "/images/WOW_RESOUND POLO BLACK.png",
+        swatchClass: "bg-ink",
+      },
+      {
+        name: "White",
+        slug: "white",
+        imageSrc: "/images/WOW_RESOUND POLO WHITE.png",
+        swatchClass: "bg-white",
+      },
+    ],
+    sizes: ["Medium", "Large", "Xtra Large", "XXL"],
+  },
   policyVersion: "2026.1",
   social: {
     instagram: "https://instagram.com/wonderexperience",

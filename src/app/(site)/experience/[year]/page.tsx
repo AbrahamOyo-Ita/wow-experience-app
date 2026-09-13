@@ -101,9 +101,14 @@ export default async function ExperienceYearPage({
             </SlideUp>
 
             {upcoming ? (
-              <FadeIn delay={0.3} className="mt-8">
-                <HoverCard scale={1.03} className="inline-block">
+              <FadeIn delay={0.3} className="mt-8 flex flex-wrap gap-3">
+                <HoverCard scale={1.03}>
                   <OpenRsvpButton variant="inverse">Reserve your space</OpenRsvpButton>
+                </HoverCard>
+                <HoverCard scale={1.03}>
+                  <Button href="/flyer" variant="outlineLight">
+                    Create attending flyer
+                  </Button>
                 </HoverCard>
               </FadeIn>
             ) : null}
@@ -315,9 +320,16 @@ export default async function ExperienceYearPage({
               </p>
             </FadeIn>
             <SlideUp delay={0.2} className="mt-8">
-              <HoverCard scale={1.04} className="inline-block">
-                <OpenRsvpButton variant="inverse">Reserve your space</OpenRsvpButton>
-              </HoverCard>
+              <div className="flex flex-wrap justify-center gap-3">
+                <HoverCard scale={1.04}>
+                  <OpenRsvpButton variant="inverse">Reserve your space</OpenRsvpButton>
+                </HoverCard>
+                <HoverCard scale={1.04}>
+                  <Button href="/flyer" variant="outlineLight">
+                    Create attending flyer
+                  </Button>
+                </HoverCard>
+              </div>
             </SlideUp>
           </div>
         </section>

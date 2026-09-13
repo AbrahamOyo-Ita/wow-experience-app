@@ -380,6 +380,19 @@ export interface SitePlaceholders {
   instagram: string;
   youtube: string;
   whatsappDisplay: string;
+  whatsappNumber: string;
+  polo: {
+    name: string;
+    price: number;
+    currency: string;
+    colors: Array<{
+      name: string;
+      slug: string;
+      imageSrc: string;
+      swatchClass: string;
+    }>;
+    sizes: string[];
+  };
   policyVersion: string;
   social: {
     instagram: string;

@@ -4,6 +4,7 @@ import {
   ExperiencePreview,
   HomeRsvp,
   InsightPreview,
+  MerchPromo,
   MinistersPreview,
   SoundRisingSection,
   SupportSection,
@@ -17,6 +18,7 @@ export default function HomePage() {
       <PurposeBand />
       <SoundRisingSection />
       <EditionBlock />
+      <MerchPromo />
       <MinistersPreview />
       <ExperiencePreview />
       <VolunteerCall />
@@ -26,4 +28,3 @@ export default function HomePage() {
     </main>
   );
 }
-
