@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "motion/react";
 import { Menu, X } from "lucide-react";
 import { Wordmark } from "@/components/site/wordmark";
 import { OpenRsvpButton } from "@/components/rsvp/open-button";
@@ -58,7 +59,7 @@ export function SiteHeader({ inverted = false }: { inverted?: boolean }) {
           <button
             type="button"
             className={cn(
-              "inline-flex h-11 w-11 items-center justify-center rounded-full border lg:hidden",
+              "inline-flex h-11 w-11 items-center justify-center rounded-full border lg:hidden transition-transform active:scale-95",
               onDark ? "border-white/30 text-white" : "border-border text-ink",
             )}
             aria-expanded={open}
@@ -71,42 +72,64 @@ export function SiteHeader({ inverted = false }: { inverted?: boolean }) {
         </div>
       </div>
 
-      {open ? (
-        <div
-          id="mobile-nav"
-          className="fixed inset-0 z-50 bg-ink text-white lg:hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Menu"
-        >
-          <div className="container-site flex h-[72px] items-center justify-between">
-            <Wordmark inverted />
-            <button
-              type="button"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/30"
-              onClick={() => setOpen(false)}
-            >
-              <X className="h-5 w-5" aria-hidden />
-              <span className="sr-only">Close menu</span>
-            </button>
-          </div>
-          <nav className="container-site mt-8 grid gap-2">
-            {publicNav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            id="mobile-nav"
+            initial={{ opacity: 0, y: "-100%" }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: "-100%" }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed inset-0 z-50 flex flex-col bg-ink text-white lg:hidden overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu"
+          >
+            <div className="container-site flex h-[72px] shrink-0 items-center justify-between">
+              <Wordmark inverted />
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                type="button"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/30"
                 onClick={() => setOpen(false)}
-                className="border-b border-white/10 py-4 text-2xl font-display font-semibold"
               >
-                {item.label}
-              </Link>
-            ))}
-            <div className="pt-8">
-              <OpenRsvpButton variant="inverse">Reserve Spot</OpenRsvpButton>
+                <X className="h-5 w-5" aria-hidden />
+                <span className="sr-only">Close menu</span>
+              </motion.button>
             </div>
-          </nav>
-        </div>
-      ) : null}
+            <nav className="container-site my-auto py-8 grid gap-1">
+              {publicNav.map((item, i) => (
+                <motion.div
+                  key={item.href}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ delay: 0.1 + i * 0.05, duration: 0.3 }}
+                >
+                  <Link
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className="block border-b border-white/10 py-3.5 text-2xl font-display font-semibold transition-colors hover:text-red-soft"
+                  >
+                    {item.label}
+                  </Link>
+                </motion.div>
+              ))}
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ delay: 0.4, duration: 0.3 }}
+                className="pt-6"
+              >
+                <OpenRsvpButton variant="inverse" className="w-full text-center">
+                  Reserve Spot
+                </OpenRsvpButton>
+              </motion.div>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

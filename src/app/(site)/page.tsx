@@ -2,6 +2,7 @@ import { HomeHero, PurposeBand } from "@/components/home/hero";
 import {
   EditionBlock,
   ExperiencePreview,
+  FlyerPromoSection,
   HomeRsvp,
   InsightPreview,
   MerchPromo,
@@ -18,6 +19,7 @@ export default function HomePage() {
       <PurposeBand />
       <SoundRisingSection />
       <EditionBlock />
+      <FlyerPromoSection />
       <MerchPromo />
       <MinistersPreview />
       <ExperiencePreview />

@@ -42,11 +42,61 @@ export function SoundRisingSection() {
           <div className="mt-10 flex items-center justify-center gap-4">
             <HoverCard scale={1.04} lift={-2}>
               <OpenRsvpButton variant="inverse">
-                Be in the Room &rarr;
+                I&rsquo;ll be in the room &rarr;
               </OpenRsvpButton>
             </HoverCard>
           </div>
         </FadeIn>
+      </div>
+    </section>
+  );
+}
+
+export function FlyerPromoSection() {
+  return (
+    <section className="bg-paper py-20 border-y border-border/40">
+      <div className="container-site grid gap-10 lg:grid-cols-12 lg:items-center">
+        <SlideUp className="lg:col-span-6">
+          <span className="text-xs font-bold uppercase tracking-widest text-red">
+            Attendance Flyer Studio
+          </span>
+          <h2 className="mt-3 font-display text-4xl sm:text-6xl font-bold leading-tight text-ink">
+            Create Your <span className="text-red">Attending Flyer</span>
+          </h2>
+          <p className="mt-4 text-base sm:text-lg text-muted font-light leading-relaxed">
+            Let your friends and community know you&rsquo;ll be in the room for Wonders of Worship Experience 2026. Upload your photo, personalize your name, and instantly download your branded flyer to share on WhatsApp & social media.
+          </p>
+          <div className="mt-8">
+            <HoverCard scale={1.03} className="inline-block">
+              <Button href="/flyer" size="lg" className="gap-2">
+                Create My Flyer &rarr;
+              </Button>
+            </HoverCard>
+          </div>
+        </SlideUp>
+
+        <ScaleIn delay={0.2} className="lg:col-span-6 flex justify-center">
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border/80 bg-white p-6 shadow-md">
+            <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-ink">
+              <Image
+                src="/images/WOW CTA Flyer_122739.png"
+                alt="Wonders of Worship Experience Attendance Flyer"
+                fill
+                sizes="(max-width: 1024px) 100vw, 40vw"
+                className="object-contain p-2"
+              />
+            </div>
+            <div className="mt-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-ink">Flyer Studio 2026</p>
+                <p className="text-xs text-muted">Personalized PNG Download</p>
+              </div>
+              <Button href="/flyer" variant="outlineDark" size="sm">
+                Open Studio
+              </Button>
+            </div>
+          </div>
+        </ScaleIn>
       </div>
     </section>
   );
