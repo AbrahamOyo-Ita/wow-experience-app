@@ -52,7 +52,7 @@ export function SiteHeader({ inverted = false }: { inverted?: boolean }) {
               variant={onDark ? "inverse" : "primary"}
               className="px-5 py-2.5"
             >
-              I&apos;ll attend
+              Reserve Spot
             </OpenRsvpButton>
           </div>
           <button
@@ -102,7 +102,7 @@ export function SiteHeader({ inverted = false }: { inverted?: boolean }) {
               </Link>
             ))}
             <div className="pt-8">
-              <OpenRsvpButton variant="inverse">I&apos;ll attend</OpenRsvpButton>
+              <OpenRsvpButton variant="inverse">Reserve Spot</OpenRsvpButton>
             </div>
           </nav>
         </div>

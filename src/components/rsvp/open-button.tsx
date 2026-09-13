@@ -7,7 +7,7 @@ export function openRsvpModal(step: "decision" | "form" = "form") {
 }
 
 export function OpenRsvpButton({
-  children = "I'll attend",
+  children = "Reserve Spot",
   variant = "primary",
   className,
 }: {
