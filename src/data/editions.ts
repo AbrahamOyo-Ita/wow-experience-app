@@ -10,10 +10,10 @@ export const editions: EventEdition[] = [
     name: "Wonders of Worship Experience 2026",
     shortName: "WOW 2026",
     slug: "2026",
-    theme: "A People in Wonder",
-    statement: "One gathering. One room. A collective voice raised in awe.",
+    theme: "RESOUND",
+    statement: "Revelation 19:6 — 'Then I heard what sounded like a great multitude, like the roar of rushing waters and like loud peals of thunder, shouting: Hallelujah! For our Lord God Almighty reigns.'",
     description:
-      "The 2026 gathering anchors our annual rhythm in Uyo. An unhurried space for believers to gather, sing Scripture, and dwell in the presence of Christ without production pressures or tight stage timers.",
+      "The 2026 gathering anchors our annual rhythm in Uyo around the theme RESOUND (Revelation 19:6). An unhurried space for believers to gather, sing Scripture, and dwell in the presence of Christ like the roar of rushing waters.",
     timezone: "Africa/Lagos",
     startsAt: "2026-10-18T09:00:00+01:00",
     endsAt: "2026-10-18T14:00:00+01:00",

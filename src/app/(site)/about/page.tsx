@@ -18,78 +18,46 @@ export default function AboutPage() {
 
   return (
     <PageShell>
-      {/* Hero Intro Banner */}
-      <section className="relative overflow-hidden bg-ink py-20 text-white sm:py-28">
-        <div className="pointer-events-none absolute -top-32 left-1/2 h-[450px] w-[700px] -translate-x-1/2 rounded-full bg-red/25 blur-[120px]" />
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
-            backgroundSize: "24px 24px",
-          }}
+      {/* Hero Intro Banner - THE WHY BEHIND WOW */}
+      <section className="relative min-h-[70vh] overflow-hidden bg-ink text-white flex items-center">
+        <Image
+          src="/images/THE WHY BEHIND WOW.jpeg"
+          alt="The why behind WOW Experience"
+          fill
+          sizes="100vw"
+          className="object-cover object-[center_28%] opacity-60"
+          priority
         />
-
-        <div className="container-site relative z-10">
-          <FadeIn>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-red-soft backdrop-blur-md">
-              <Sparkles className="h-3.5 w-3.5 text-red" />
-              <span>About the Platform & Movement</span>
-            </div>
-          </FadeIn>
-
-          <SlideUp delay={0.15}>
-            <h1 className="mt-6 max-w-4xl font-display text-4xl font-bold leading-[0.95] sm:text-6xl lg:text-7xl">
-              An unhurried space for{" "}
-              <AnimatedHighlight className="text-red">worship</AnimatedHighlight>
+        <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/50 to-ink/20" />
+        <div className="relative z-10 container-site py-24 md:py-32 md:max-w-3xl">
+          <SlideUp>
+            <span className="text-xs font-bold uppercase tracking-widest text-red-soft">
+              THE WHY BEHIND WOW
+            </span>
+            <h1 className="mt-4 font-display text-4xl font-bold leading-tight sm:text-6xl lg:text-7xl uppercase">
+              WE GATHER TO MAKE <AnimatedHighlight className="text-red">JESUS</AnimatedHighlight> VISIBLE
             </h1>
-          </SlideUp>
-
-          <FadeIn delay={0.3}>
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/85 sm:text-xl font-light">
-              Wonders of Worship Experience is an annual digital platform and congregational movement. 
-              We exist to create room for believers across generations to behold Christ through Scripture, song, and quiet reverence.
+            <p className="mt-6 text-white/90 text-lg sm:text-xl font-light leading-relaxed max-w-2xl">
+              WOW exists to bring hearts together in authentic worship, create room for genuine encounters with God, and raise a generation that carries His presence beyond the gathering.
             </p>
-          </FadeIn>
-
-          {/* Quick Metrics Bar */}
-          <StaggerContainer staggerDelay={0.1} delay={0.4} className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:max-w-3xl">
-            <StaggerItem>
-              <HoverCard lift={-4} scale={1.02} className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-                <p className="text-xs uppercase tracking-wider text-white/60 font-medium">Format</p>
-                <p className="mt-1 text-base font-semibold text-white">Full Day Gathering</p>
-                <p className="text-xs text-white/70">Congregational Worship</p>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <HoverCard scale={1.03}>
+                <Button href="#philosophy" variant="outlineLight">
+                  Our core philosophy
+                </Button>
               </HoverCard>
-            </StaggerItem>
-
-            <StaggerItem>
-              <HoverCard lift={-4} scale={1.02} className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-                <p className="text-xs uppercase tracking-wider text-white/60 font-medium">Pacing</p>
-                <p className="mt-1 text-base font-semibold text-white">Unhurried Time</p>
-                <p className="text-xs text-white/70">No Stage Rush</p>
+              <HoverCard scale={1.03}>
+                <Button href="/experiences" variant="ghost" className="text-white hover:bg-white/10">
+                  Browse past archives
+                </Button>
               </HoverCard>
-            </StaggerItem>
-
-            <StaggerItem>
-              <HoverCard lift={-4} scale={1.02} className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-                <p className="text-xs uppercase tracking-wider text-white/60 font-medium">Anchor</p>
-                <p className="mt-1 text-base font-semibold text-white">Scriptural Truth</p>
-                <p className="text-xs text-white/70">Word-Centered</p>
-              </HoverCard>
-            </StaggerItem>
-
-            <StaggerItem>
-              <HoverCard lift={-4} scale={1.02} className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-                <p className="text-xs uppercase tracking-wider text-white/60 font-medium">Platform</p>
-                <p className="mt-1 text-base font-semibold text-white">Multi-Edition</p>
-                <p className="text-xs text-white/70">Past, Present & Future</p>
-              </HoverCard>
-            </StaggerItem>
-          </StaggerContainer>
+            </div>
+          </SlideUp>
         </div>
       </section>
 
       {/* "Why We Gather" Section */}
-      <section className="relative bg-gradient-to-b from-paper via-white to-white py-20 sm:py-28">
+      <section id="philosophy" className="relative bg-gradient-to-b from-paper via-white to-white py-20 sm:py-28">
         <div className="container-site">
           <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
             {/* Left Column */}

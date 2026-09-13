@@ -2,6 +2,7 @@
 
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Sparkles, Send, CheckCircle2 } from "lucide-react";
 import { subscribeNewsletter } from "@/actions/public";
 import { SITE } from "@/data/editions";
@@ -74,10 +75,16 @@ export function SiteFooter() {
         <div className="grid gap-12 lg:grid-cols-[1.3fr_0.8fr_0.8fr_1.4fr]">
           {/* Brand Column */}
           <div>
-            <Link href="/" className="inline-flex items-center gap-2.5 font-display text-2xl font-bold tracking-tight text-ink">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-red text-white shadow-xs">
-                <Sparkles className="h-5 w-5" />
-              </span>
+            <Link href="/" className="inline-flex items-center gap-3 font-display text-2xl font-bold tracking-tight text-ink group">
+              <div className="relative h-10 w-10 shrink-0 overflow-hidden">
+                <Image
+                  src="/images/WOW Experience Logo Black.png"
+                  alt="Wonders of Worship Logo"
+                  fill
+                  sizes="80px"
+                  className="object-contain transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
               <span>Wonders of Worship</span>
             </Link>
             

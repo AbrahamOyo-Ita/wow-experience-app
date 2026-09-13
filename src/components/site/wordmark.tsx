@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 export function Wordmark({
@@ -9,26 +10,41 @@ export function Wordmark({
   compact?: boolean;
 }) {
   return (
-    <Link
-      href="/"
-      className={cn(
-        "flex flex-col leading-none",
-        inverted ? "text-white" : "text-ink",
-      )}
-    >
-      <span className="font-display text-[1.2rem] tracking-normal md:text-[1.35rem]">
-        Wonders of Worship
-      </span>
-      {!compact ? (
-        <span
-          className={cn(
-            "mt-0.5 text-[0.65rem] font-semibold tracking-[0.18em] uppercase",
-            inverted ? "text-white/70" : "text-muted",
-          )}
-        >
-          Experience
+    <Link href="/" className="inline-flex items-center gap-3 group">
+      <div className="relative h-9 w-9 shrink-0 overflow-hidden">
+        <Image
+          src={
+            inverted
+              ? "/images/WOW Experience Logo White.png"
+              : "/images/WOW Experience Logo Black.png"
+          }
+          alt="Wonders of Worship Logo"
+          fill
+          sizes="72px"
+          className="object-contain transition-transform duration-300 group-hover:scale-105"
+          priority
+        />
+      </div>
+      <div
+        className={cn(
+          "flex flex-col leading-none transition-colors",
+          inverted ? "text-white" : "text-ink",
+        )}
+      >
+        <span className="font-display text-[1.15rem] font-bold tracking-tight md:text-[1.3rem]">
+          Wonders of Worship
         </span>
-      ) : null}
+        {!compact ? (
+          <span
+            className={cn(
+              "mt-0.5 text-[0.62rem] font-bold tracking-[0.18em] uppercase",
+              inverted ? "text-white/75" : "text-red",
+            )}
+          >
+            Experience
+          </span>
+        ) : null}
+      </div>
     </Link>
   );
 }
