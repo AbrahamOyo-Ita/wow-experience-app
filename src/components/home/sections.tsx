@@ -387,10 +387,7 @@ export function SupportSection() {
       <div className="container-site relative z-10 grid gap-10 lg:grid-cols-12 lg:items-center">
         {/* Left Column: Left-aligned Text */}
         <SlideUp className="lg:col-span-7 text-left">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3.5 py-1 text-xs font-bold uppercase tracking-widest text-white backdrop-blur-md">
-            <span>Financial Partnership</span>
-          </div>
-          <h2 className="mt-3 font-display text-4xl font-bold leading-tight sm:text-6xl text-white uppercase">
+          <h2 className="font-display text-4xl font-bold leading-tight sm:text-6xl text-white uppercase">
             Partner With <span className="text-white">WOW Experience</span>
           </h2>
           <p className="mt-4 text-base sm:text-lg text-white/90 font-light leading-relaxed max-w-xl">
