@@ -47,14 +47,8 @@ export default function ContactPage() {
           <div className="mt-10">
             <p className="text-xs font-bold uppercase tracking-wider text-muted mb-3">Connect on Socials</p>
             <div className="flex flex-wrap gap-4 text-sm font-semibold">
-              <a href={SITE.social.instagram} target="_blank" rel="noreferrer" className="text-ink hover:text-red transition-colors">
-                Instagram &rarr;
-              </a>
               <a href={SITE.social.youtube} target="_blank" rel="noreferrer" className="text-ink hover:text-red transition-colors">
                 YouTube &rarr;
-              </a>
-              <a href={SITE.social.x} target="_blank" rel="noreferrer" className="text-ink hover:text-red transition-colors">
-                X &rarr;
               </a>
               <a href={SITE.social.facebook} target="_blank" rel="noreferrer" className="text-ink hover:text-red transition-colors">
                 Facebook &rarr;

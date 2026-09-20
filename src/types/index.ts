@@ -396,9 +396,9 @@ export interface SitePlaceholders {
   };
   policyVersion: string;
   social: {
-    instagram: string;
+    instagram?: string;
     youtube: string;
-    x: string;
+    x?: string;
     facebook: string;
     tiktok: string;
   };

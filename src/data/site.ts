@@ -6,7 +6,7 @@ export const SITE: SitePlaceholders = {
   contactEmail: "hello@wonderexperience.org",
   contactPhone: "+234 800 000 0000",
   instagram: "https://instagram.com/wonderexperience",
-  youtube: "https://youtube.com/@wonderexperience",
+  youtube: "https://youtube.com/@wowexperience-f9n?si=LQe_yZ_fjd-CdOcT",
   whatsappDisplay: "+234 907 012 5173",
   whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "+234 907 012 5173",
   polo: {
@@ -43,9 +43,7 @@ export const SITE: SitePlaceholders = {
   },
   policyVersion: "2026.1",
   social: {
-    instagram: "https://instagram.com/wonderexperience",
-    youtube: "https://youtube.com/@wonderexperience",
-    x: "https://x.com/wonderexperience",
+    youtube: "https://youtube.com/@wowexperience-f9n?si=LQe_yZ_fjd-CdOcT",
     facebook: "https://www.facebook.com/share/1Bvd8mUwih/",
     tiktok: "https://tiktok.com/@wow.experience4",
   },
