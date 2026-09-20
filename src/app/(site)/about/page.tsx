@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { Sparkles, Heart, Quote, Users, BookOpen, Clock, MapPin } from "lucide-react";
 import { PageShell } from "@/components/site/page-shell";
 import { Button } from "@/components/ui/button";
 import { organizingTeam, previousImpact, values } from "@/data/content";
@@ -42,7 +41,7 @@ export default function AboutPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <HoverCard scale={1.03}>
-                <Button href="#philosophy" variant="outlineLight">
+                <Button href="#values" variant="outlineLight">
                   Our core philosophy
                 </Button>
               </HoverCard>
@@ -56,103 +55,8 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* "Why We Gather" Section */}
-      <section id="philosophy" className="relative bg-gradient-to-b from-paper via-white to-white py-20 sm:py-28">
-        <div className="container-site">
-          <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
-            {/* Left Column */}
-            <SlideUp className="lg:col-span-7">
-              <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-red">
-                <Heart className="h-3.5 w-3.5 fill-red/20 text-red" />
-                <span>Our Heart & Purpose</span>
-              </div>
-
-              <h2 className="mt-3 font-display text-3xl font-bold sm:text-5xl text-ink">
-                An Atmosphere of Reverence
-              </h2>
-
-              <div className="relative my-8 rounded-2xl border border-red/20 bg-white p-6 shadow-xs border-l-4 border-l-red sm:p-7">
-                <Quote className="absolute right-6 top-6 h-8 w-8 text-red/10" />
-                <p className="relative z-10 text-lg leading-relaxed font-medium text-ink/90 italic">
-                  &ldquo;Worship can easily turn into a structured production where songs end on a schedule and the room is rushed. 
-                  We built Wonders of Worship around the opposite priority: a prepared room, clear scriptural grounding, and enough space to sing until hearts respond.&rdquo;
-                </p>
-              </div>
-
-              <p className="max-w-2xl leading-relaxed text-muted text-base">
-                This platform connects worshippers across annual editions. Whether exploring recordings from past years or registering for upcoming gatherings, the core mission remains simple: exalting Christ together.
-              </p>
-
-              {/* Feature Cards Grid */}
-              <StaggerContainer staggerDelay={0.1} className="mt-8 grid gap-4 sm:grid-cols-3">
-                <StaggerItem>
-                  <HoverCard lift={-4} className="rounded-xl border border-border bg-white p-4 shadow-2xs">
-                    <Users className="h-5 w-5 text-red" />
-                    <h3 className="mt-3 font-semibold text-ink text-sm">Congregational Voice</h3>
-                    <p className="mt-1 text-xs text-muted leading-snug">
-                      Active participative worshippers, not spectators.
-                    </p>
-                  </HoverCard>
-                </StaggerItem>
-
-                <StaggerItem>
-                  <HoverCard lift={-4} className="rounded-xl border border-border bg-white p-4 shadow-2xs">
-                    <BookOpen className="h-5 w-5 text-red" />
-                    <h3 className="mt-3 font-semibold text-ink text-sm">Scripture Centered</h3>
-                    <p className="mt-1 text-xs text-muted leading-snug">
-                      Grounded in scripture and earnest prayer.
-                    </p>
-                  </HoverCard>
-                </StaggerItem>
-
-                <StaggerItem>
-                  <HoverCard lift={-4} className="rounded-xl border border-border bg-white p-4 shadow-2xs">
-                    <Clock className="h-5 w-5 text-red" />
-                    <h3 className="mt-3 font-semibold text-ink text-sm">Unhurried Pacing</h3>
-                    <p className="mt-1 text-xs text-muted leading-snug">
-                      Time to linger in God&apos;s presence without rush.
-                    </p>
-                  </HoverCard>
-                </StaggerItem>
-              </StaggerContainer>
-            </SlideUp>
-
-            {/* Right Column Visual */}
-            <ScaleIn delay={0.2} className="lg:col-span-5">
-              <div className="group relative">
-                <div className="absolute -inset-2 rounded-3xl bg-gradient-to-tr from-red/30 via-red/10 to-transparent blur-xl opacity-70 transition duration-500 group-hover:opacity-100" />
-                <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-ink border border-ink/10 shadow-2xl lg:aspect-[5/6]">
-                  <Image
-                    src="/images/about-worship-hero.jpg"
-                    alt="Congregation gathered in authentic worship"
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 40vw"
-                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/20 to-transparent" />
-                  <div className="absolute bottom-5 left-5 right-5 rounded-xl border border-white/20 bg-ink/75 p-4 backdrop-blur-md text-white shadow-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red text-white shadow-sm">
-                        <Sparkles className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold tracking-tight">Pure Congregational Worship</p>
-                        <p className="text-xs text-white/75 flex items-center gap-1.5 mt-0.5">
-                          <MapPin className="h-3 w-3 text-red-soft" />
-                          <span>Annual Gathering Movement</span>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </ScaleIn>
-          </div>
-        </div>
-      </section>
-
       {/* Values Section */}
-      <section className="bg-paper py-20 sm:py-24 border-y border-border/40">
+      <section id="values" className="bg-paper py-20 sm:py-24 border-y border-border/40">
         <div className="container-site">
           <FadeIn>
             <span className="text-xs font-bold uppercase tracking-widest text-red">Core Commitments</span>

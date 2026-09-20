@@ -6,18 +6,23 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { Menu, X } from "lucide-react";
 import { Wordmark } from "@/components/site/wordmark";
-import { OpenRsvpButton } from "@/components/rsvp/open-button";
 import { publicNav } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
 export function SiteHeader({ inverted = false }: { inverted?: boolean }) {
   const pathname = usePathname();
+  return <SiteHeaderContent key={pathname} pathname={pathname} inverted={inverted} />;
+}
+
+function SiteHeaderContent({
+  pathname,
+  inverted,
+}: {
+  pathname: string;
+  inverted: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const onDark = inverted;
-
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     if (!open) return;

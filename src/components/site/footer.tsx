@@ -3,7 +3,7 @@
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Sparkles, Send, CheckCircle2 } from "lucide-react";
+import { Send, CheckCircle2 } from "lucide-react";
 import { subscribeNewsletter } from "@/actions/public";
 import { SITE } from "@/data/editions";
 import { HoverCard } from "@/components/ui/motion";
