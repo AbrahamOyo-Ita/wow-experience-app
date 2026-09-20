@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 export function SiteHeader({ inverted = false }: { inverted?: boolean }) {
   const pathname = usePathname();
-  return <SiteHeaderContent key={pathname} pathname={pathname} inverted={inverted} />;
+  return <SiteHeaderContent pathname={pathname} inverted={inverted} />;
 }
 
 function SiteHeaderContent({
@@ -24,16 +24,21 @@ function SiteHeaderContent({
   const [open, setOpen] = useState(false);
   const onDark = inverted;
 
+  // Auto-close menu when navigating to a new page
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  // Lock body scroll when mobile menu is open and clean up on close/unmount
   useEffect(() => {
     if (!open) return;
-    const previousOverflow = document.body.style.overflow;
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
     document.body.style.overflow = "hidden";
     document.addEventListener("keydown", closeOnEscape);
     return () => {
-      document.body.style.overflow = previousOverflow;
+      document.body.style.overflow = "";
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [open]);
@@ -48,55 +53,55 @@ function SiteHeaderContent({
             : "sticky top-0 border-b border-border/80 bg-white/95 text-ink backdrop-blur-md",
         )}
       >
-        <div className="container-site flex h-[72px] items-center justify-between gap-6">
-        <Wordmark inverted={onDark} />
-        <nav className="hidden items-center gap-7 lg:flex" aria-label="Primary">
-          {publicNav.map((item) => {
-            const active =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname === item.href || pathname.startsWith(`${item.href}/`);
-            return (
+        <div className="container-site flex h-[72px] items-center justify-between gap-3 sm:gap-6">
+          <Wordmark inverted={onDark} />
+          <nav className="hidden items-center gap-7 lg:flex" aria-label="Primary">
+            {publicNav.map((item) => {
+              const active =
+                item.href === "/"
+                  ? pathname === "/"
+                  : pathname === item.href || pathname.startsWith(`${item.href}/`);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "text-sm font-medium transition-colors",
+                    onDark ? "text-white/80 hover:text-white" : "text-ink/70 hover:text-ink",
+                    active && (onDark ? "text-white" : "text-ink"),
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:block">
               <Link
-                key={item.href}
-                href={item.href}
+                href="/experiences"
                 className={cn(
-                  "text-sm font-medium transition-colors",
-                  onDark ? "text-white/80 hover:text-white" : "text-ink/70 hover:text-ink",
-                  active && (onDark ? "text-white" : "text-ink"),
+                  "inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold tracking-tight transition duration-200 ease-out active:scale-[0.98]",
+                  onDark ? "bg-white text-ink hover:bg-white/90" : "bg-red text-white hover:bg-red-deep",
                 )}
               >
-                {item.label}
+                Explore all editions
               </Link>
-            );
-          })}
-        </nav>
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:block">
-            <Link
-              href="/experiences"
+            </div>
+            <button
+              type="button"
               className={cn(
-                "inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold tracking-tight transition duration-200 ease-out active:scale-[0.98]",
-                onDark ? "bg-white text-ink hover:bg-white/90" : "bg-red text-white hover:bg-red-deep",
+                "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border lg:hidden transition-transform active:scale-95",
+                onDark ? "border-white/30 text-white" : "border-border text-ink",
               )}
+              aria-expanded={open}
+              aria-controls="mobile-nav"
+              aria-label={open ? "Close menu" : "Open menu"}
+              onClick={() => setOpen((current) => !current)}
             >
-              Explore all editions
-            </Link>
+              {open ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
+            </button>
           </div>
-          <button
-            type="button"
-            className={cn(
-              "inline-flex h-11 w-11 items-center justify-center rounded-full border lg:hidden transition-transform active:scale-95",
-              onDark ? "border-white/30 text-white" : "border-border text-ink",
-            )}
-            aria-expanded={open}
-            aria-controls="mobile-nav"
-            onClick={() => setOpen((current) => !current)}
-          >
-            <Menu className="h-5 w-5" aria-hidden />
-            <span className="sr-only">Open menu</span>
-          </button>
-        </div>
         </div>
       </header>
 

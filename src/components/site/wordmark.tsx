@@ -10,8 +10,8 @@ export function Wordmark({
   compact?: boolean;
 }) {
   return (
-    <Link href="/" className="inline-flex items-center gap-3 group">
-      <div className="relative h-9 w-9 shrink-0 overflow-hidden">
+    <Link href="/" className="inline-flex items-center gap-2.5 sm:gap-3 group shrink-0">
+      <div className="relative h-9 w-9 sm:h-10 sm:w-10 shrink-0">
         <Image
           src={
             inverted
@@ -20,24 +20,24 @@ export function Wordmark({
           }
           alt="Wonders of Worship Logo"
           fill
-          sizes="72px"
+          sizes="80px"
           className="object-contain transition-transform duration-300 group-hover:scale-105"
           priority
         />
       </div>
       <div
         className={cn(
-          "flex flex-col leading-none transition-colors",
+          "flex flex-col leading-none transition-colors shrink-0",
           inverted ? "text-white" : "text-ink",
         )}
       >
-        <span className="font-display text-[1.15rem] font-bold tracking-tight md:text-[1.3rem]">
+        <span className="font-display text-[1.05rem] font-bold tracking-tight sm:text-[1.2rem] md:text-[1.3rem] whitespace-nowrap">
           Wonders of Worship
         </span>
         {!compact ? (
           <span
             className={cn(
-              "mt-0.5 text-[0.62rem] font-bold tracking-[0.18em] uppercase",
+              "mt-0.5 text-[0.6rem] sm:text-[0.62rem] font-bold tracking-[0.18em] uppercase",
               inverted ? "text-white/75" : "text-red",
             )}
           >
