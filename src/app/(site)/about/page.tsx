@@ -91,7 +91,7 @@ export default function AboutPage() {
             </p>
           </FadeIn>
 
-          <StaggerContainer staggerDelay={0.15} className="mt-12 grid gap-8 md:grid-cols-3">
+          <StaggerContainer staggerDelay={0.15} className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {organizingTeam.map((person) => (
               <StaggerItem key={person.name}>
                 <HoverCard lift={-6} className="group overflow-hidden rounded-2xl border border-border bg-paper shadow-2xs">
@@ -100,14 +100,14 @@ export default function AboutPage() {
                       src={person.imageSrc}
                       alt={person.imageAlt}
                       fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                      className="object-cover grayscale transition-all duration-500 group-hover:scale-105 group-hover:grayscale-0"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      className="object-cover transition-all duration-500 group-hover:scale-105"
                     />
                   </div>
                   <div className="p-5">
-                    <h3 className="font-display text-2xl font-bold text-ink">{person.name}</h3>
-                    <p className="text-sm font-semibold text-red">{person.role}</p>
-                    <p className="mt-3 text-sm text-muted leading-relaxed">{person.bio}</p>
+                    <h3 className="font-display text-xl font-bold text-ink">{person.name}</h3>
+                    <p className="text-xs font-semibold text-red uppercase tracking-wider mt-1">{person.role}</p>
+                    <p className="mt-3 text-xs text-muted leading-relaxed font-light">{person.bio}</p>
                   </div>
                 </HoverCard>
               </StaggerItem>

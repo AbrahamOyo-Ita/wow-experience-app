@@ -151,25 +151,32 @@ export const values = [
 
 export const organizingTeam = [
   {
-    name: "Ruth Eze",
-    role: "Gathering Direction",
-    bio: "Ruth stewards the spiritual vision and editorial direction of Wonders of Worship, holding the room's unhurried focus since our maiden edition.",
-    imageSrc: "/images/minister-chioma.jpg",
-    imageAlt: "Portrait of Ruth Eze",
+    name: "Pst. Nsemeke David",
+    role: "Host Pastor",
+    bio: "Providing spiritual fatherhood, leadership oversight, and pastoral direction for Wonders of Worship Experience.",
+    imageSrc: "/images/PST. NSEMEKE DAVID_Host Pastor.PNG",
+    imageAlt: "Portrait of Pst. Nsemeke David",
   },
   {
-    name: "Kemi Ajayi",
-    role: "Operations & Logistics",
-    bio: "Kemi coordinates volunteer teams, venue operations, and guest experience, ensuring gathering days run with calm efficiency.",
-    imageSrc: "/images/minister-amara.jpg",
-    imageAlt: "Portrait of Kemi Ajayi",
+    name: "Barr. David Etido",
+    role: "Coordinator",
+    bio: "Coordinating overall vision, team administration, and strategic execution across all Wonders of Worship Experience editions.",
+    imageSrc: "/images/Barr. David Etido_ Coordinator.jpeg",
+    imageAlt: "Portrait of Barr. David Etido",
   },
   {
-    name: "Ibrahim Sule",
-    role: "Communications & Digital Platform",
-    bio: "Ibrahim manages community updates, platform copy, and digital communications that welcome guests with clarity.",
-    imageSrc: "/images/minister-daniel.jpg",
-    imageAlt: "Portrait of Ibrahim Sule",
+    name: "Patience Tim",
+    role: "Assistant Coordinator",
+    bio: "Assisting in operational coordination, team synergy, and gathering administration for Wonders of Worship Experience.",
+    imageSrc: "/images/Patience Tim_Assistant Coordinators.jpeg",
+    imageAlt: "Portrait of Patience Tim",
+  },
+  {
+    name: "Pastor Evelyn Isua-ikoh",
+    role: "National Teens & Children Coordinator",
+    bio: "Overseeing the vision, spiritual nurture, and coordination for children and teens across our gatherings nationwide.",
+    imageSrc: "/images/Pastor Evelyn Isua-ikoh_National Teens & Children Coordinators.jpeg",
+    imageAlt: "Portrait of Pastor Evelyn Isua-ikoh",
   },
 ];
 
