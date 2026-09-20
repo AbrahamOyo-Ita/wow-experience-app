@@ -85,12 +85,7 @@ export default async function ExperienceYearPage({
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-transparent" />
         <div className="relative z-10 flex min-h-[78vh] items-end">
           <div className="container-site py-16 md:max-w-3xl">
-            <FadeIn>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-widest text-red-soft backdrop-blur-md">
-                <span>{edition.year} Gathering Edition</span>
-              </span>
-            </FadeIn>
-            
+
             <SlideUp delay={0.15}>
               <h1 className="mt-4 font-display text-4xl font-bold sm:text-6xl text-white">
                 {edition.theme}
