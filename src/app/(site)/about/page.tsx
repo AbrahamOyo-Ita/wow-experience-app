@@ -101,7 +101,7 @@ export default function AboutPage() {
                       alt={person.imageAlt}
                       fill
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                      className="object-cover object-top scale-135 sm:scale-140 grayscale transition-all duration-500 group-hover:scale-150 group-hover:grayscale-0"
+                      className={`object-cover ${person.imagePosition ?? "object-top"} ${person.imageScale ?? "scale-135 sm:scale-140 group-hover:scale-150"} grayscale transition-all duration-500 group-hover:grayscale-0`}
                     />
                   </div>
                   <div className="p-5">
