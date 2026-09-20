@@ -175,9 +175,10 @@ export const organizingTeam = [
 
 export const previousImpact = {
   year: 2025,
-  theme: "Behold Him",
+  theme: "RESOUND",
+  scripture: "Revelation 19:6",
   summary:
-    "Our inaugural 2025 gathering in Ikeja established our foundational pattern: one room, a focused message, and hours dedicated to congregational worship.",
+    "Our inaugural gathering established our foundational pattern under theme RESOUND (Revelation 19:6): one room, a focused message, and hours dedicated to congregational worship.",
   notes: [
     "Single-day focused worship gathering built around deep reverence.",
     "Dedicated volunteer teams covering hospitality, intercession, media, and venue flow.",

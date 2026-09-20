@@ -130,9 +130,12 @@ export default function AboutPage() {
             <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-red-soft">
               <span>Maiden Chapter &bull; {previousImpact.year}</span>
             </div>
-            <h2 className="mt-3 max-w-2xl font-display text-3xl font-bold sm:text-5xl">
+            <h2 className="mt-3 max-w-2xl font-display text-3xl font-bold sm:text-5xl uppercase">
               Theme: {previousImpact.theme}
             </h2>
+            <p className="mt-1 text-sm font-semibold tracking-wider text-red-soft uppercase">
+              Scripture: {previousImpact.scripture}
+            </p>
             <p className="mt-5 max-w-xl text-lg text-white/85 font-light leading-relaxed">{previousImpact.summary}</p>
             <ul className="mt-8 max-w-lg space-y-3 text-white/80 text-sm">
               {previousImpact.notes.map((note) => (

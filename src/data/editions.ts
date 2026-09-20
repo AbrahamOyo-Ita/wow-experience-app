@@ -46,8 +46,8 @@ export const editions: EventEdition[] = [
     name: "Wonders of Worship Experience 2025",
     shortName: "WOW 2025",
     slug: "2025",
-    theme: "Behold Him",
-    statement: "Our maiden gathering: a room set apart to gaze upon Christ.",
+    theme: "RESOUND",
+    statement: "Revelation 19:6 — 'Then I heard what sounded like a great multitude, like the roar of rushing waters and like loud peals of thunder, shouting: Hallelujah! For our Lord God Almighty reigns.'",
     description:
       "The inauguration of the Wonders of Worship movement in Ikeja. A single room, a gathered congregation, and hours given to simple, earnest praise that laid the groundwork for future annual editions.",
     timezone: "Africa/Lagos",
