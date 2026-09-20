@@ -1,74 +1,7 @@
 import { CURRENT_EDITION_ID } from "@/data/site";
 import type { Minister, ScheduleItem } from "@/types";
 
-export const ministers: Minister[] = [
-  {
-    id: "min-amara",
-    editionId: CURRENT_EDITION_ID,
-    name: "Amara Okonkwo",
-    role: "Worship Lead",
-    bio: "Amara leads congregational singing with a clear pastoral instinct. She has served worship teams across Lagos for twelve years and cares most about helping a room actually sing.",
-    imageSrc: "/images/minister-amara.jpg",
-    imageAlt: "Portrait of Amara Okonkwo",
-    featured: true,
-    order: 1,
-  },
-  {
-    id: "min-daniel",
-    editionId: CURRENT_EDITION_ID,
-    name: "Daniel Adeyemi",
-    role: "Host Pastor",
-    bio: "Daniel hosts the day and frames the gathering around Scripture. His work is to keep the room focused on Christ rather than on production.",
-    imageSrc: "/images/minister-daniel.jpg",
-    imageAlt: "Portrait of Daniel Adeyemi",
-    featured: true,
-    order: 2,
-  },
-  {
-    id: "min-kwame",
-    editionId: CURRENT_EDITION_ID,
-    name: "Kwame Mensah",
-    role: "Music Director",
-    bio: "Kwame shapes the musical language of the gathering: keys, voices and dynamics that serve the congregation instead of competing with it.",
-    imageSrc: "/images/minister-kwame.jpg",
-    imageAlt: "Portrait of Kwame Mensah",
-    featured: true,
-    order: 3,
-  },
-  {
-    id: "min-chioma",
-    editionId: CURRENT_EDITION_ID,
-    name: "Chioma Nwosu",
-    role: "Prayer & Hospitality",
-    bio: "Chioma leads the prayer team and the welcome floor. She believes the first ten minutes of a gathering teach people whether they are wanted.",
-    imageSrc: "/images/minister-chioma.jpg",
-    imageAlt: "Portrait of Chioma Nwosu",
-    featured: true,
-    order: 4,
-  },
-  {
-    id: "min-tunde",
-    editionId: CURRENT_EDITION_ID,
-    name: "Tunde Balogun",
-    role: "Teacher of the Word",
-    bio: "Tunde opens Scripture with patience and weight. His brief for 2026 is a focused word on wonder and the glory of Christ.",
-    imageSrc: "/images/minister-tunde.jpg",
-    imageAlt: "Portrait of Tunde Balogun",
-    featured: true,
-    order: 5,
-  },
-  {
-    id: "min-grace",
-    editionId: CURRENT_EDITION_ID,
-    name: "Grace Okafor",
-    role: "Vocal Lead & Intercessor",
-    bio: "Grace brings a profound spirit of prayer and vocal ministering to the platform, shepherding deep moments of congregational response.",
-    imageSrc: "/images/minister-grace.jpg",
-    imageAlt: "Portrait of Grace Okafor",
-    featured: true,
-    order: 6,
-  },
-];
+export const ministers: Minister[] = [];
 
 export const schedule: ScheduleItem[] = [
   {

@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import Image from "next/image";
 import { Eye, Newspaper, Send, UserPlus } from "lucide-react";
-import { saveMinisterAction, saveNewsletterAction } from "@/actions/admin";
+import { deleteMinisterAction, saveMinisterAction, saveNewsletterAction } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Field, TextArea, TextInput } from "@/components/ui/field";
 import { DataTable, type DataTableColumn } from "@/components/admin/data-table";
@@ -226,6 +226,23 @@ export default function AdminContentPage() {
         return;
       }
       setSaved(result.message ?? "Minister could not be saved.");
+    });
+  };
+
+  const deleteMinister = (id: string) => {
+    if (!id) return;
+    setErrors({});
+    setSaved(null);
+    startTransition(async () => {
+      const result = await deleteMinisterAction(id);
+      if (result.status === "success") {
+        setSaved("Minister removed.");
+        setMinister(null);
+        setMinisterImage(null);
+        await refresh();
+      } else {
+        setSaved(result.message ?? "Could not delete minister.");
+      }
     });
   };
 
@@ -534,14 +551,27 @@ export default function AdminContentPage() {
                 <span className="mt-1 block text-muted">Leave this off until the minister is confirmed.</span>
               </span>
             </label>
-            <Button
-              type="button"
-              className="bg-ink text-white hover:bg-ink/90"
-              disabled={isPending}
-              onClick={saveMinister}
-            >
-              {isPending ? "Saving" : "Save minister"}
-            </Button>
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+              {minister.id ? (
+                <Button
+                  type="button"
+                  variant="outlineDark"
+                  disabled={isPending}
+                  onClick={() => deleteMinister(minister.id)}
+                  className="text-red border-red/30 hover:bg-red/10"
+                >
+                  Delete minister
+                </Button>
+              ) : <div />}
+              <Button
+                type="button"
+                className="bg-ink text-white hover:bg-ink/90"
+                disabled={isPending}
+                onClick={saveMinister}
+              >
+                {isPending ? "Saving" : "Save minister"}
+              </Button>
+            </div>
           </div>
         ) : null}
       </Drawer>

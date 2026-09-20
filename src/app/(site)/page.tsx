@@ -5,7 +5,6 @@ import {
   FlyerPromoSection,
   HomeRsvp,
   MerchPromo,
-  MinistersPreview,
   SoundRisingSection,
   SupportSection,
   VolunteerCall,
@@ -20,7 +19,6 @@ export default function HomePage() {
       <EditionBlock />
       <FlyerPromoSection />
       <MerchPromo />
-      <MinistersPreview />
       <ExperiencePreview />
       <VolunteerCall />
       <SupportSection />

@@ -766,6 +766,34 @@ export async function saveMinisterAction(formData: FormData) {
   return { status: "success" as const, data: mapMinister(data as Record<string, unknown>) };
 }
 
+export async function deleteMinisterAction(id: string) {
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub as string | undefined;
+  if (!userId) {
+    return { status: "error" as const, message: "Sign in to delete ministers." };
+  }
+
+  const { error } = await supabase.from("ministers").delete().eq("id", id);
+  if (error) {
+    return { status: "error" as const, message: error.message };
+  }
+
+  await supabase.from("audit_logs").insert({
+    actor_id: userId,
+    actor_name: "Admin",
+    action: "Deleted minister",
+    entity_type: "minister",
+    entity_id: id,
+    metadata_preview: `Deleted minister ${id}`,
+  });
+
+  revalidatePath("/");
+  revalidatePath("/admin/content");
+
+  return { status: "success" as const };
+}
+
 export async function adminCheckIn(input: AttendanceInput) {
   return checkInAttendance({ ...input, source: "admin" });
 }
