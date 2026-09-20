@@ -95,13 +95,13 @@ export default function AboutPage() {
             {organizingTeam.map((person) => (
               <StaggerItem key={person.name}>
                 <HoverCard lift={-6} className="group overflow-hidden rounded-2xl border border-border bg-paper shadow-2xs">
-                  <div className="relative aspect-[4/5] overflow-hidden bg-ink">
+                  <div className="relative aspect-square sm:aspect-[4/5] overflow-hidden bg-ink">
                     <Image
                       src={person.imageSrc}
                       alt={person.imageAlt}
                       fill
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                      className="object-cover transition-all duration-500 group-hover:scale-105"
+                      className="object-cover object-top scale-135 sm:scale-140 grayscale transition-all duration-500 group-hover:scale-150 group-hover:grayscale-0"
                     />
                   </div>
                   <div className="p-5">
