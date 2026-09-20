@@ -378,13 +378,9 @@ export function VolunteerCall() {
 }
 
 export function SupportSection() {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText("8101654190");
-    setCopied(true);
-    setTimeout(() => setCopied(false), 3000);
-  };
+  const whatsappPhone = "2348101654190";
+  const defaultMessage = "Hi, I want to support WOW Experience.";
+  const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(defaultMessage)}`;
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-r from-red-deep via-red to-red-deep py-16 sm:py-20 text-white border-y border-red-deep/40">
@@ -402,33 +398,36 @@ export function SupportSection() {
           </p>
         </SlideUp>
 
-        {/* Right Column: Direct Transfer Details Card */}
+        {/* Right Column: WhatsApp Direct Partnership Card */}
         <SlideUp delay={0.15} className="lg:col-span-5">
-          <div className="rounded-3xl bg-white p-6 sm:p-8 text-ink border border-white/20">
-            <p className="text-xs font-bold uppercase tracking-widest text-red-deep">Direct Transfer Details</p>
-            <dl className="mt-4 grid gap-3.5 text-sm">
-              <div className="flex justify-between border-b border-border/60 pb-2.5">
-                <dt className="text-muted font-medium">Bank / Provider</dt>
-                <dd className="font-bold text-ink text-base">OPay</dd>
-              </div>
-              <div className="flex items-center justify-between border-b border-border/60 pb-2.5">
-                <dt className="text-muted font-medium">Account Number</dt>
-                <dd className="flex items-center gap-3">
-                  <span className="font-display text-3xl font-bold text-red-deep tracking-wider">8101654190</span>
-                  <button
-                    type="button"
-                    onClick={handleCopy}
-                    className="rounded-lg border border-red/30 bg-red-soft px-3 py-1 text-xs font-bold text-red-deep transition hover:bg-red hover:text-white"
-                  >
-                    {copied ? "Copied!" : "Copy"}
-                  </button>
-                </dd>
-              </div>
-              <div className="flex justify-between pt-0.5">
-                <dt className="text-muted font-medium">Account Name</dt>
-                <dd className="font-bold text-ink text-base">PATIENCE SOLOMON TIM</dd>
-              </div>
-            </dl>
+          <div className="rounded-3xl bg-white p-6 sm:p-8 text-ink border border-white/20 shadow-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full bg-red-soft px-3 py-1 text-xs font-bold uppercase tracking-wider text-red-deep mb-3">
+              <span>Direct Partnership</span>
+            </div>
+            <h3 className="font-display text-2xl font-bold text-ink uppercase">
+              Support via WhatsApp
+            </h3>
+            <p className="mt-2 text-sm text-muted leading-relaxed font-light">
+              To make a financial contribution or inquire about giving to WOW Experience, connect directly with our partnership team on WhatsApp.
+            </p>
+
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-6 flex items-center justify-center gap-3 rounded-full bg-[#25D366] px-6 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:bg-[#20bd5a] hover:shadow-lg active:scale-[0.98]"
+            >
+              <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24">
+                <path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984 0 1.763.459 3.486 1.332 5.001L2 22l5.127-1.341c1.464.798 3.119 1.218 4.881 1.219h.004c5.504 0 9.987-4.478 9.988-9.984 0-2.666-1.037-5.172-2.923-7.058C17.19 2.95 14.68 1.999 12.012 2zM12.012 20.37h-.003c-1.498 0-2.968-.396-4.256-1.144l-.305-.18-3.045.797.812-2.968-.198-.315a8.293 8.293 0 0 1-1.272-4.576c0-4.587 3.733-8.318 8.32-8.318 2.222 0 4.31.866 5.88 2.438a8.27 8.27 0 0 1 2.434 5.882c0 4.588-3.732 8.32-8.317 8.32zm4.56-6.225c-.25-.125-1.481-.731-1.71-.814-.23-.083-.396-.125-.563.125-.166.25-.646.814-.792.981-.146.166-.292.187-.542.062a6.865 6.865 0 0 1-2.014-1.242 7.56 7.56 0 0 1-1.393-1.734c-.146-.25-.015-.385.11-.51.112-.112.25-.292.375-.438.125-.146.166-.25.25-.416.083-.166.042-.312-.02-.437-.063-.125-.563-1.354-.772-1.854-.203-.487-.41-.421-.563-.429h-.479c-.167 0-.438.063-.667.313s-.875.854-.875 2.083c0 1.229.896 2.417 1.02 2.584.125.166 1.764 2.694 4.274 3.778.597.257 1.063.41 1.426.526.598.19 1.142.163 1.572.099.48-.071 1.481-.605 1.688-1.189.208-.584.208-1.084.146-1.189-.063-.104-.229-.166-.479-.291z"/>
+              </svg>
+              <span>Partner on WhatsApp</span>
+            </a>
+
+            <div className="mt-4 pt-3 border-t border-border/50 text-center">
+              <p className="text-xs font-semibold text-muted">
+                Official Line: <span className="text-ink font-bold">+234 810 165 4190</span>
+              </p>
+            </div>
           </div>
         </SlideUp>
       </div>
