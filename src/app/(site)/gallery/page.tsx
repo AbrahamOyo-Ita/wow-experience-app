@@ -65,7 +65,7 @@ export default async function GalleryPage({
               <Link
                 href={filter.slug === "all" ? "/gallery" : `/gallery?year=${filter.slug}`}
                 className={cn(
-                  "rounded-full border px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all shadow-2xs",
+                  "rounded-xl border px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all shadow-2xs",
                   selected === filter.slug
                     ? "border-red bg-red text-white shadow-sm"
                     : "border-border bg-white text-ink hover:border-red/40 hover:text-red",

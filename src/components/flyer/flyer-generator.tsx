@@ -379,7 +379,7 @@ export function FlyerGenerator() {
                   {outputSize.width} x {outputSize.height}px PNG
                 </p>
               </div>
-              <p className="rounded-full bg-paper px-3 py-1 text-xs font-bold text-muted">
+              <p className="rounded-md bg-paper px-3 py-1 text-xs font-bold text-muted">
                 Drag photo to adjust
               </p>
             </div>
@@ -419,7 +419,7 @@ function SegmentedControl({
   return (
     <div>
       <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted">{label}</p>
-      <div className="flex rounded-full border border-border bg-paper p-1 shadow-2xs">
+      <div className="flex rounded-xl border border-border bg-paper p-1 shadow-2xs">
         {options.map((option) => {
           const active = option.value === value;
           return (
@@ -428,7 +428,7 @@ function SegmentedControl({
               type="button"
               onClick={() => onChange(option.value)}
               className={cn(
-                "flex-1 rounded-full py-2 px-2.5 text-center text-xs font-bold transition-all duration-200 active:scale-[0.97]",
+                "flex-1 rounded-lg py-2 px-2.5 text-center text-xs font-bold transition-all duration-200 active:scale-[0.97]",
                 active
                   ? "bg-red text-white shadow-xs"
                   : "bg-transparent text-ink/75 hover:text-ink",

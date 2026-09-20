@@ -35,7 +35,7 @@ export default function ExperiencesPage() {
               <HoverCard lift={-4} scale={1.01} className="rounded-2xl border border-border bg-white p-8 shadow-2xs transition-all hover:border-red/40 hover:shadow-md">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${
+                    <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider ${
                       edition.status === "published" || edition.status === "live"
                         ? "bg-red/10 text-red border border-red/20"
                         : edition.status === "completed"

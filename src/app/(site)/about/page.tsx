@@ -127,9 +127,9 @@ export default function AboutPage() {
         />
         <div className="relative z-10 container-site">
           <SlideUp>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-red-soft">
-              <span>Maiden Chapter &bull; {previousImpact.year}</span>
-            </div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-red-soft">
+              Maiden Chapter &bull; {previousImpact.year}
+            </p>
             <h2 className="mt-3 max-w-2xl font-display text-3xl font-bold sm:text-5xl uppercase">
               Theme: {previousImpact.theme}
             </h2>

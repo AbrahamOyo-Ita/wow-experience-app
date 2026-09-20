@@ -21,7 +21,7 @@ export function VolunteerStatusBadge({ status }: { status: VolunteerStatus }) {
   return (
     <span
       className={cn(
-        "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
+        "inline-flex rounded-md px-2.5 py-1 text-xs font-semibold",
         volunteerStyles[status],
       )}
     >

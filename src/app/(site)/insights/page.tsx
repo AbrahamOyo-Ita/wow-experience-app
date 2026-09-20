@@ -103,7 +103,7 @@ export default async function InsightsPage({
                   key={item}
                   href={hrefFor({ category: item, page: 1 })}
                   className={cn(
-                    "rounded-full border px-4 py-2 text-sm font-semibold",
+                    "rounded-xl border px-4 py-2 text-sm font-semibold",
                     (category === item || (item === "All" && category === "All"))
                       ? "border-ink bg-ink text-white"
                       : "border-border text-ink hover:border-ink",
