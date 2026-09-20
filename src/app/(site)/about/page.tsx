@@ -68,7 +68,7 @@ export default function AboutPage() {
               </div>
 
               <h2 className="mt-3 font-display text-3xl font-bold sm:text-5xl text-ink">
-                Why We Gather
+                An Atmosphere of Reverence
               </h2>
 
               <div className="relative my-8 rounded-2xl border border-red/20 bg-white p-6 shadow-xs border-l-4 border-l-red sm:p-7">

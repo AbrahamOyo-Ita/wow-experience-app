@@ -1,18 +1,19 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { Eye, Newspaper, Send } from "lucide-react";
-import { saveNewsletterAction } from "@/actions/admin";
+import Image from "next/image";
+import { Eye, Newspaper, Send, UserPlus } from "lucide-react";
+import { saveMinisterAction, saveNewsletterAction } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Field, TextArea, TextInput } from "@/components/ui/field";
 import { DataTable, type DataTableColumn } from "@/components/admin/data-table";
 import { Drawer } from "@/components/admin/drawer";
 import { PageHeader } from "@/components/admin/page-header";
 import { useAdminData } from "@/components/admin/admin-data";
+import { useEdition } from "@/components/admin/edition-context";
 import { articles } from "@/data/articles";
 import { galleryAlbums } from "@/data/content";
 import { faqs } from "@/data/faqs";
-import { ministers } from "@/data/ministers";
 import { SITE } from "@/data/site";
 import { formatDateTime } from "@/lib/utils";
 import type { Article, FaqItem, GalleryAlbum, Minister, Newsletter, NewsletterSubscriber } from "@/types";
@@ -27,11 +28,26 @@ const emptyNewsletter = (): Partial<Newsletter> => ({
   status: "draft",
 });
 
+const emptyMinister = (editionId: string, order: number): Minister => ({
+  id: "",
+  editionId,
+  name: "",
+  role: "",
+  bio: "",
+  imageSrc: "",
+  imageAlt: "",
+  featured: true,
+  published: false,
+  order,
+});
+
 export default function AdminContentPage() {
-  const { newsletters, newsletterSubscribers, refresh } = useAdminData();
+  const { edition } = useEdition();
+  const { newsletters, newsletterSubscribers, ministers, refresh } = useAdminData();
   const [tab, setTab] = useState<(typeof TABS)[number]>("Newsletters");
   const [article, setArticle] = useState<Article | null>(null);
   const [minister, setMinister] = useState<Minister | null>(null);
+  const [ministerImage, setMinisterImage] = useState<File | null>(null);
   const [faq, setFaq] = useState<FaqItem | null>(null);
   const [album, setAlbum] = useState<GalleryAlbum | null>(null);
   const [newsletter, setNewsletter] = useState<Partial<Newsletter> | null>(null);
@@ -70,13 +86,22 @@ export default function AdminContentPage() {
       header: "Name",
       sortValue: (row) => row.name,
       render: (row) => (
-        <button type="button" className="text-left font-semibold" onClick={() => setMinister(row)}>
+        <button
+          type="button"
+          className="text-left font-semibold"
+          onClick={() => {
+            setErrors({});
+            setMinisterImage(null);
+            setMinister(row);
+          }}
+        >
           {row.name}
         </button>
       ),
     },
     { key: "role", header: "Role", render: (row) => row.role },
-    { key: "featured", header: "Featured", render: (row) => (row.featured ? "Yes" : "No") },
+    { key: "published", header: "Published", render: (row) => (row.published ? "Yes" : "Draft") },
+    { key: "featured", header: "Homepage", render: (row) => (row.featured ? "Yes" : "No") },
   ];
 
   const faqCols: DataTableColumn<FaqItem>[] = [
@@ -166,17 +191,68 @@ export default function AdminContentPage() {
     });
   };
 
+  const saveMinister = () => {
+    if (!minister) return;
+    setErrors({});
+    setSaved(null);
+    const formData = new FormData();
+    if (minister.id) formData.set("id", minister.id);
+    formData.set("editionId", minister.editionId);
+    formData.set("name", minister.name);
+    formData.set("role", minister.role);
+    formData.set("bio", minister.bio);
+    formData.set("imageSrc", minister.imageSrc);
+    formData.set("imageAlt", minister.imageAlt);
+    formData.set("featured", String(minister.featured));
+    formData.set("published", String(Boolean(minister.published)));
+    formData.set("order", String(minister.order));
+    if (ministerImage) formData.set("image", ministerImage);
+
+    startTransition(async () => {
+      const result = await saveMinisterAction(formData);
+      if (result.status === "success") {
+        setSaved(
+          result.data.published
+            ? "Minister saved and published."
+            : "Minister saved as a draft.",
+        );
+        setMinister(null);
+        setMinisterImage(null);
+        await refresh();
+        return;
+      }
+      if ("errors" in result && Array.isArray(result.errors)) {
+        setErrors(Object.fromEntries(result.errors.map((error) => [error.field, error.message])));
+        return;
+      }
+      setSaved(result.message ?? "Minister could not be saved.");
+    });
+  };
+
   return (
     <div className="grid gap-6">
       <PageHeader
         title="Content"
         description="Newsletters, public copy, ministers, FAQ and gallery pointers."
-        actions={
+        actions={tab === "Ministers" ? (
+          <Button
+            type="button"
+            className="bg-red text-white hover:bg-red-deep"
+            onClick={() => {
+              setErrors({});
+              setMinisterImage(null);
+              setMinister(emptyMinister(edition.id, ministers.length + 1));
+            }}
+          >
+            <UserPlus className="mr-2 h-4 w-4" aria-hidden="true" />
+            New minister
+          </Button>
+        ) : (
           <Button type="button" className="bg-red text-white hover:bg-red-deep" onClick={() => setNewsletter(emptyNewsletter())}>
             <Newspaper className="mr-2 h-4 w-4" aria-hidden="true" />
             New newsletter
           </Button>
-        }
+        )}
       />
       {saved ? (
         <p className="border border-border bg-white px-4 py-3 text-sm" role="status">
@@ -355,9 +431,25 @@ export default function AdminContentPage() {
         ) : null}
       </Drawer>
 
-      <Drawer open={Boolean(minister)} onClose={() => setMinister(null)} title={minister?.name ?? "Minister"} wide>
+      <Drawer
+        open={Boolean(minister)}
+        onClose={() => {
+          setMinister(null);
+          setMinisterImage(null);
+        }}
+        title={minister?.name || "New minister"}
+        wide
+      >
         {minister ? (
           <div className="grid gap-4">
+            <Field id="mn-name" label="Name" error={errors.name}>
+              <TextInput
+                id="mn-name"
+                value={minister.name}
+                error={errors.name}
+                onChange={(event) => setMinister({ ...minister, name: event.target.value })}
+              />
+            </Field>
             <Field id="mn-role" label="Role">
               <TextInput
                 id="mn-role"
@@ -372,15 +464,83 @@ export default function AdminContentPage() {
                 onChange={(event) => setMinister({ ...minister, bio: event.target.value })}
               />
             </Field>
+            {minister.imageSrc ? (
+              <div className="relative aspect-[3/4] w-full max-w-64 overflow-hidden rounded-md border border-border bg-paper">
+                <Image
+                  src={minister.imageSrc}
+                  alt={minister.imageAlt || `Portrait of ${minister.name}`}
+                  fill
+                  sizes="256px"
+                  className="object-cover"
+                />
+              </div>
+            ) : null}
+            <Field
+              id="mn-image"
+              label="Portrait"
+              hint={ministerImage ? `Selected: ${ministerImage.name}` : "JPG, PNG, or WebP. Maximum 5 MB."}
+              error={errors.image}
+            >
+              <input
+                id="mn-image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                aria-invalid={Boolean(errors.image)}
+                aria-describedby={errors.image ? "mn-image-error" : "mn-image-hint"}
+                className="w-full rounded-md border border-border bg-white px-3 py-3 text-sm text-ink file:mr-3 file:rounded-sm file:border-0 file:bg-paper file:px-3 file:py-2 file:font-semibold"
+                onChange={(event) => setMinisterImage(event.target.files?.[0] ?? null)}
+              />
+            </Field>
+            <Field id="mn-alt" label="Image description" hint="Used by screen readers.">
+              <TextInput
+                id="mn-alt"
+                value={minister.imageAlt}
+                placeholder={minister.name ? `Portrait of ${minister.name}` : "Portrait description"}
+                onChange={(event) => setMinister({ ...minister, imageAlt: event.target.value })}
+              />
+            </Field>
+            <Field id="mn-order" label="Display order" error={errors.order}>
+              <TextInput
+                id="mn-order"
+                type="number"
+                min={1}
+                max={1000}
+                value={minister.order}
+                error={errors.order}
+                onChange={(event) => setMinister({ ...minister, order: Number(event.target.value) })}
+              />
+            </Field>
+            <label className="flex items-start gap-3 rounded-md border border-border bg-white p-4 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={minister.featured}
+                onChange={(event) => setMinister({ ...minister, featured: event.target.checked })}
+                className="mt-0.5 h-4 w-4 accent-red"
+              />
+              <span>
+                <span className="block font-semibold">Show on homepage</span>
+                <span className="mt-1 block text-muted">The profile appears in the homepage section after it is published.</span>
+              </span>
+            </label>
+            <label className="flex items-start gap-3 rounded-md border border-border bg-white p-4 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={Boolean(minister.published)}
+                onChange={(event) => setMinister({ ...minister, published: event.target.checked })}
+                className="mt-0.5 h-4 w-4 accent-red"
+              />
+              <span>
+                <span className="block font-semibold">Published and confirmed</span>
+                <span className="mt-1 block text-muted">Leave this off until the minister is confirmed.</span>
+              </span>
+            </label>
             <Button
               type="button"
               className="bg-ink text-white hover:bg-ink/90"
-              onClick={() => {
-                setSaved("Minister saved (mock).");
-                setMinister(null);
-              }}
+              disabled={isPending}
+              onClick={saveMinister}
             >
-              Save
+              {isPending ? "Saving" : "Save minister"}
             </Button>
           </div>
         ) : null}

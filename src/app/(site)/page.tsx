@@ -4,7 +4,6 @@ import {
   ExperiencePreview,
   FlyerPromoSection,
   HomeRsvp,
-  InsightPreview,
   MerchPromo,
   MinistersPreview,
   SoundRisingSection,
@@ -25,7 +24,6 @@ export default function HomePage() {
       <ExperiencePreview />
       <VolunteerCall />
       <SupportSection />
-      <InsightPreview />
       <HomeRsvp />
     </main>
   );

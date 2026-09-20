@@ -26,7 +26,6 @@ const statusSamples: VolunteerStatus[] = [
 export default function VolunteerPage() {
   const edition = getCurrentEdition();
   const teams = getTeamsByEdition(edition.id);
-  const totalPlaces = teams.reduce((sum, team) => sum + team.capacity, 0);
 
   return (
     <PageShell>
@@ -45,25 +44,18 @@ export default function VolunteerPage() {
         
         <SlideUp delay={0.15}>
           <span className="text-xs font-bold uppercase tracking-widest text-red">Service Teams</span>
-          <h1 className="mt-2 max-w-xl font-display text-4xl font-bold leading-tight text-ink sm:text-6xl">
-            Serve the <span className="text-red">Gathering</span>
+          <h1 className="mt-2 max-w-xl font-display text-4xl font-bold leading-tight text-ink sm:text-6xl uppercase">
+            BE PART OF THE <span className="text-red">EXPERIENCE</span>
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted font-light">
-            Behind every seamless gathering are dedicated hearts serving in hospitality, prayer, media, and logistics. Join a team and help prepare the way.
+            WOW Experience comes to life through hearts willing to serve. Bring your gifts, your passion, and your hands. Find your place on the team and help us prepare for RESOUND 2026.
           </p>
 
-          <StaggerContainer staggerDelay={0.1} delay={0.3} className="mt-8 grid gap-4 sm:grid-cols-3">
+          <StaggerContainer staggerDelay={0.1} delay={0.3} className="mt-8 grid gap-4 sm:grid-cols-2 max-w-md">
             <StaggerItem>
               <HoverCard lift={-3} className="rounded-xl border border-border bg-white p-4 shadow-2xs">
                 <p className="font-display text-3xl font-bold text-red">{teams.length}</p>
                 <p className="mt-1 text-xs font-medium text-muted uppercase tracking-wider">Service Teams</p>
-              </HoverCard>
-            </StaggerItem>
-
-            <StaggerItem>
-              <HoverCard lift={-3} className="rounded-xl border border-border bg-white p-4 shadow-2xs">
-                <p className="font-display text-3xl font-bold text-red">{totalPlaces}</p>
-                <p className="mt-1 text-xs font-medium text-muted uppercase tracking-wider">Available Positions</p>
               </HoverCard>
             </StaggerItem>
 
@@ -97,9 +89,6 @@ export default function VolunteerPage() {
                   <HoverCard lift={-4} className="h-full rounded-2xl border border-border bg-white p-6 shadow-2xs">
                     <div className="flex items-center justify-between">
                       <h3 className="font-display text-2xl font-bold text-ink">{team.name}</h3>
-                      <span className="rounded-full bg-red/10 border border-red/20 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-red">
-                        {team.capacity} places
-                      </span>
                     </div>
                     <p className="mt-3 text-muted text-sm leading-relaxed">{team.description}</p>
                     <p className="mt-4 border-t border-border/60 pt-3 text-xs font-semibold text-ink">

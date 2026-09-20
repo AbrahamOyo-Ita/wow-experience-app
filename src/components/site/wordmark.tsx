@@ -15,8 +15,8 @@ export function Wordmark({
         <Image
           src={
             inverted
-              ? "/images/WOW Experience Logo White.png"
-              : "/images/WOW Experience Logo Black.png"
+              ? "/images/wow-logo-white.webp"
+              : "/images/wow-logo-black.webp"
           }
           alt="Wonders of Worship Logo"
           fill

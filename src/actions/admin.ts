@@ -8,7 +8,8 @@ import {
   processNewsletterBroadcast,
   processNotificationQueue,
 } from "@/lib/notifications/process";
-import { campaignScheduleSchema, newsletterPublishSchema } from "@/lib/validation";
+import { campaignScheduleSchema, ministerSchema, newsletterPublishSchema } from "@/lib/validation";
+import { mapMinister } from "@/lib/ministers";
 import type { AttendanceInput, MockSubmitResult } from "@/services/contracts";
 import type {
   AdminUser,
@@ -20,6 +21,7 @@ import type {
   ContactConsent,
   EventEdition,
   MessageTemplate,
+  Minister,
   Newsletter,
   NewsletterSubscriber,
   Rsvp,
@@ -42,6 +44,7 @@ import {
   whatsappSession as mockWhatsappSession,
 } from "@/data/admin";
 import { editions as mockEditions } from "@/data/editions";
+import { ministers as mockMinisters } from "@/data/ministers";
 
 export type AdminBundle = {
   profile: AdminUser | null;
@@ -53,6 +56,7 @@ export type AdminBundle = {
   campaigns: Campaign[];
   newsletters: Newsletter[];
   newsletterSubscribers: NewsletterSubscriber[];
+  ministers: Minister[];
   templates: MessageTemplate[];
   automations: AutomationRule[];
   auditLogs: AuditLog[];
@@ -126,6 +130,7 @@ function emptyBundle(error?: string): AdminBundle {
     campaigns: [],
     newsletters: [],
     newsletterSubscribers: [],
+    ministers: [],
     templates: [],
     automations: [],
     auditLogs: [],
@@ -151,6 +156,7 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
       campaigns: mockCampaigns,
       newsletters: [],
       newsletterSubscribers: [],
+      ministers: mockMinisters,
       templates: mockTemplates,
       automations: mockAutomations,
       auditLogs: mockAuditLogs,
@@ -178,6 +184,7 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
     sessionRes,
     profilesRes,
     allRolesRes,
+    ministersRes,
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
     supabase.from("profile_roles").select("role").eq("profile_id", userId),
@@ -196,13 +203,15 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
     supabase.from("whatsapp_sessions").select("*").limit(1).maybeSingle(),
     supabase.from("profiles").select("*").order("created_at"),
     supabase.from("profile_roles").select("profile_id, role"),
+    supabase.from("ministers").select("*, event_editions(legacy_key)").order("sort_order"),
   ]);
 
   const firstError =
     profileRes.error ||
     rolesRes.error ||
     contactsRes.error ||
-    rsvpsRes.error;
+    rsvpsRes.error ||
+    ministersRes.error;
 
   const role = (rolesRes.data?.[0]?.role as AdminUser["role"] | undefined) ?? "content_editor";
   const profileRow = profileRes.data as Record<string, unknown> | null;
@@ -328,6 +337,7 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
       subscribedAt: String(row.subscribed_at),
       unsubscribedAt: row.unsubscribed_at ? String(row.unsubscribed_at) : null,
     })),
+    ministers: ((ministersRes.data as Record<string, unknown>[] | null) ?? []).map(mapMinister),
     templates: ((templatesRes.data as Record<string, unknown>[] | null) ?? []).map((row) => ({
       id: String(row.id),
       eventId: row.edition_id ? (editionKey.get(String(row.edition_id)) ?? String(row.edition_id)) : null,
@@ -632,6 +642,128 @@ export async function saveNewsletterAction(input: Partial<Newsletter> & { publis
       updatedAt: data.updated_at,
     } as Newsletter,
   };
+}
+
+export async function saveMinisterAction(formData: FormData) {
+  const parsed = ministerSchema.safeParse({
+    id: String(formData.get("id") ?? "") || undefined,
+    editionId: String(formData.get("editionId") ?? ""),
+    name: String(formData.get("name") ?? ""),
+    role: String(formData.get("role") ?? ""),
+    bio: String(formData.get("bio") ?? ""),
+    imageSrc: String(formData.get("imageSrc") ?? "") || undefined,
+    imageAlt: String(formData.get("imageAlt") ?? "") || undefined,
+    featured: formData.get("featured") === "true",
+    published: formData.get("published") === "true",
+    order: Number(formData.get("order") ?? 1),
+  });
+
+  if (!parsed.success) {
+    return {
+      status: "validation" as const,
+      errors: parsed.error.issues.map((issue) => ({
+        field: String(issue.path[0] ?? "form"),
+        message: issue.message,
+      })),
+    };
+  }
+
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub as string | undefined;
+  if (!userId) {
+    return { status: "error" as const, message: "Sign in to update ministers." };
+  }
+
+  const input = parsed.data;
+  const { data: edition, error: editionError } = await supabase
+    .from("event_editions")
+    .select("id, legacy_key")
+    .eq("legacy_key", input.editionId)
+    .maybeSingle();
+
+  if (editionError || !edition) {
+    return { status: "error" as const, message: editionError?.message ?? "Edition not found." };
+  }
+
+  let imageSrc = input.imageSrc ?? "";
+  let uploadedPath: string | null = null;
+  const image = formData.get("image");
+  if (image && typeof image !== "string" && image.size > 0) {
+    const allowedTypes = new Map([
+      ["image/jpeg", "jpg"],
+      ["image/png", "png"],
+      ["image/webp", "webp"],
+    ]);
+    const extension = allowedTypes.get(image.type);
+    if (!extension) {
+      return { status: "validation" as const, errors: [{ field: "image", message: "Upload a JPG, PNG, or WebP image." }] };
+    }
+    if (image.size > 5 * 1024 * 1024) {
+      return { status: "validation" as const, errors: [{ field: "image", message: "Keep the image under 5 MB." }] };
+    }
+
+    uploadedPath = `${input.editionId}/${crypto.randomUUID()}.${extension}`;
+    const { error: uploadError } = await supabase.storage
+      .from("minister-images")
+      .upload(uploadedPath, await image.arrayBuffer(), {
+        contentType: image.type,
+        cacheControl: "31536000",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      return { status: "error" as const, message: uploadError.message };
+    }
+    imageSrc = supabase.storage.from("minister-images").getPublicUrl(uploadedPath).data.publicUrl;
+  }
+
+  if (!imageSrc) {
+    return { status: "validation" as const, errors: [{ field: "image", message: "Add a portrait before saving." }] };
+  }
+
+  const id = input.id ?? `min-${crypto.randomUUID()}`;
+  const row = {
+    id,
+    edition_id: edition.id,
+    name: input.name,
+    role: input.role,
+    bio: input.bio,
+    image_src: imageSrc,
+    image_alt: input.imageAlt || `Portrait of ${input.name}`,
+    featured: input.featured,
+    is_published: input.published,
+    sort_order: input.order,
+  };
+
+  const request = input.id
+    ? supabase.from("ministers").update(row).eq("id", input.id)
+    : supabase.from("ministers").insert(row);
+  const { data, error } = await request
+    .select("*, event_editions(legacy_key)")
+    .maybeSingle();
+
+  if (error || !data) {
+    if (uploadedPath) {
+      await supabase.storage.from("minister-images").remove([uploadedPath]);
+    }
+    return { status: "error" as const, message: error?.message ?? "Could not save the minister." };
+  }
+
+  await supabase.from("audit_logs").insert({
+    actor_id: userId,
+    actor_name: "Admin",
+    action: input.id ? "Updated minister" : "Created minister",
+    entity_type: "minister",
+    entity_id: id,
+    metadata_preview: `${input.name} / ${input.published ? "published" : "draft"}`,
+  });
+
+  revalidatePath("/");
+  revalidatePath(`/experience/${input.editionId.replace("edition-", "")}/ministers`);
+  revalidatePath("/admin/content");
+
+  return { status: "success" as const, data: mapMinister(data as Record<string, unknown>) };
 }
 
 export async function adminCheckIn(input: AttendanceInput) {

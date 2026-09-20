@@ -78,7 +78,7 @@ export function SiteFooter() {
             <Link href="/" className="inline-flex items-center gap-3 font-display text-2xl font-bold tracking-tight text-ink group">
               <div className="relative h-10 w-10 shrink-0 overflow-hidden">
                 <Image
-                  src="/images/WOW Experience Logo Black.png"
+                  src="/images/wow-logo-black.webp"
                   alt="Wonders of Worship Logo"
                   fill
                   sizes="80px"
@@ -129,6 +129,28 @@ export function SiteFooter() {
               </HoverCard>
               <HoverCard scale={1.1} lift={-2}>
                 <a
+                  href={SITE.social.facebook}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Facebook"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-white text-[0.65rem] font-bold text-ink shadow-2xs transition-colors hover:border-red hover:text-red"
+                >
+                  FB
+                </a>
+              </HoverCard>
+              <HoverCard scale={1.1} lift={-2}>
+                <a
+                  href={SITE.social.tiktok}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="TikTok"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-white text-[0.65rem] font-bold text-ink shadow-2xs transition-colors hover:border-red hover:text-red"
+                >
+                  TT
+                </a>
+              </HoverCard>
+              <HoverCard scale={1.1} lift={-2}>
+                <a
                   href={`https://wa.me/${SITE.whatsappDisplay.replace(/[^0-9]/g, "")}`}
                   target="_blank"
                   rel="noreferrer"
@@ -164,9 +186,6 @@ export function SiteFooter() {
                 <Link href="/polo" className="transition-colors hover:text-red">Official Polo</Link>
               </li>
               <li>
-                <Link href="/insights" className="transition-colors hover:text-red">Insights & Essays</Link>
-              </li>
-              <li>
                 <Link href="/newsletters" className="transition-colors hover:text-red">Newsletter Archive</Link>
               </li>
             </ul>
@@ -198,7 +217,7 @@ export function SiteFooter() {
           <div>
             <h3 className="font-display text-lg font-bold text-ink tracking-wide">Newsletter</h3>
             <p className="mt-3 text-sm text-muted font-light leading-relaxed">
-              Get edition updates, schedule announcements, and worship insights delivered directly to your inbox.
+              Get edition updates, schedule announcements, and gathering news delivered directly to your inbox.
             </p>
 
             <form onSubmit={handleSubscribe} className="mt-5">

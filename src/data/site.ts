@@ -46,6 +46,8 @@ export const SITE: SitePlaceholders = {
     instagram: "https://instagram.com/wonderexperience",
     youtube: "https://youtube.com/@wonderexperience",
     x: "https://x.com/wonderexperience",
+    facebook: "https://www.facebook.com/share/1Bvd8mUwih/",
+    tiktok: "https://tiktok.com/@wow.experience4",
   },
 };
 

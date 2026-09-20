@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
@@ -15,16 +15,35 @@ export function SiteHeader({ inverted = false }: { inverted?: boolean }) {
   const [open, setOpen] = useState(false);
   const onDark = inverted;
 
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
   return (
-    <header
-      className={cn(
-        "z-40",
-        onDark
-          ? "absolute inset-x-0 top-0 text-white"
-          : "sticky top-0 border-b border-border/80 bg-white/95 text-ink backdrop-blur-md",
-      )}
-    >
-      <div className="container-site flex h-[72px] items-center justify-between gap-6">
+    <>
+      <header
+        className={cn(
+          "z-40",
+          onDark
+            ? "absolute inset-x-0 top-0 text-white"
+            : "sticky top-0 border-b border-border/80 bg-white/95 text-ink backdrop-blur-md",
+        )}
+      >
+        <div className="container-site flex h-[72px] items-center justify-between gap-6">
         <Wordmark inverted={onDark} />
         <nav className="hidden items-center gap-7 lg:flex" aria-label="Primary">
           {publicNav.map((item) => {
@@ -67,13 +86,14 @@ export function SiteHeader({ inverted = false }: { inverted?: boolean }) {
             )}
             aria-expanded={open}
             aria-controls="mobile-nav"
-            onClick={() => setOpen(true)}
+            onClick={() => setOpen((current) => !current)}
           >
             <Menu className="h-5 w-5" aria-hidden />
             <span className="sr-only">Open menu</span>
           </button>
         </div>
-      </div>
+        </div>
+      </header>
 
       <AnimatePresence>
         {open && (
@@ -137,6 +157,6 @@ export function SiteHeader({ inverted = false }: { inverted?: boolean }) {
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
 }

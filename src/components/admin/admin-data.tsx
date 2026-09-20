@@ -19,6 +19,7 @@ const empty: AdminBundle = {
   campaigns: [],
   newsletters: [],
   newsletterSubscribers: [],
+  ministers: [],
   templates: [],
   automations: [],
   auditLogs: [],

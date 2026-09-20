@@ -5,7 +5,6 @@ export const publicNav = [
   { href: "/flyer", label: "Flyer" },
   { href: "/volunteer", label: "Volunteer" },
   { href: "/polo", label: "Merch" },
-  { href: "/insights", label: "Insights" },
   { href: "/gallery", label: "Gallery" },
 ] as const;
 
@@ -20,7 +19,6 @@ export const footerNav = {
   ],
   serve: [
     { href: "/volunteer", label: "Volunteer" },
-    { href: "/insights", label: "Insights" },
     { href: "/gallery", label: "Gallery" },
     { href: "/contact", label: "Contact" },
   ],

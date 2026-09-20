@@ -103,6 +103,7 @@ export interface Minister {
   imageSrc: string;
   imageAlt: string;
   featured: boolean;
+  published?: boolean;
   order: number;
 }
 
@@ -398,6 +399,8 @@ export interface SitePlaceholders {
     instagram: string;
     youtube: string;
     x: string;
+    facebook: string;
+    tiktok: string;
   };
 }
 

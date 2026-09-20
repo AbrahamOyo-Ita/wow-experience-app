@@ -10,6 +10,7 @@ import { getCurrentEdition } from "@/data/editions";
 import { getFeaturedMinisters } from "@/data/ministers";
 import { getPublishedArticles } from "@/data/articles";
 import { formatLongDate, formatTime } from "@/lib/utils";
+import type { Minister } from "@/types";
 import {
   FadeIn,
   SlideUp,
@@ -190,9 +191,11 @@ export function EditionBlock() {
   );
 }
 
-export function MinistersPreview() {
+export function MinistersPreview({ ministers }: { ministers?: Minister[] } = {}) {
   const edition = getCurrentEdition();
-  const ministers = getFeaturedMinisters(edition.id);
+  const list = ministers ?? getFeaturedMinisters(edition.id);
+  if (list.length === 0) return null;
+
   return (
     <section className="bg-white py-20 sm:py-28">
       <div className="container-site">
@@ -209,7 +212,7 @@ export function MinistersPreview() {
         </FadeIn>
 
         <StaggerContainer staggerDelay={0.15} className="mt-12 grid gap-8 md:grid-cols-3">
-          {ministers.map((minister) => (
+          {list.map((minister) => (
             <StaggerItem key={minister.id}>
               <HoverCard lift={-8} scale={1.015} className="group overflow-hidden rounded-2xl border border-border bg-paper shadow-2xs">
                 <div className="relative aspect-[3/4] overflow-hidden bg-ink">
@@ -334,13 +337,13 @@ export function VolunteerCall() {
         <div className="max-w-3xl">
           <SlideUp>
             <span className="text-xs font-bold uppercase tracking-widest text-red">
-              Join the Service Team
+              Service Teams
             </span>
             <h2 className="mt-3 font-display text-4xl font-bold leading-tight sm:text-6xl text-ink uppercase">
-              Join the <span className="text-red">Workforce</span>
+              BE PART OF THE <span className="text-red">EXPERIENCE</span>
             </h2>
             <p className="mt-4 text-base sm:text-lg text-muted font-light leading-relaxed">
-              We are calling on passionate hearts, willing hands, and dedicated individuals to join the team for WOW EXPERIENCE — a powerful worship gathering created to glorify God, inspire lives, and create an unforgettable encounter with Him. Let&rsquo;s serve together. Let&rsquo;s build together. Let&rsquo;s make an eternal impact.
+              WOW Experience comes to life through hearts willing to serve. Bring your gifts, your passion, and your hands. Find your place on the team and help us prepare for RESOUND 2026.
             </p>
           </SlideUp>
         </div>

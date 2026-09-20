@@ -156,6 +156,19 @@ export const newsletterPublishSchema = z.object({
   publish: z.boolean().optional(),
 });
 
+export const ministerSchema = z.object({
+  id: z.string().trim().max(100).optional(),
+  editionId: z.string().trim().regex(/^[a-z0-9-]+$/i, "Choose a valid edition."),
+  name: z.string().trim().min(2, "Enter the minister's name.").max(120),
+  role: z.string().trim().max(120),
+  bio: z.string().trim().max(2000),
+  imageSrc: z.string().trim().max(2000).optional(),
+  imageAlt: z.string().trim().max(180).optional(),
+  featured: z.boolean(),
+  published: z.boolean(),
+  order: z.number().int().min(1).max(1000),
+});
+
 export function flattenZodErrors(error: z.ZodError) {
   const out: Record<string, string> = {};
   for (const issue of error.issues) {
