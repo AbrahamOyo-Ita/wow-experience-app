@@ -105,13 +105,12 @@ export default async function GalleryPage({
                   <div className="p-2 pt-4">
                     <h2 className="font-display text-2xl font-bold text-ink">{album.title}</h2>
                     <p className="mt-1.5 text-muted text-sm leading-relaxed">{album.description}</p>
-                    <p className="mt-2 text-xs font-semibold text-red uppercase tracking-wider">{album.photoCount} High-Res Photographs</p>
                     
                     <div className="mt-5">
                       {album.driveUrl ? (
                         <HoverCard scale={1.02} className="inline-block">
                           <Button href={album.driveUrl} variant="outlineDark">
-                            View Album on Google Drive
+                            Open Google Drive Folder
                           </Button>
                         </HoverCard>
                       ) : (
