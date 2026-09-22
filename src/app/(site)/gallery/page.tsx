@@ -85,18 +85,10 @@ export default async function GalleryPage({
           </SlideUp>
         ) : (
           <StaggerContainer staggerDelay={0.12} className="mt-12 grid gap-8 md:grid-cols-12">
-            {albums.map((album, index) => (
+            {albums.map((album) => (
               <StaggerItem
                 key={album.id}
-                className={
-                  album.aspect === "portrait"
-                    ? "md:col-span-4"
-                    : album.aspect === "square"
-                      ? "md:col-span-5"
-                      : index === 0
-                        ? "md:col-span-8"
-                        : "md:col-span-7"
-                }
+                className="md:col-span-6"
               >
                 <HoverCard lift={-6} className="group overflow-hidden rounded-2xl border border-border bg-white p-4 shadow-2xs">
                   <div className={cn("relative overflow-hidden rounded-xl bg-ink", aspectClass[album.aspect])}>

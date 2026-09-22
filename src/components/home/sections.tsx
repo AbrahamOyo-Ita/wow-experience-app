@@ -418,12 +418,6 @@ export function SupportSection() {
               </svg>
               <span>Send a message on WhatsApp</span>
             </a>
-
-            <div className="mt-4 pt-3 border-t border-border/50 text-center">
-              <p className="text-xs font-semibold text-muted">
-                Official Line: <span className="text-ink font-bold">+234 810 165 4190</span>
-              </p>
-            </div>
           </div>
         </SlideUp>
       </div>
