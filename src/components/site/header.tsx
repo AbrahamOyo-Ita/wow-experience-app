@@ -79,15 +79,17 @@ function SiteHeaderContent({
           </nav>
           <div className="flex items-center gap-3">
             <div className="hidden sm:block">
-              <Link
-                href="/volunteer"
+              <a
+                href="https://drive.google.com/drive/folders/1WFHGwCd8871lpNg2upeB9LVyI84VVRJn"
+                target="_blank"
+                rel="noopener noreferrer"
                 className={cn(
                   "inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold tracking-tight transition duration-200 ease-out active:scale-[0.98]",
                   onDark ? "bg-white text-ink hover:bg-white/90" : "bg-red text-white hover:bg-red-deep",
                 )}
               >
-                Volunteer with us
-              </Link>
+                View Archive
+              </a>
             </div>
             <button
               type="button"
@@ -156,13 +158,15 @@ function SiteHeaderContent({
                 transition={{ delay: 0.4, duration: 0.3 }}
                 className="pt-6"
               >
-                <Link
-                  href="/volunteer"
+                <a
+                  href="https://drive.google.com/drive/folders/1WFHGwCd8871lpNg2upeB9LVyI84VVRJn"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={() => setOpen(false)}
                   className="block rounded-full bg-white px-6 py-3.5 text-center text-sm font-semibold text-ink transition-colors hover:bg-white/90"
                 >
-                  Volunteer with us
-                </Link>
+                  View Archive
+                </a>
               </motion.div>
             </nav>
           </motion.div>
