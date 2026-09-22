@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Countdown } from "@/components/site/countdown";
@@ -235,8 +234,8 @@ export function MinistersPreview({ ministers }: { ministers?: Minister[] } = {})
         </StaggerContainer>
 
         <FadeIn delay={0.3} className="mt-10">
-          <Button href="/experience/2026/ministers" variant="outlineDark">
-            View full minister profiles
+          <Button href="/about" variant="outlineDark">
+            Learn about our ministry
           </Button>
         </FadeIn>
       </div>
@@ -308,8 +307,8 @@ export function ExperiencePreview() {
                 </Button>
               </HoverCard>
               <HoverCard scale={1.03}>
-                <Button href="/experiences" variant="ghost" className="text-white hover:bg-white/10">
-                  Browse past archives
+                <Button href="/gallery" variant="ghost" className="text-white hover:bg-white/10">
+                  Browse photo gallery
                 </Button>
               </HoverCard>
             </div>

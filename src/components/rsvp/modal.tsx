@@ -331,8 +331,8 @@ export function RsvpModal({ pathname }: { pathname: string }) {
               <Button type="button" onClick={() => downloadIcs(edition)}>
                 Add to calendar
               </Button>
-              <Button href="/experience/2026" variant="outlineDark" onClick={() => setOpen(false)}>
-                View event details
+              <Button href="/about" variant="outlineDark" onClick={() => setOpen(false)}>
+                About WOW
               </Button>
             </div>
             <button

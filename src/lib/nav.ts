@@ -1,7 +1,6 @@
 export const publicNav = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
-  { href: "/experience/2026", label: "Experience" },
   { href: "/flyer", label: "Flyer" },
   { href: "/volunteer", label: "Volunteer" },
   { href: "/polo", label: "Merch" },
@@ -10,12 +9,10 @@ export const publicNav = [
 
 export const footerNav = {
   visit: [
-    { href: "/experience/2026", label: "2026 experience" },
-    { href: "/experience/2026/ministers", label: "Ministers" },
-    { href: "/experience/2026/faq", label: "FAQ" },
     { href: "/flyer", label: "Attending flyer" },
     { href: "/polo", label: "Polo merch" },
-    { href: "/experiences", label: "Previous editions" },
+    { href: "/gallery", label: "Gallery" },
+    { href: "/volunteer", label: "Volunteer" },
   ],
   serve: [
     { href: "/volunteer", label: "Volunteer" },

@@ -4,7 +4,7 @@ import { PageShell } from "@/components/site/page-shell";
 import { Button } from "@/components/ui/button";
 import { organizingTeam, previousImpact, values } from "@/data/content";
 import { getEditionByYear } from "@/data/editions";
-import { FadeIn, SlideUp, ScaleIn, StaggerContainer, StaggerItem, HoverCard, AnimatedHighlight } from "@/components/ui/motion";
+import { FadeIn, SlideUp, StaggerContainer, StaggerItem, HoverCard, AnimatedHighlight } from "@/components/ui/motion";
 
 export const metadata: Metadata = {
   title: "About | Wonders of Worship Experience",
@@ -46,8 +46,8 @@ export default function AboutPage() {
                 </Button>
               </HoverCard>
               <HoverCard scale={1.03}>
-                <Button href="/experiences" variant="ghost" className="text-white hover:bg-white/10">
-                  Browse past archives
+                <Button href="/gallery" variant="ghost" className="text-white hover:bg-white/10">
+                  Browse photo gallery
                 </Button>
               </HoverCard>
             </div>
@@ -152,8 +152,8 @@ export default function AboutPage() {
                 </Button>
               </HoverCard>
               <HoverCard scale={1.03}>
-                <Button href="/experiences" variant="ghost" className="text-white hover:bg-white/10">
-                  Explore all edition archives
+                <Button href="/gallery" variant="ghost" className="text-white hover:bg-white/10">
+                  View photo gallery
                 </Button>
               </HoverCard>
             </div>
@@ -173,8 +173,8 @@ export default function AboutPage() {
             </p>
             <div className="mt-8">
               <HoverCard scale={1.04} className="inline-block">
-                <Button href="/experience/2026" variant="inverse">
-                  Explore the 2026 Experience
+                <Button href="/volunteer" variant="inverse">
+                  Volunteer with Us
                 </Button>
               </HoverCard>
             </div>

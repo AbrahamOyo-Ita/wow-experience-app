@@ -760,7 +760,6 @@ export async function saveMinisterAction(formData: FormData) {
   });
 
   revalidatePath("/");
-  revalidatePath(`/experience/${input.editionId.replace("edition-", "")}/ministers`);
   revalidatePath("/admin/content");
 
   return { status: "success" as const, data: mapMinister(data as Record<string, unknown>) };

@@ -149,9 +149,6 @@ export function SiteFooter() {
                 <Link href="/about" className="transition-colors hover:text-red">About us</Link>
               </li>
               <li>
-                <Link href="/experiences" className="transition-colors hover:text-red">Annual Gatherings</Link>
-              </li>
-              <li>
                 <Link href="/gallery" className="transition-colors hover:text-red">Photo Gallery</Link>
               </li>
               <li>
@@ -166,24 +163,15 @@ export function SiteFooter() {
             </ul>
           </div>
 
-          {/* Column 3: Experience */}
+          {/* Column 3: Community */}
           <div>
-            <h3 className="font-display text-lg font-bold text-ink tracking-wide">Experience</h3>
+            <h3 className="font-display text-lg font-bold text-ink tracking-wide">Community</h3>
             <ul className="mt-4 space-y-2.5 text-sm text-muted">
-              <li>
-                <Link href="/experience/2026" className="transition-colors hover:text-red">2026 Gathering</Link>
-              </li>
-              <li>
-                <Link href="/experience/2026/ministers" className="transition-colors hover:text-red">Lead Ministers</Link>
-              </li>
               <li>
                 <Link href="/volunteer" className="transition-colors hover:text-red">Volunteer Intake</Link>
               </li>
               <li>
                 <Link href="/contact" className="transition-colors hover:text-red">Contact Us</Link>
-              </li>
-              <li>
-                <Link href="/experience/2026/faq" className="transition-colors hover:text-red">Attendee FAQs</Link>
               </li>
             </ul>
           </div>

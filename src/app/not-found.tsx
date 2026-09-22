@@ -12,8 +12,8 @@ export default function NotFound() {
       <section className="container-site pb-24">
         <div className="flex flex-wrap gap-4">
           <Button href="/">Home</Button>
-          <Button href="/experience/2026" variant="outlineDark">
-            2026 experience
+          <Button href="/volunteer" variant="outlineDark">
+            Volunteer
           </Button>
           <Button href="/contact" variant="ghost">
             Contact
