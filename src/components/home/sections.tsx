@@ -58,18 +58,18 @@ export function FlyerPromoSection() {
       <div className="container-site grid gap-10 lg:grid-cols-12 lg:items-center">
         <SlideUp className="lg:col-span-6">
           <span className="text-xs font-bold uppercase tracking-widest text-red">
-            Attendance Flyer Studio
+            Attendance Flyer Studio • Coming Soon
           </span>
           <h2 className="mt-3 font-display text-4xl sm:text-6xl font-bold leading-tight text-ink">
-            Create Your <span className="text-red">Attending Flyer</span>
+            Official Attending Flyer <span className="text-red">Coming Soon</span>
           </h2>
           <p className="mt-4 text-base sm:text-lg text-muted font-light leading-relaxed">
-            Let your friends and community know you&rsquo;ll be in the room for Wonders of Worship Experience 2026. Upload your photo, personalize your name, and instantly download your branded flyer to share on WhatsApp & social media.
+            The official Wonders of Worship Experience 2026 event artwork is currently being finalized by our media team. Customized attendee flyer creation will open immediately after the official artwork drops. Subscribe to get notified on launch!
           </p>
           <div className="mt-8">
             <HoverCard scale={1.03} className="inline-block">
               <Button href="/flyer" size="lg" className="gap-2">
-                Create My Flyer &rarr;
+                Get Notified On Drop &rarr;
               </Button>
             </HoverCard>
           </div>
@@ -78,29 +78,30 @@ export function FlyerPromoSection() {
         <ScaleIn delay={0.2} className="lg:col-span-6 flex justify-center">
           <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border bg-ink p-6 text-white shadow-xl">
             <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-b from-ink via-ink/90 to-ink p-6 flex flex-col justify-between text-center">
-              <div>
-                <p className="text-[0.65rem] font-bold uppercase tracking-widest text-red-soft">
-                  Wonders of Worship Experience 2026
-                </p>
-                <h3 className="mt-2 font-display text-2xl font-bold tracking-tight text-white uppercase">
+              <div className="absolute inset-0 bg-cover bg-center opacity-40" style={{ backgroundImage: `url('/images/IMG_2311.jpg')` }} />
+              <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/70 to-transparent" />
+
+              <div className="relative z-10">
+                <span className="inline-block rounded-full bg-red px-3 py-1 text-[0.65rem] font-bold uppercase tracking-widest text-white shadow-sm">
+                  Official Artwork Dropping Soon
+                </span>
+                <h3 className="mt-3 font-display text-2xl font-bold tracking-tight text-white uppercase">
                   I Will Be <span className="text-red">Attending</span>
                 </h3>
               </div>
 
-              {/* Dummy Photo Avatar Frame Preview */}
-              <div className="my-auto mx-auto flex flex-col items-center">
-                <div className="relative h-28 w-28 overflow-hidden rounded-full border-2 border-red bg-white/10 p-1 shadow-lg flex items-center justify-center">
-                  <div className="flex h-full w-full items-center justify-center rounded-full bg-white/15 text-white/60">
-                    <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              <div className="relative z-10 my-auto mx-auto flex flex-col items-center">
+                <div className="relative h-24 w-24 overflow-hidden rounded-full border-2 border-red bg-white/10 p-1 shadow-lg flex items-center justify-center">
+                  <div className="flex h-full w-full items-center justify-center rounded-full bg-white/15 text-white/80">
+                    <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                 </div>
-                <p className="mt-3 text-sm font-bold text-white tracking-wide">YOUR NAME HERE</p>
-                <p className="text-[0.7rem] font-medium text-white/70">Attending from Your City</p>
+                <p className="mt-3 text-xs font-bold text-white tracking-widest uppercase">STAY TUNED FOR LAUNCH</p>
               </div>
 
-              <div className="border-t border-white/15 pt-3">
+              <div className="relative z-10 border-t border-white/15 pt-3">
                 <p className="text-[0.68rem] font-semibold text-white/80 uppercase tracking-widest">
                   October 18, 2026 • Doors Open 8:00 AM
                 </p>

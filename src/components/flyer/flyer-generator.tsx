@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Download, ImagePlus, Move, Share2, Upload } from "lucide-react";
+import { Bell, CheckCircle2, Clock, Download, ImagePlus, Mail, Share2, Sparkles, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, TextInput } from "@/components/ui/field";
+import { subscribeNewsletter } from "@/actions/public";
 import {
   canvasToBlob,
   getFlyerSize,
@@ -37,8 +38,6 @@ const layoutOptions: Array<{ value: FlyerLayout; label: string }> = [
   { value: "square", label: "Square" },
 ];
 
-
-
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
@@ -59,7 +58,163 @@ function loadImageFromFile(file: File) {
   });
 }
 
-export function FlyerGenerator() {
+function FlyerComingSoonView() {
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setSubmitting(true);
+    setErrorMsg(null);
+    try {
+      const res = await subscribeNewsletter({ email, source: "flyer_page" });
+      if (res.status === "success" || res.status === "existing") {
+        setSubscribed(true);
+      } else if (res.status === "validation") {
+        setErrorMsg(res.errors[0]?.message ?? "Please enter a valid email address.");
+      } else {
+        setErrorMsg("Something went wrong. Please try again.");
+      }
+    } catch {
+      setErrorMsg("Could not subscribe. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <section className="bg-paper py-12 sm:py-20">
+      <div className="container-site max-w-5xl">
+        <div className="grid gap-10 lg:grid-cols-12 lg:items-center">
+          {/* Left Column: Notice and Email Subscription Form */}
+          <div className="lg:col-span-7 text-left">
+            <span className="inline-flex items-center gap-2 rounded-full border border-red/30 bg-red-soft px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-red-deep">
+              <Clock className="h-3.5 w-3.5" aria-hidden />
+              Attending Flyer Studio • Coming Soon
+            </span>
+
+            <h1 className="mt-4 font-display text-4xl font-bold leading-tight text-ink sm:text-6xl uppercase">
+              Official Event Flyer <span className="text-red">Coming Soon</span>
+            </h1>
+
+            <p className="mt-5 text-base sm:text-lg text-muted font-light leading-relaxed">
+              The official Wonders of Worship Experience 2026 artwork and personalized attendee flyer generator are currently being finalized by our media team.
+            </p>
+            <p className="mt-3 text-base text-muted font-light leading-relaxed">
+              Custom attending flyers cannot be generated just yet, but will open immediately after the official artwork drops. Subscribe below to get an instant email notification as soon as it launches!
+            </p>
+
+            {/* Notification Signup Card */}
+            <div className="mt-8 rounded-2xl border border-border bg-white p-6 shadow-sm">
+              <h3 className="font-display text-xl font-bold text-ink">
+                Get Notified on Launch
+              </h3>
+              <p className="mt-1 text-sm text-muted">
+                Enter your email address and we will notify you the moment the attending flyer studio is live.
+              </p>
+
+              {subscribed ? (
+                <div className="mt-5 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
+                  <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold">You&apos;re on the notification list!</p>
+                    <p className="mt-0.5 text-xs text-emerald-700">
+                      We will send you an email update as soon as the official attending flyer generator opens.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleSubscribe} className="mt-5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div className="relative flex-1">
+                      <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden />
+                      <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Enter your email address"
+                        className="w-full rounded-xl border border-border bg-paper py-3 pl-10 pr-4 text-sm font-medium text-ink placeholder:text-muted focus:border-red focus:outline-none"
+                      />
+                    </div>
+                    <Button type="submit" disabled={submitting} size="lg" className="gap-2 shrink-0">
+                      <Bell className="h-4 w-4" aria-hidden />
+                      {submitting ? "Subscribing..." : "Notify Me"}
+                    </Button>
+                  </div>
+                  {errorMsg && (
+                    <p className="mt-2 text-xs font-semibold text-red">{errorMsg}</p>
+                  )}
+                </form>
+              )}
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-4 text-sm text-muted">
+              <span>Looking for updates?</span>
+              <a
+                href="https://wa.me/2348101654190?text=Hi%2C%20I%20want%20to%20get%20updates%20on%20WOW%20Experience%202026."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-red hover:underline"
+              >
+                Join our WhatsApp updates &rarr;
+              </a>
+            </div>
+          </div>
+
+          {/* Right Column: Visual Preview Mockup Card */}
+          <div className="lg:col-span-5 flex justify-center">
+            <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border bg-ink p-6 text-white shadow-xl">
+              <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-b from-ink via-ink/90 to-ink p-6 flex flex-col justify-between text-center">
+                <div className="absolute inset-0 bg-cover bg-center opacity-40" style={{ backgroundImage: `url('/images/IMG_2311.jpg')` }} />
+                <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/60 to-transparent" />
+
+                <div className="relative z-10">
+                  <span className="inline-block rounded-full bg-red px-3 py-1 text-[0.65rem] font-bold uppercase tracking-widest text-white shadow-sm">
+                    Official Artwork Dropping Soon
+                  </span>
+                  <h3 className="mt-4 font-display text-3xl font-bold tracking-tight text-white uppercase leading-tight">
+                    RESOUND <span className="text-red">2026</span>
+                  </h3>
+                </div>
+
+                <div className="relative z-10 my-auto py-6">
+                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-white/40 bg-white/10 text-white/80">
+                    <Sparkles className="h-8 w-8 text-red-soft" />
+                  </div>
+                  <p className="mt-4 text-sm font-bold text-white tracking-wide uppercase">
+                    Attending Flyer Studio
+                  </p>
+                  <p className="mt-1 text-xs text-white/70">
+                    Custom Photo Upload & Frame Drop
+                  </p>
+                </div>
+
+                <div className="relative z-10 border-t border-white/20 pt-4">
+                  <p className="text-[0.7rem] font-semibold text-white/90 uppercase tracking-widest">
+                    Sunday, Oct 18, 2026 • Uyo, Akwa Ibom State
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function FlyerGenerator({ isFlyerReady = false }: { isFlyerReady?: boolean }) {
+  if (!isFlyerReady) {
+    return <FlyerComingSoonView />;
+  }
+  return <FlyerStudioInteractive />;
+}
+
+function FlyerStudioInteractive() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dragStartRef = useRef<DragStart | null>(null);
   const [fullName, setFullName] = useState("");
