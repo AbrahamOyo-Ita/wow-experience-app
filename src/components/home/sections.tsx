@@ -469,11 +469,11 @@ export function HomeRsvp() {
 
           <div className="relative z-10 mx-auto max-w-3xl">
             <FadeIn>
-              <h2 className="font-display text-4xl font-bold leading-[0.95] text-white sm:text-6xl lg:text-7xl">
-                Where Worship Becomes an <AnimatedHighlight className="text-white/90">Encounter.</AnimatedHighlight>
+              <h2 className="font-display text-4xl font-bold leading-[0.95] text-white sm:text-6xl lg:text-7xl uppercase">
+                BEYOND THE <AnimatedHighlight className="text-white/90">ROOM</AnimatedHighlight>
               </h2>
-              <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/90 sm:text-lg font-light">
-                Reserve your space for the upcoming edition. Instant confirmation and direct venue updates straight to your inbox and WhatsApp.
+              <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-white/90 sm:text-lg font-light">
+                We gather to worship, but we believe the experience does not end when the meeting does. Our prayer is that every encounter with God at WOW becomes a testimony that continues to speak in your life long after you leave the room.
               </p>
             </FadeIn>
             <SlideUp delay={0.2} className="mt-8">
