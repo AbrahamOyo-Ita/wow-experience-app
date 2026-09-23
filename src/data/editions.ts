@@ -25,7 +25,7 @@ export const editions: EventEdition[] = [
       country: "Nigeria",
       directionsUrl:
         "https://maps.google.com/?q=Sanctified+Mount+Zion+Church+25+Ibiono+Street+Uyo+Akwa+Ibom+State",
-      notes: "Detailed access and arrival instructions will be sent to all confirmed RSVPs.",
+      notes: "",
     },
     status: "published",
     publishedAt: "2026-06-01T10:00:00+01:00",

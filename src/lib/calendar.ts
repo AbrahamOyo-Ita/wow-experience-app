@@ -11,7 +11,7 @@ export function buildIcs(edition: EventEdition) {
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",
-    `UID:${edition.id}@wonderexperience.org`,
+    `UID:${edition.id}@wowexperience.com.ng`,
     `DTSTAMP:${stamp(new Date().toISOString())}`,
     `DTSTART:${stamp(edition.startsAt)}`,
     `DTEND:${stamp(edition.endsAt)}`,

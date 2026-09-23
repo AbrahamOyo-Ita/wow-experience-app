@@ -3,7 +3,7 @@ import type { SitePlaceholders } from "@/types";
 export const SITE: SitePlaceholders = {
   organizationName: "Wonders of Worship Experience",
   eventSeriesName: "Wonders of Worship Experience",
-  contactEmail: "hello@wonderexperience.org",
+  contactEmail: "hello@wowexperience.com.ng",
   contactPhone: "+234 810 165 4190",
   instagram: "https://instagram.com/wonderexperience",
   youtube: "https://youtube.com/@wowexperience-f9n?si=LQe_yZ_fjd-CdOcT",

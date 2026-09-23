@@ -73,7 +73,7 @@ export default function ContactPage() {
             <p className="mt-4 max-w-md text-muted text-base leading-relaxed">
               {edition.venue.name} &bull; {edition.venue.city}, {edition.venue.country}.
             </p>
-            <p className="mt-2 text-sm text-muted">{edition.venue.notes}</p>
+            {edition.venue.notes ? <p className="mt-2 text-sm text-muted">{edition.venue.notes}</p> : null}
             <div className="mt-6">
               <HoverCard scale={1.03} className="inline-block">
                 <Button href={edition.venue.directionsUrl} variant="outlineDark">
