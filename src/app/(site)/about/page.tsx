@@ -57,8 +57,50 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* Origin Story Section - WHERE THE STORY BEGAN */}
+      <section className="bg-white py-16 sm:py-24 border-b border-border/40">
+        <div className="container-site">
+          <div className="grid gap-10 lg:grid-cols-12 lg:items-center">
+            {/* Text Content */}
+            <div className="lg:col-span-7">
+              <FadeIn>
+                <span className="text-xs font-bold uppercase tracking-widest text-red">
+                  Our Origins
+                </span>
+                <h2 className="mt-2 font-display text-3xl font-bold sm:text-5xl text-ink uppercase">
+                  Where the Story Began
+                </h2>
+                <p className="mt-6 text-lg text-ink/90 font-light leading-relaxed">
+                  WOW Experience was birthed by the Teens and Children’s Ministry of Sanctified Mount Zion Church as an expression of worship and a desire to see lives encounter God.
+                </p>
+                <p className="mt-4 text-base text-muted leading-relaxed font-light">
+                  From those beginnings, the vision has continued to grow, bringing generations together in worship and creating moments that leave lasting testimonies.
+                </p>
+              </FadeIn>
+            </div>
+
+            {/* Logo Side */}
+            <div className="lg:col-span-5 flex justify-center lg:justify-end">
+              <FadeIn>
+                <HoverCard lift={-4} className="relative flex items-center justify-center rounded-3xl border border-border/60 bg-paper p-8 shadow-xs">
+                  <div className="relative aspect-square w-48 sm:w-60 max-w-full overflow-hidden">
+                    <Image
+                      src="/images/SMZC Children and Teens Logo.webp"
+                      alt="Teens and Children's Ministry of Sanctified Mount Zion Church Logo"
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 768px) 200px, 240px"
+                    />
+                  </div>
+                </HoverCard>
+              </FadeIn>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Values Section */}
-      <section id="values" className="bg-paper py-20 sm:py-24 border-y border-border/40">
+      <section id="values" className="bg-paper py-20 sm:py-24 border-b border-border/40">
         <div className="container-site">
           <FadeIn>
             <span className="text-xs font-bold uppercase tracking-widest text-red">Core Commitments</span>
