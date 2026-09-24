@@ -117,48 +117,78 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Previous Impact Banner */}
-      <section className="relative overflow-hidden bg-ink py-20 text-white sm:py-28">
-        <Image
-          src="/images/gallery-gathering.jpg"
-          alt="The 2025 congregation"
-          fill
-          sizes="100vw"
-          className="object-cover opacity-35"
-        />
-        <div className="relative z-10 container-site">
-          <SlideUp>
-            <p className="text-xs font-semibold uppercase tracking-widest text-red-soft">
-              Maiden Chapter &bull; {previousImpact.year}
-            </p>
-            <h2 className="mt-3 max-w-2xl font-display text-3xl font-bold sm:text-5xl uppercase">
-              Theme: {previousImpact.theme}
-            </h2>
-            <p className="mt-1 text-sm font-semibold tracking-wider text-red-soft uppercase">
-              Scripture: {previousImpact.scripture}
-            </p>
-            <p className="mt-5 max-w-xl text-lg text-white/85 font-light leading-relaxed">{previousImpact.summary}</p>
-            <ul className="mt-8 max-w-lg space-y-3 text-white/80 text-sm">
-              {previousImpact.notes.map((note) => (
-                <li key={note} className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-red" />
-                  <span>{note}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-10 flex flex-wrap gap-4">
-              <HoverCard scale={1.03}>
-                <Button href="/gallery?year=2025" variant="outlineLight">
-                  Browse 2025 photo gallery
-                </Button>
-              </HoverCard>
-              <HoverCard scale={1.03}>
-                <Button href="/gallery" variant="ghost" className="text-white hover:bg-white/10">
-                  View photo gallery
-                </Button>
-              </HoverCard>
+      {/* Previous Impact / Maiden Chapter Section */}
+      <section className="bg-paper py-20 sm:py-28 border-t border-border/40">
+        <div className="container-site">
+          <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
+            {/* Left Content Column */}
+            <div className="lg:col-span-7">
+              <FadeIn>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-xs font-bold uppercase tracking-widest text-red">
+                    Maiden Chapter &bull; {previousImpact.year}
+                  </span>
+                  <span className="rounded-full bg-red/10 px-3 py-1 text-xs font-semibold text-red">
+                    {previousImpact.scripture}
+                  </span>
+                </div>
+
+                <h2 className="mt-3 font-display text-3xl font-bold sm:text-5xl text-ink">
+                  Theme: <span className="text-red">{previousImpact.theme}</span>
+                </h2>
+
+                <p className="mt-5 text-lg leading-relaxed text-muted font-light max-w-2xl">
+                  {previousImpact.summary}
+                </p>
+
+                <div className="mt-8 grid gap-4">
+                  {previousImpact.notes.map((note) => (
+                    <div
+                      key={note}
+                      className="flex items-start gap-3 rounded-xl border border-border/60 bg-white p-4 shadow-2xs"
+                    >
+                      <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red/10 text-red text-xs font-bold">
+                        ✓
+                      </div>
+                      <span className="text-sm font-medium text-ink/90 leading-snug">{note}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-10">
+                  <HoverCard scale={1.03} className="inline-block">
+                    <Button href="/gallery?year=2025" variant="primary">
+                      Browse 2025 Photo Gallery
+                    </Button>
+                  </HoverCard>
+                </div>
+              </FadeIn>
             </div>
-          </SlideUp>
+
+            {/* Right Image Showcase Column */}
+            <div className="lg:col-span-5">
+              <FadeIn>
+                <HoverCard lift={-4} className="relative overflow-hidden rounded-3xl border border-border/80 bg-white p-2.5 shadow-md">
+                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-ink">
+                    <Image
+                      src="/images/gallery-gathering.jpg"
+                      alt="The 2025 congregation"
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 40vw"
+                      className="object-cover transition-transform duration-500 hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white text-xs font-medium">
+                      <span className="rounded-full bg-ink/80 px-3 py-1 backdrop-blur-xs">
+                        2025 Gathering Archive
+                      </span>
+                      <span className="text-white/80">Photo Highlights</span>
+                    </div>
+                  </div>
+                </HoverCard>
+              </FadeIn>
+            </div>
+          </div>
         </div>
       </section>
 
