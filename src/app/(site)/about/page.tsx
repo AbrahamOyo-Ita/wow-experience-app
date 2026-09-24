@@ -85,7 +85,7 @@ export default function AboutPage() {
                 <HoverCard lift={-4} className="relative flex items-center justify-center rounded-3xl border border-border/60 bg-paper p-8 shadow-xs">
                   <div className="relative aspect-square w-48 sm:w-60 max-w-full overflow-hidden">
                     <Image
-                      src="/images/SMZC Children and Teens Logo.webp"
+                      src="/images/smzc-children-teens-logo.webp"
                       alt="Teens and Children's Ministry of Sanctified Mount Zion Church Logo"
                       fill
                       className="object-contain"
