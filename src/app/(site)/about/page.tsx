@@ -71,7 +71,7 @@ export default function AboutPage() {
                   Where the Story Began
                 </h2>
                 <p className="mt-6 text-lg text-ink/90 font-light leading-relaxed">
-                  WOW Experience was birthed by the Teens and Children’s Ministry of Sanctified Mount Zion Church as an expression of worship and a desire to see lives encounter God.
+                  WOW Experience was birthed by the Children’s and Teens’ Ministry of Sanctified Mount Zion Church as an expression of worship and a desire to see lives encounter God.
                 </p>
                 <p className="mt-4 text-base text-muted leading-relaxed font-light">
                   From those beginnings, the vision has continued to grow, bringing generations together in worship and creating moments that leave lasting testimonies.
@@ -86,7 +86,7 @@ export default function AboutPage() {
                   <div className="relative aspect-square w-48 sm:w-60 max-w-full overflow-hidden">
                     <Image
                       src="/images/smzc-children-teens-logo.webp"
-                      alt="Teens and Children's Ministry of Sanctified Mount Zion Church Logo"
+                      alt="Children's and Teens' Ministry of Sanctified Mount Zion Church Logo"
                       fill
                       className="object-contain"
                       sizes="(max-width: 768px) 200px, 240px"
