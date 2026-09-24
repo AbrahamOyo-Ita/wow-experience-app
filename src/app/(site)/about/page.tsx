@@ -28,30 +28,32 @@ export default function AboutPage() {
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/50 to-ink/20" />
-        <div className="relative z-10 container-site py-24 md:py-32 md:max-w-3xl">
-          <SlideUp>
-            <span className="text-xs font-bold uppercase tracking-widest text-red-soft">
-              THE WHY BEHIND WOW
-            </span>
-            <h1 className="mt-4 font-display text-4xl font-bold leading-tight sm:text-6xl lg:text-7xl uppercase">
-              WE GATHER TO MAKE <AnimatedHighlight className="text-red">JESUS</AnimatedHighlight> VISIBLE
-            </h1>
-            <p className="mt-6 text-white/90 text-lg sm:text-xl font-light leading-relaxed max-w-2xl">
-              WOW exists to bring hearts together in authentic worship, create room for genuine encounters with God, and raise a generation that carries His presence beyond the gathering.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-4">
-              <HoverCard scale={1.03}>
-                <Button href="#values" variant="outlineLight">
-                  Our core philosophy
-                </Button>
-              </HoverCard>
-              <HoverCard scale={1.03}>
-                <Button href="/gallery" variant="ghost" className="text-white hover:bg-white/10">
-                  Browse photo gallery
-                </Button>
-              </HoverCard>
-            </div>
-          </SlideUp>
+        <div className="relative z-10 container-site py-24 md:py-32">
+          <div className="max-w-3xl">
+            <SlideUp>
+              <span className="text-xs font-bold uppercase tracking-widest text-red-soft">
+                THE WHY BEHIND WOW
+              </span>
+              <h1 className="mt-4 font-display text-4xl font-bold leading-tight sm:text-6xl lg:text-7xl uppercase">
+                WE GATHER TO MAKE <AnimatedHighlight className="text-red">JESUS</AnimatedHighlight> VISIBLE
+              </h1>
+              <p className="mt-6 text-white/90 text-lg sm:text-xl font-light leading-relaxed max-w-2xl">
+                WOW exists to bring hearts together in authentic worship, create room for genuine encounters with God, and raise a generation that carries His presence beyond the gathering.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-4">
+                <HoverCard scale={1.03}>
+                  <Button href="#values" variant="outlineLight">
+                    Our core philosophy
+                  </Button>
+                </HoverCard>
+                <HoverCard scale={1.03}>
+                  <Button href="/gallery" variant="ghost" className="text-white hover:bg-white/10">
+                    Browse photo gallery
+                  </Button>
+                </HoverCard>
+              </div>
+            </SlideUp>
+          </div>
         </div>
       </section>
 
