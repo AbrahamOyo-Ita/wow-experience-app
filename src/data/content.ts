@@ -129,31 +129,27 @@ export const values = [
 
 export const organizingTeam = [
   {
-    name: "Pst. Nsemeke David",
+    name: "Pastor Nsemeke David",
     role: "Host Pastor",
-    bio: "Providing spiritual fatherhood, leadership oversight, and pastoral direction for Wonders of Worship Experience.",
-    imageSrc: "/images/headshot-nsemeke.png",
-    imageAlt: "Portrait of Pst. Nsemeke David",
+    imageSrc: "/images/Pastor Nsemeke David_Host Pastor_1st.webp",
+    imageAlt: "Portrait of Pastor Nsemeke David",
   },
   {
     name: "Pastor Evelyn Isua-ikoh",
-    role: "National Teens & Children Coordinator",
-    bio: "Overseeing the vision, spiritual nurture, and coordination for children and teens across our gatherings nationwide.",
-    imageSrc: "/images/headshot-evelyn.jpg",
+    role: "National Teens & Children Coordinators",
+    imageSrc: "/images/Pastor Evelyn Isua-ikoh_National Teens & Children Coordinators_3rd.webp",
     imageAlt: "Portrait of Pastor Evelyn Isua-ikoh",
   },
   {
     name: "Barr. David Etido",
     role: "Coordinator",
-    bio: "Coordinating overall vision, team administration, and strategic execution across all Wonders of Worship Experience editions.",
-    imageSrc: "/images/headshot-david.jpg",
+    imageSrc: "/images/Barr. David Etido_ Coordinator_3rd.webp",
     imageAlt: "Portrait of Barr. David Etido",
   },
   {
     name: "Patience Tim",
-    role: "Assistant Coordinator",
-    bio: "Assisting in operational coordination, team synergy, and gathering administration for Wonders of Worship Experience.",
-    imageSrc: "/images/headshot-patience.jpg",
+    role: "Assistant Coordinators",
+    imageSrc: "/images/Patience Tim_Assistant Coordinators_4th.webp",
     imageAlt: "Portrait of Patience Tim",
   },
 ];

@@ -107,7 +107,6 @@ export default function AboutPage() {
                   <div className="p-5">
                     <h3 className="font-display text-xl font-bold text-ink">{person.name}</h3>
                     <p className="text-xs font-semibold text-red uppercase tracking-wider mt-1">{person.role}</p>
-                    <p className="mt-3 text-xs text-muted leading-relaxed font-light">{person.bio}</p>
                   </div>
                 </HoverCard>
               </StaggerItem>
