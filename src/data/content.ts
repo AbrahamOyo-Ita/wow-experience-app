@@ -129,12 +129,6 @@ export const values = [
 
 export const organizingTeam = [
   {
-    name: "Philip Essien",
-    role: "Convener, WOW Experience",
-    imageSrc: "/images/Philip Essien_Convener_WOW Experience.png",
-    imageAlt: "Portrait of Philip Essien",
-  },
-  {
     name: "Pastor Nsemeke David",
     role: "Host Pastor",
     imageSrc: "/images/Pastor Nsemeke David_Host Pastor_1st.webp",
@@ -157,6 +151,12 @@ export const organizingTeam = [
     role: "Assistant Coordinator",
     imageSrc: "/images/Patience Tim_Assistant Coordinators_4th.webp",
     imageAlt: "Portrait of Patience Tim",
+  },
+  {
+    name: "Philip Essien",
+    role: "Convener, WOW Experience",
+    imageSrc: "/images/Philip Essien_Convener_WOW Experience.png",
+    imageAlt: "Portrait of Philip Essien",
   },
 ];
 
