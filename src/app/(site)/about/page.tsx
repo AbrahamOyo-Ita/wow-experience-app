@@ -84,7 +84,7 @@ export default function AboutPage() {
           <FadeIn>
             <span className="text-xs font-bold uppercase tracking-widest text-red">Organizing Leadership</span>
             <h2 className="mt-2 font-display text-3xl font-bold sm:text-5xl text-ink">
-              Stewards of the Gathering
+              Stewards of the Vision
             </h2>
             <p className="mt-4 max-w-xl text-muted text-base">
               The core team upholding vision, operations, and guest experience across our annual editions.
