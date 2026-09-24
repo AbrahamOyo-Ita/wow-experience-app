@@ -91,7 +91,7 @@ export default function AboutPage() {
             </p>
           </FadeIn>
 
-          <StaggerContainer staggerDelay={0.15} className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <StaggerContainer staggerDelay={0.15} className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {organizingTeam.map((person) => (
               <StaggerItem key={person.name}>
                 <HoverCard lift={-6} className="group overflow-hidden rounded-2xl border border-border bg-paper shadow-2xs">
