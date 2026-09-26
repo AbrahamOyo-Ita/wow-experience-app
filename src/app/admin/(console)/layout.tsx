@@ -10,15 +10,16 @@ export default async function AdminConsoleLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const requireAuth = process.env.REQUIRE_ADMIN_AUTH === "true";
-
-  if (requireAuth && isSupabaseConfigured()) {
+  if (isSupabaseConfigured()) {
     const supabase = await createClient();
     const { data } = await supabase.auth.getClaims();
     if (!data?.claims?.sub) {
       redirect("/admin/login");
     }
-    await ensureSuperAdminRole(data.claims.sub as string);
+    await ensureSuperAdminRole(
+      data.claims.sub as string,
+      typeof data.claims.email === "string" ? data.claims.email : null,
+    );
     const { data: roles } = await supabase
       .from("profile_roles")
       .select("role")

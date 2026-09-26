@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { checkInAttendance } from "@/actions/public";
 import {
   processCampaignQueue,
@@ -63,8 +64,32 @@ export type AdminBundle = {
   editions: EventEdition[];
   whatsappSession: WhatsAppSession | null;
   adminUsers: AdminUser[];
+  systemHealth: {
+    databaseConfigured: boolean;
+    emailConfigured: boolean;
+    emailCustomDomain: boolean;
+    emailWebhookConfigured: boolean;
+    cronConfigured: boolean;
+    whatsAppConfigured: boolean;
+    appUrl: string;
+    sender: string;
+  };
   error?: string;
 };
+
+function systemHealth(): AdminBundle["systemHealth"] {
+  const sender = process.env.RESEND_FROM ?? "";
+  return {
+    databaseConfigured: isSupabaseConfigured() && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    emailConfigured: Boolean(process.env.RESEND_API_KEY && sender),
+    emailCustomDomain: Boolean(sender && !sender.toLowerCase().includes("resend.dev")),
+    emailWebhookConfigured: Boolean(process.env.RESEND_WEBHOOK_SECRET),
+    cronConfigured: Boolean(process.env.CRON_SECRET),
+    whatsAppConfigured: Boolean(process.env.OPENWA_BASE_URL && process.env.OPENWA_API_KEY),
+    appUrl: process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? "",
+    sender,
+  };
+}
 
 function mapEdition(row: Record<string, unknown>): EventEdition {
   return {
@@ -137,6 +162,7 @@ function emptyBundle(error?: string): AdminBundle {
     editions: [],
     whatsappSession: null,
     adminUsers: [],
+    systemHealth: systemHealth(),
     error,
   };
 }
@@ -146,6 +172,9 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
   const { data: claimsData } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub as string | undefined;
   if (!userId) {
+    if (isSupabaseConfigured()) {
+      return emptyBundle("Your admin session has expired. Sign in again.");
+    }
     return {
       profile: currentAdmin,
       contacts: mockContacts,
@@ -163,6 +192,7 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
       editions: mockEditions,
       whatsappSession: mockWhatsappSession,
       adminUsers: mockAdminUsers,
+      systemHealth: systemHealth(),
     };
   }
 
@@ -212,6 +242,10 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
     contactsRes.error ||
     rsvpsRes.error ||
     ministersRes.error;
+
+  if (rolesRes.error || !rolesRes.data?.length) {
+    return emptyBundle("This account does not have an admin role.");
+  }
 
   const role = (rolesRes.data?.[0]?.role as AdminUser["role"] | undefined) ?? "content_editor";
   const profileRow = profileRes.data as Record<string, unknown> | null;
@@ -400,6 +434,7 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
       role: roleByProfile.get(String(row.id)) ?? "content_editor",
       status: "active" as const,
     })),
+    systemHealth: systemHealth(),
     error: firstError?.message,
   };
 }

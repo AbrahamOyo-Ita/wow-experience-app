@@ -18,6 +18,7 @@ export type OutboundMessage = {
 
 export type ProviderResult = {
   status: NotificationStatus;
+  providerMessageId?: string;
   skipped?: boolean;
   reason?: string;
   preview?: string;
@@ -92,7 +93,11 @@ export async function sendEmail(message: OutboundMessage): Promise<ProviderResul
     }
 
     const preview = data ? JSON.stringify(data) : "Email accepted by Resend.";
-    return { status: "sent", preview: preview.slice(0, 500) };
+    return {
+      status: "sent",
+      providerMessageId: data?.id,
+      preview: preview.slice(0, 500),
+    };
   } catch (error) {
     const reason = error instanceof Error ? error.message : "Unknown Resend error.";
     return { status: "failed", reason: reason.slice(0, 500), preview: reason.slice(0, 500) };

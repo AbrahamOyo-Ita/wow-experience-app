@@ -12,6 +12,100 @@ function channelsFor(mode: CampaignChannelMode) {
   return ["email", "whatsapp"] as const;
 }
 
+function localEventDayAtSeven(dateValue: string) {
+  const date = new Date(dateValue);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Lagos",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return new Date(`${values.year}-${values.month}-${values.day}T07:00:00+01:00`);
+}
+
+async function processAutomationQueue(supabase: ReturnType<typeof createAdminClient>, limit = 20) {
+  const now = new Date();
+  const { data: rules, error } = await supabase
+    .from("automation_rules")
+    .select("*, event_editions(id, name, starts_at, ends_at, venue_name, venue_city, venue_address, directions_url)")
+    .eq("enabled", true)
+    .in("trigger_type", ["two_day_reminder", "event_day_reminder", "post_event_thank_you"])
+    .limit(limit);
+  if (error) return { processed: 0, error: error.message };
+
+  let processed = 0;
+  for (const rule of (rules as Record<string, unknown>[] | null) ?? []) {
+    const edition = rule.event_editions as Record<string, unknown> | null;
+    if (!edition?.starts_at || !edition.ends_at) continue;
+    const startsAt = new Date(String(edition.starts_at));
+    const endsAt = new Date(String(edition.ends_at));
+    const trigger = String(rule.trigger_type);
+    const dueAt = trigger === "two_day_reminder"
+      ? new Date(startsAt.getTime() - 48 * 60 * 60 * 1000)
+      : trigger === "event_day_reminder"
+        ? localEventDayAtSeven(String(edition.starts_at))
+        : new Date(endsAt.getTime() + Number(rule.offset_minutes ?? 1440) * 60 * 1000);
+    if (rule.last_run_at || now < dueAt) {
+      if (!rule.last_run_at) {
+        await supabase.from("automation_rules").update({ next_run_at: dueAt.toISOString() }).eq("id", rule.id);
+      }
+      continue;
+    }
+
+    const { data: rsvps, error: rsvpError } = await supabase
+      .from("rsvps")
+      .select("contact_id")
+      .eq("edition_id", edition.id)
+      .eq("response", "attending");
+    if (rsvpError) {
+      await supabase.from("automation_rules").update({ last_run_at: now.toISOString(), last_run_status: "failed" }).eq("id", rule.id);
+      continue;
+    }
+    const contactIds = [...new Set(((rsvps as { contact_id: string }[] | null) ?? []).map((item) => item.contact_id))];
+    const { data: contacts } = contactIds.length
+      ? await supabase.from("contacts").select("id, first_name, email_normalized, phone_normalized, contact_consents(channel, purpose, status)").in("id", contactIds)
+      : { data: [] };
+    const body = trigger === "two_day_reminder"
+      ? "{{first_name}}, {{event_name}} is in two days. {{event_date}} at {{event_time}}. Venue: {{venue}}."
+      : trigger === "event_day_reminder"
+        ? "{{first_name}}, today is {{event_name}}. We look forward to seeing you at {{venue}}."
+        : "Thank you for joining {{event_name}}. We are grateful you gathered with us."
+    const rows: Record<string, unknown>[] = [];
+    for (const contact of (contacts as Record<string, unknown>[] | null) ?? []) {
+      const consents = (contact.contact_consents ?? []) as { channel?: string; purpose?: string; status?: string }[];
+      for (const channel of channelsFor(rule.channel_mode as CampaignChannelMode)) {
+        const address = channel === "email" ? contact.email_normalized : contact.phone_normalized;
+        const allowed = consents.some((consent) => consent.channel === channel && consent.status === "granted" && ["event_reminders", "newsletter"].includes(consent.purpose ?? ""));
+        if (!address || !allowed) continue;
+        rows.push({
+          edition_id: edition.id,
+          contact_id: contact.id,
+          automation_rule_id: rule.id,
+          channel,
+          template_key: trigger,
+          to_address: address,
+          payload: {
+            first_name: contact.first_name,
+            event_name: edition.name,
+            event_date: new Intl.DateTimeFormat("en-NG", { dateStyle: "long", timeZone: "Africa/Lagos" }).format(startsAt),
+            event_time: new Intl.DateTimeFormat("en-NG", { timeStyle: "short", timeZone: "Africa/Lagos" }).format(startsAt),
+            venue: edition.venue_name,
+            body,
+            subject: trigger === "post_event_thank_you" ? `Thank you for joining ${edition.name}` : `Reminder: ${edition.name}`,
+          },
+          scheduled_for: now.toISOString(),
+          status: "queued",
+        });
+      }
+    }
+    if (rows.length) await supabase.from("notifications").upsert(rows, { onConflict: "automation_rule_id,contact_id,channel", ignoreDuplicates: true });
+    await supabase.from("automation_rules").update({ last_run_at: now.toISOString(), last_run_status: "success", next_run_at: null }).eq("id", rule.id);
+    processed += 1;
+  }
+  return { processed };
+}
+
 function payloadForContact(contact: Record<string, unknown>, extra: Record<string, unknown> = {}) {
   return {
     first_name: contact.first_name,
@@ -222,6 +316,14 @@ export async function processNotificationQueue(limit = 25) {
 
   const campaignResult = await processCampaignQueue(Math.min(10, limit));
   const supabase = createAdminClient();
+  const automationResult = await processAutomationQueue(supabase, Math.min(20, limit));
+  const staleBefore = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+  await supabase
+    .from("notifications")
+    .update({ status: "queued", processing_started_at: null, error_message: "Recovered after an interrupted worker run." })
+    .eq("status", "processing")
+    .lt("processing_started_at", staleBefore);
+
   const { data: rows, error } = await supabase
     .from("notifications")
     .select("*")
@@ -236,7 +338,14 @@ export async function processNotificationQueue(limit = 25) {
 
   let processed = 0;
   for (const row of rows ?? []) {
-    await supabase.from("notifications").update({ status: "processing" }).eq("id", row.id);
+    const { data: claimed } = await supabase
+      .from("notifications")
+      .update({ status: "processing", processing_started_at: new Date().toISOString() })
+      .eq("id", row.id)
+      .eq("status", "queued")
+      .select("id")
+      .maybeSingle();
+    if (!claimed) continue;
     const payload = (row.payload ?? {}) as Record<string, unknown>;
     const directBody = typeof payload.body === "string" ? payload.body : null;
     const directSubject = typeof payload.subject === "string" ? payload.subject : null;
@@ -274,6 +383,8 @@ export async function processNotificationQueue(limit = 25) {
       notification_id: row.id,
       channel: row.channel,
       provider: row.channel === "email" ? "resend" : "openwa",
+      provider_message_id: result.providerMessageId ?? null,
+      event_type: result.status,
       success: result.status === "sent",
       response_preview: result.preview ?? result.reason ?? null,
     });
@@ -285,6 +396,8 @@ export async function processNotificationQueue(limit = 25) {
         skip_reason: result.reason ?? null,
         error_message: result.status === "failed" ? result.reason : null,
         sent_at: result.status === "sent" ? new Date().toISOString() : null,
+        provider_message_id: result.providerMessageId ?? null,
+        processing_started_at: null,
       })
       .eq("id", row.id);
     processed += 1;
@@ -306,18 +419,24 @@ export async function processNotificationQueue(limit = 25) {
     const statuses = ((totals as { status: string }[] | null) ?? []).map((row) => row.status);
     if (!statuses.length || statuses.some((status) => status === "queued" || status === "processing")) continue;
     const sentCount = statuses.filter((status) => status === "sent" || status === "delivered").length;
+    const deliveredCount = statuses.filter((status) => status === "delivered").length;
     const failedCount = statuses.filter((status) => status === "failed").length;
     await supabase
       .from("campaigns")
       .update({
         status: failedCount && !sentCount ? "failed" : "completed",
         sent_count: sentCount,
-        delivered_count: sentCount,
+        delivered_count: deliveredCount,
         failed_count: failedCount,
         completed_at: new Date().toISOString(),
       })
       .eq("id", campaignId);
   }
 
-  return { processed, campaignsProcessed: campaignResult.processed };
+  return {
+    processed,
+    campaignsProcessed: campaignResult.processed,
+    automationsProcessed: automationResult.processed,
+    automationError: automationResult.error,
+  };
 }

@@ -78,6 +78,22 @@ export default function PrivacyPage() {
         </section>
 
         <section>
+          <h2 className="font-display text-2xl font-semibold text-ink">Website analytics</h2>
+          <p className="mt-3">
+            We use first-party analytics to understand which pages are visited,
+            how visitors reached the site, device category, and approximate city,
+            region and country supplied by our hosting provider. We do not store
+            a visitor&apos;s raw IP address in analytics records, and we do not use
+            advertising trackers or sell this information.
+          </p>
+          <p className="mt-3">
+            A random visitor identifier and a short-lived session identifier are
+            stored in secure cookies so visits can be counted without knowing
+            your name. Browser Do Not Track requests are respected.
+          </p>
+        </section>
+
+        <section>
           <h2 className="font-display text-2xl font-semibold text-ink">What we keep, and for how long</h2>
           <p className="mt-3">
             We keep contact details, consents, RSVPs, volunteer applications and

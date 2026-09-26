@@ -92,7 +92,7 @@ export default function AdminAutomationsPage() {
     <div className="grid gap-6">
       <PageHeader
         title="Automations"
-        description="Seven reminder and confirmation rules. Toggles stay in this browser only."
+        description="Seven reminder and confirmation rules. Changes are persisted and scheduled rules run through the notification worker."
       />
       <DataTable
         columns={columns}

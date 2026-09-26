@@ -40,3 +40,8 @@ scratch/
 config.json
 open-wa-session*
 # end managed
+
+.cache/
+.tmp*
+supabase/.temp/*
+!supabase/.temp/cli-latest

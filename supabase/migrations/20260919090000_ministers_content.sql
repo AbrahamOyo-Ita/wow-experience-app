@@ -81,37 +81,5 @@ using (
   and (select app_private.is_admin())
 );
 
-insert into public.ministers (
-  id,
-  edition_id,
-  name,
-  role,
-  bio,
-  image_src,
-  image_alt,
-  featured,
-  is_published,
-  sort_order
-)
-select seed.id,
-       edition.id,
-       seed.name,
-       seed.role,
-       seed.bio,
-       seed.image_src,
-       seed.image_alt,
-       true,
-       false,
-       seed.sort_order
-from public.event_editions edition
-cross join (
-  values
-    ('min-amara', 'Amara Okonkwo', 'Worship Lead', 'Amara leads congregational singing with a clear pastoral instinct.', '/images/minister-amara.jpg', 'Portrait of Amara Okonkwo', 1),
-    ('min-daniel', 'Daniel Adeyemi', 'Host Pastor', 'Daniel hosts the day and frames the gathering around Scripture.', '/images/minister-daniel.jpg', 'Portrait of Daniel Adeyemi', 2),
-    ('min-kwame', 'Kwame Mensah', 'Music Director', 'Kwame shapes the musical language of the gathering.', '/images/minister-kwame.jpg', 'Portrait of Kwame Mensah', 3),
-    ('min-chioma', 'Chioma Nwosu', 'Prayer and Hospitality', 'Chioma leads the prayer team and the welcome floor.', '/images/minister-chioma.jpg', 'Portrait of Chioma Nwosu', 4),
-    ('min-tunde', 'Tunde Balogun', 'Teacher of the Word', 'Tunde opens Scripture with patience and weight.', '/images/minister-tunde.jpg', 'Portrait of Tunde Balogun', 5),
-    ('min-grace', 'Grace Okafor', 'Vocal Lead and Intercessor', 'Grace brings a profound spirit of prayer and vocal ministering to the platform.', '/images/minister-grace.jpg', 'Portrait of Grace Okafor', 6)
-) as seed(id, name, role, bio, image_src, image_alt, sort_order)
-where edition.legacy_key = 'edition-2026'
-on conflict (id) do nothing;
+-- Ministers are intentionally created through the admin console. Production
+-- must not be pre-populated with fictional placeholder people.

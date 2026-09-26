@@ -117,15 +117,22 @@ export function RsvpModal({ pathname }: { pathname: string }) {
     }
     setErrors({});
     setSubmitting(true);
-    const result = await rsvpService.submit({
-      firstName,
-      phone,
-      email,
-      preferredChannel: channel,
-      whatsappConsent,
-      emailConsent,
-      editionId: edition.id,
-    });
+    let result: Awaited<ReturnType<typeof rsvpService.submit>>;
+    try {
+      result = await rsvpService.submit({
+        firstName,
+        phone,
+        email,
+        preferredChannel: channel,
+        whatsappConsent,
+        emailConsent,
+        editionId: edition.id,
+      });
+    } catch {
+      setSubmitting(false);
+      setFormError("The connection was interrupted. Please refresh the page and try again.");
+      return;
+    }
     setSubmitting(false);
     if (result.status === "validation_error" || result.status === "validation") {
       setErrors(Object.fromEntries(result.errors.map((row) => [row.field, row.message])));

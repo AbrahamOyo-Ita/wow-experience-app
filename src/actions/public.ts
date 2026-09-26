@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { newsletterSubscribeSchema } from "@/lib/validation";
+import { newsletterSubscribeSchema, rsvpSchema } from "@/lib/validation";
 import type {
   AttendanceInput,
   EnquiryInput,
@@ -35,27 +35,66 @@ async function callRpc<T>(
     return { status: "error", message: "Supabase is not configured." };
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc(name, {
-    payload: { ...payload, ipHash: await ipHash() },
-  });
+  const requestId = crypto.randomUUID();
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc(name, {
+      payload: { ...payload, ipHash: await ipHash() },
+    });
 
-  if (error) {
+    if (error) {
+      console.error("Public Supabase RPC failed", {
+        requestId,
+        rpc: name,
+        code: error.code,
+        details: error.details,
+      });
+      return {
+        status: "error",
+        message: `We could not complete that request. Please try again. Reference: ${requestId}`,
+      };
+    }
+
+    const result = data as MockSubmitResult<T> | null;
+    if (!result?.status) {
+      console.error("Public Supabase RPC returned an invalid result", { requestId, rpc: name });
+      return {
+        status: "error",
+        message: `We could not complete that request. Please try again. Reference: ${requestId}`,
+      };
+    }
+    return result;
+  } catch (error) {
+    console.error("Public Supabase RPC threw", {
+      requestId,
+      rpc: name,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     return {
       status: "error",
-      message: error.message || "The request could not be completed. Try again.",
+      message: `The connection was interrupted. Please try again. Reference: ${requestId}`,
     };
   }
-
-  const result = data as MockSubmitResult<T> | null;
-  if (!result?.status) {
-    return { status: "error", message: "The request could not be completed. Try again." };
-  }
-  return result;
 }
 
 export async function submitRsvp(input: RsvpInput) {
-  return callRpc<Rsvp>("submit_rsvp", { ...input });
+  const parsed = rsvpSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      status: "validation" as const,
+      errors: parsed.error.issues.map((issue) => ({
+        field: String(issue.path[0] ?? "form"),
+        message: issue.message,
+      })),
+    };
+  }
+
+  return callRpc<Rsvp>("submit_rsvp", {
+    ...parsed.data,
+    editionId: input.editionId,
+    eventId: input.eventId,
+    source: input.source,
+  });
 }
 
 export async function declineRsvp(eventId: string) {

@@ -26,6 +26,16 @@ const empty: AdminBundle = {
   editions: [],
   whatsappSession: null,
   adminUsers: [],
+  systemHealth: {
+    databaseConfigured: false,
+    emailConfigured: false,
+    emailCustomDomain: false,
+    emailWebhookConfigured: false,
+    cronConfigured: false,
+    whatsAppConfigured: false,
+    appUrl: "",
+    sender: "",
+  },
 };
 
 const AdminDataContext = createContext<AdminDataValue>({
@@ -59,6 +69,11 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminDataContext.Provider value={{ ...bundle, loading, refresh }}>
+      {bundle.error ? (
+        <div className="border-b border-red/30 bg-red/5 px-4 py-2 text-sm text-red" role="alert">
+          {bundle.error}
+        </div>
+      ) : null}
       {children}
     </AdminDataContext.Provider>
   );
