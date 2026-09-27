@@ -112,13 +112,114 @@ export function labelChannel(channel: Channel | "whatsapp" | "email") {
 
 export function labelRole(role: AdminRole) {
   const map: Record<AdminRole, string> = {
-    super_admin: "Super admin",
-    event_admin: "Event admin",
-    communications_manager: "Communications",
-    content_editor: "Content editor",
+    super_admin: "Super Admin",
+    event_admin: "Event Director",
+    communications_manager: "Communications Lead",
+    content_editor: "Content Editor",
+    workforce_coordinator: "Workforce Coordinator",
+    scanner_usher: "Check-in Usher / Scanner",
   };
-  return map[role];
+  return map[role] ?? role;
 }
+
+export interface RoleDefinition {
+  role: AdminRole;
+  label: string;
+  tier: number;
+  tierLabel: string;
+  badgeClass: string;
+  description: string;
+  permissions: string[];
+}
+
+export const ROLE_DEFINITIONS: Record<AdminRole, RoleDefinition> = {
+  super_admin: {
+    role: "super_admin",
+    label: "Super Admin",
+    tier: 1,
+    tierLabel: "Tier 1 • Full Authority",
+    badgeClass: "bg-red-500/15 text-red-400 border-red-500/30",
+    description: "Executive system control. Can invite and manage team members, edit roles, access audit logs, manage database and configuration.",
+    permissions: [
+      "Manage team & RBAC roles",
+      "Full access to all event editions",
+      "System audit log review",
+      "Platform configuration & API keys",
+      "Broadcast & campaign dispatch",
+      "Content & media management",
+    ],
+  },
+  event_admin: {
+    role: "event_admin",
+    label: "Event Director",
+    tier: 2,
+    tierLabel: "Tier 2 • Operational Authority",
+    badgeClass: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+    description: "Operational leadership. Manages event editions, attendee registrations, workforce teams, and communications.",
+    permissions: [
+      "Invite staff (Tiers 3-5)",
+      "Manage event editions & schedules",
+      "Attendee RSVPs & attendance tracking",
+      "Volunteer team coordination",
+      "Campaign broadcast approval",
+    ],
+  },
+  communications_manager: {
+    role: "communications_manager",
+    label: "Communications Lead",
+    tier: 3,
+    tierLabel: "Tier 3 • Public Outreach",
+    badgeClass: "bg-sky-500/15 text-sky-400 border-sky-500/30",
+    description: "Manages public communications, email/WhatsApp broadcasts, attendee newsletters, and message templates.",
+    permissions: [
+      "Create & schedule broadcast campaigns",
+      "Manage email & WhatsApp templates",
+      "View audience contacts & consent records",
+      "Export attendee communication lists",
+    ],
+  },
+  content_editor: {
+    role: "content_editor",
+    label: "Content & Media Editor",
+    tier: 3,
+    tierLabel: "Tier 3 • Creative & Editorial",
+    badgeClass: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    description: "Responsible for editorial insights, church FAQs, flyer graphics generation, minister lineups, and gallery uploads.",
+    permissions: [
+      "Create & edit published articles / insights",
+      "Manage church FAQs & categories",
+      "Configure flyer templates & badges",
+      "Upload gallery photos & minister profiles",
+    ],
+  },
+  workforce_coordinator: {
+    role: "workforce_coordinator",
+    label: "Workforce Coordinator",
+    tier: 4,
+    tierLabel: "Tier 4 • Department Coordination",
+    badgeClass: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    description: "Oversees workforce departments (Ushering, Sound & Media, Choir, Security, Protocol). Reviews applications and assigns roles.",
+    permissions: [
+      "Review volunteer applications",
+      "Assign volunteers to departments",
+      "Export department rosters",
+      "Monitor workforce check-in status",
+    ],
+  },
+  scanner_usher: {
+    role: "scanner_usher",
+    label: "Check-in Usher / Scanner",
+    tier: 5,
+    tierLabel: "Tier 5 • Sanctuary Field Access",
+    badgeClass: "bg-slate-500/15 text-slate-400 border-slate-500/30",
+    description: "Event day sanctuary check-in. Scans QR passes and checks in attendees at Sanctified Mount Zion Church.",
+    permissions: [
+      "QR code pass scanner access",
+      "Lookup attendee check-in status",
+      "Mark manual attendance on event day",
+    ],
+  },
+};
 
 export function labelEditionStatus(status: EditionStatus) {
   const map: Record<EditionStatus, string> = {

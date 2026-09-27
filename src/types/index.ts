@@ -55,7 +55,9 @@ export type AdminRole =
   | "super_admin"
   | "event_admin"
   | "communications_manager"
-  | "content_editor";
+  | "content_editor"
+  | "workforce_coordinator"
+  | "scanner_usher";
 
 export interface Venue {
   name: string;
@@ -359,7 +361,27 @@ export interface AdminUser {
   name: string;
   email: string;
   role: AdminRole;
+  department?: string;
+  phone?: string | null;
   status: "active" | "invited" | "disabled";
+  createdAt?: string;
+  lastSignInAt?: string | null;
+  inviteUrl?: string | null;
+}
+
+export interface TeamInvitation {
+  id: string;
+  email: string;
+  fullName: string;
+  role: AdminRole;
+  department: string;
+  invitedByName: string;
+  token: string;
+  inviteUrl?: string | null;
+  notes?: string | null;
+  status: "pending" | "accepted" | "expired" | "revoked";
+  expiresAt: string;
+  createdAt: string;
 }
 
 export interface AuditLog {

@@ -87,6 +87,8 @@ export function TextArea({
   );
 }
 
+export { TextArea as Textarea };
+
 export type SelectOption = {
   value: string;
   label: string;

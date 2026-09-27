@@ -1,0 +1,9 @@
+.git
+.next
+.cache
+node_modules
+coverage
+playwright-report
+test-results
+.tmp*
+supabase/.temp

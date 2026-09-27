@@ -35,6 +35,7 @@ export const adminNav = [
   { href: "/admin/attendance", label: "Attendance" },
   { href: "/admin/flyer", label: "Flyer" },
   { href: "/admin/volunteers", label: "Volunteers" },
+  { href: "/admin/team", label: "Team & RBAC" },
   { href: "/admin/campaigns", label: "Campaigns" },
   { href: "/admin/templates", label: "Templates" },
   { href: "/admin/automations", label: "Automations" },

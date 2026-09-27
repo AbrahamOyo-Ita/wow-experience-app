@@ -11,8 +11,13 @@ import {
 } from "@/lib/notifications/process";
 import { campaignScheduleSchema, ministerSchema, newsletterPublishSchema } from "@/lib/validation";
 import { mapMinister } from "@/lib/ministers";
+import { createAdminClient, hasServiceRole } from "@/lib/supabase/admin";
+import { renderRichEmailHtml } from "@/lib/notifications/email-template";
+import { sendEmail } from "@/lib/notifications/providers";
+import { labelRole, ROLE_DEFINITIONS } from "@/lib/admin";
 import type { AttendanceInput, MockSubmitResult } from "@/services/contracts";
 import type {
+  AdminRole,
   AdminUser,
   Article,
   AttendanceRecord,
@@ -488,7 +493,11 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
       name: String(row.full_name || row.email || "Admin"),
       email: String(row.email ?? ""),
       role: roleByProfile.get(String(row.id)) ?? "content_editor",
-      status: "active" as const,
+      department: String(row.department || "General"),
+      phone: row.phone ? String(row.phone) : null,
+      status: (row.status as AdminUser["status"]) ?? "active",
+      createdAt: String(row.created_at || ""),
+      lastSignInAt: row.last_sign_in_at ? String(row.last_sign_in_at) : null,
     })),
     systemHealth: systemHealth(),
     error: firstError?.message,
@@ -1348,4 +1357,458 @@ export async function deleteFaqAction(id: string) {
 
   return { status: "success" as const };
 }
+
+/**
+ * --------------------------------------------------------------------------------
+ * TEAM MANAGEMENT & SUPER SENIOR RBAC ACTIONS
+ * --------------------------------------------------------------------------------
+ */
+
+export async function loadTeamMembersAction(): Promise<{
+  members: AdminUser[];
+  error?: string;
+}> {
+  if (!isSupabaseConfigured() || !hasServiceRole()) {
+    return { members: mockAdminUsers };
+  }
+
+  const admin = createAdminClient();
+  try {
+    const [authUsersRes, profilesRes, rolesRes] = await Promise.all([
+      admin.auth.admin.listUsers({ perPage: 1000 }),
+      admin.from("profiles").select("*"),
+      admin.from("profile_roles").select("*"),
+    ]);
+
+    const roleByProfile = new Map<string, AdminRole>();
+    for (const r of (rolesRes.data ?? [])) {
+      roleByProfile.set(r.profile_id, r.role as AdminRole);
+    }
+
+    const profileById = new Map<string, Record<string, unknown>>();
+    for (const p of (profilesRes.data ?? [])) {
+      profileById.set(p.id, p);
+    }
+
+    const members: AdminUser[] = [];
+    const users = authUsersRes.data?.users ?? [];
+
+    for (const u of users) {
+      const p = profileById.get(u.id);
+      const role = roleByProfile.get(u.id) || (u.user_metadata?.role as AdminRole) || "scanner_usher";
+      const name = String(p?.full_name || u.user_metadata?.full_name || u.email?.split("@")[0] || "Staff Member");
+      const department = String(p?.department || u.user_metadata?.department || "Executive Leadership");
+      const status = (p?.status as AdminUser["status"]) || (u.invited_at && !u.last_sign_in_at ? "invited" : "active");
+
+      members.push({
+        id: u.id,
+        name,
+        email: u.email ?? "",
+        role,
+        department,
+        phone: (p?.phone as string) || (u.phone as string) || null,
+        status,
+        createdAt: u.created_at,
+        lastSignInAt: u.last_sign_in_at ?? null,
+      });
+    }
+
+    return { members };
+  } catch (err) {
+    console.error("Failed to load team members", err);
+    return { members: mockAdminUsers, error: err instanceof Error ? err.message : "Failed to load team" };
+  }
+}
+
+export async function inviteTeamMemberAction(input: {
+  email: string;
+  fullName: string;
+  role: AdminRole;
+  department: string;
+  notes?: string;
+}): Promise<{
+  status: "success" | "error";
+  message?: string;
+  inviteLink?: string;
+  member?: AdminUser;
+}> {
+  const email = input.email.trim().toLowerCase();
+  if (!email || !email.includes("@")) {
+    return { status: "error", message: "Please enter a valid email address." };
+  }
+  if (!input.fullName.trim()) {
+    return { status: "error", message: "Please enter the member's full name." };
+  }
+
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const callerId = claimsData?.claims?.sub as string | undefined;
+  const callerEmail = claimsData?.claims?.email as string | undefined;
+
+  const { data: callerRoles } = await supabase
+    .from("profile_roles")
+    .select("role")
+    .eq("profile_id", callerId ?? "");
+
+  const callerRole = callerRoles?.[0]?.role as AdminRole | undefined;
+  const isSuperAdmin = callerRole === "super_admin";
+  const isEventAdmin = callerRole === "event_admin";
+
+  if (!isSuperAdmin && !isEventAdmin) {
+    return { status: "error", message: "You do not have permission to invite team members." };
+  }
+
+  if (!isSuperAdmin && input.role === "super_admin") {
+    return { status: "error", message: "Only Super Admins can appoint another Super Admin." };
+  }
+
+  const admin = createAdminClient();
+  const origin = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://www.wowexperience.com.ng";
+  const redirectTo = `${origin}/admin/set-password`;
+
+  try {
+    const { data: userList } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const existing = userList?.users?.find((u) => u.email?.toLowerCase() === email);
+
+    let userId = existing?.id;
+    let inviteLink = "";
+
+    if (existing) {
+      userId = existing.id;
+      const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+        type: "magiclink",
+        email,
+        options: {
+          redirectTo,
+          data: {
+            full_name: input.fullName,
+            role: input.role,
+            department: input.department,
+          },
+        },
+      });
+      if (linkErr) throw linkErr;
+      inviteLink = linkData.properties.action_link;
+    } else {
+      const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+        type: "invite",
+        email,
+        options: {
+          redirectTo,
+          data: {
+            full_name: input.fullName,
+            role: input.role,
+            department: input.department,
+          },
+        },
+      });
+      if (linkErr) {
+        const { data: invData, error: invErr } = await admin.auth.admin.inviteUserByEmail(email, {
+          redirectTo,
+          data: {
+            full_name: input.fullName,
+            role: input.role,
+            department: input.department,
+          },
+        });
+        if (invErr) throw invErr;
+        userId = invData.user.id;
+      } else {
+        inviteLink = linkData.properties.action_link;
+        userId = linkData.user.id;
+      }
+    }
+
+    // Upsert profile
+    await admin.from("profiles").upsert({
+      id: userId,
+      email,
+      full_name: input.fullName,
+      department: input.department,
+      status: "invited",
+    });
+
+    // Upsert profile_role
+    await admin.from("profile_roles").upsert({
+      profile_id: userId,
+      role: input.role,
+    });
+
+    // Attempt to log in team_invitations table
+    try {
+      await admin.from("team_invitations").insert({
+        email,
+        full_name: input.fullName,
+        role: input.role,
+        department: input.department,
+        invited_by_id: callerId,
+        invited_by_name: callerEmail || "Super Admin",
+        token: crypto.randomUUID(),
+        invite_url: inviteLink,
+        notes: input.notes ?? null,
+        status: "pending",
+      });
+    } catch {
+      // Table may be pending migration
+    }
+
+    // Send custom luxury invitation email via Resend
+    const roleDef = ROLE_DEFINITIONS[input.role] || ROLE_DEFINITIONS.content_editor;
+    const inviteHtml = renderRichEmailHtml({
+      title: "Invitation to WOW Experience Team",
+      preheader: `You have been appointed as ${roleDef.label} in ${input.department}.`,
+      badgeText: `${input.department.toUpperCase()} • APPOINTMENT`,
+      headline: `Welcome to the Workforce, ${input.fullName}!`,
+      leadParagraph: `You have been appointed to join the administrative and leadership team for Wonders of Worship Experience.`,
+      detailsGrid: [
+        { label: "Appointed Role", value: roleDef.label, badge: "Authorized" },
+        { label: "Department", value: input.department },
+        { label: "Access Tier", value: roleDef.tierLabel },
+      ],
+      callout: {
+        type: "gold",
+        title: "ROLE MANDATE & CAPABILITIES",
+        text: roleDef.description,
+      },
+      primaryAction: inviteLink
+        ? {
+            text: "Accept Invitation & Set Password",
+            url: inviteLink,
+          }
+        : undefined,
+      venueCard: true,
+      scriptureQuote: true,
+      recipientEmail: email,
+    });
+
+    await sendEmail({
+      id: crypto.randomUUID(),
+      channel: "email",
+      to: email,
+      subject: `You have been appointed to the WOW Experience Team (${input.department})`,
+      body: `Dear ${input.fullName}, you have been appointed to the WOW Experience team as ${roleDef.label}. Follow your invitation link: ${inviteLink}`,
+      html: inviteHtml,
+    });
+
+    // Audit log
+    await admin.from("audit_logs").insert({
+      actor_id: callerId,
+      actor_name: callerEmail || "Admin",
+      action: "team.invited_member",
+      entity_type: "team_member",
+      entity_id: userId,
+      metadata_preview: `Invited ${input.fullName} (${email}) as ${roleDef.label} in ${input.department}`,
+    });
+
+    revalidatePath("/admin/team");
+    revalidatePath("/admin");
+
+    return {
+      status: "success",
+      inviteLink,
+      member: {
+        id: userId!,
+        name: input.fullName,
+        email,
+        role: input.role,
+        department: input.department,
+        status: "invited",
+        inviteUrl: inviteLink,
+      },
+    };
+  } catch (err) {
+    console.error("Invite team member error:", err);
+    return {
+      status: "error",
+      message: err instanceof Error ? err.message : "Failed to invite team member",
+    };
+  }
+}
+
+export async function updateTeamMemberRoleAction(input: {
+  userId: string;
+  role: AdminRole;
+  department?: string;
+  status?: "active" | "invited" | "disabled";
+}): Promise<{ status: "success" | "error"; message?: string }> {
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const callerId = claimsData?.claims?.sub as string | undefined;
+
+  const { data: callerRoles } = await supabase
+    .from("profile_roles")
+    .select("role")
+    .eq("profile_id", callerId ?? "");
+
+  const callerRole = callerRoles?.[0]?.role as AdminRole | undefined;
+  if (callerRole !== "super_admin" && callerRole !== "event_admin") {
+    return { status: "error", message: "Only administrators can update team roles." };
+  }
+
+  const admin = createAdminClient();
+  const { data: targetUser } = await admin.auth.admin.getUserById(input.userId);
+  const targetEmail = targetUser?.user?.email?.toLowerCase();
+
+  // Guard: Cannot demote primary super admin
+  if (targetEmail === "oyoitaabraham@gmail.com" && input.role !== "super_admin") {
+    return { status: "error", message: "The primary Super Admin cannot be demoted." };
+  }
+
+  // Guard: If caller is demoting self, make sure another super admin exists
+  if (callerId === input.userId && input.role !== "super_admin") {
+    const { data: allSupers } = await admin
+      .from("profile_roles")
+      .select("profile_id")
+      .eq("role", "super_admin");
+    if (!allSupers || allSupers.length <= 1) {
+      return { status: "error", message: "Cannot demote yourself: at least one Super Admin must remain active." };
+    }
+  }
+
+  // Update role
+  await admin.from("profile_roles").upsert({
+    profile_id: input.userId,
+    role: input.role,
+  });
+
+  // Update profile
+  const profileUpdates: Record<string, unknown> = {};
+  if (input.department) profileUpdates.department = input.department;
+  if (input.status) profileUpdates.status = input.status;
+  if (Object.keys(profileUpdates).length) {
+    await admin.from("profiles").update(profileUpdates).eq("id", input.userId);
+  }
+
+  // Update user_metadata in auth
+  await admin.auth.admin.updateUserById(input.userId, {
+    user_metadata: {
+      role: input.role,
+      ...(input.department ? { department: input.department } : {}),
+    },
+  });
+
+  // Audit log
+  await admin.from("audit_logs").insert({
+    actor_id: callerId,
+    actor_name: claimsData?.claims?.email || "Admin",
+    action: "team.updated_role",
+    entity_type: "team_member",
+    entity_id: input.userId,
+    metadata_preview: `Updated ${targetEmail} to role ${labelRole(input.role)} (${input.department ?? "No dept change"})`,
+  });
+
+  revalidatePath("/admin/team");
+  revalidatePath("/admin");
+
+  return { status: "success" };
+}
+
+export async function deleteTeamMemberAction(input: {
+  userId: string;
+}): Promise<{ status: "success" | "error"; message?: string }> {
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const callerId = claimsData?.claims?.sub as string | undefined;
+
+  const { data: callerRoles } = await supabase
+    .from("profile_roles")
+    .select("role")
+    .eq("profile_id", callerId ?? "");
+
+  if (callerRoles?.[0]?.role !== "super_admin") {
+    return { status: "error", message: "Only Super Admins can remove team members." };
+  }
+
+  if (callerId === input.userId) {
+    return { status: "error", message: "You cannot remove your own account." };
+  }
+
+  const admin = createAdminClient();
+  const { data: targetUser } = await admin.auth.admin.getUserById(input.userId);
+  const targetEmail = targetUser?.user?.email?.toLowerCase();
+
+  if (targetEmail === "oyoitaabraham@gmail.com") {
+    return { status: "error", message: "The primary Super Admin cannot be removed." };
+  }
+
+  await admin.from("profile_roles").delete().eq("profile_id", input.userId);
+  await admin.from("profiles").delete().eq("id", input.userId);
+  await admin.auth.admin.deleteUser(input.userId);
+
+  await admin.from("audit_logs").insert({
+    actor_id: callerId,
+    actor_name: claimsData?.claims?.email || "Super Admin",
+    action: "team.removed_member",
+    entity_type: "team_member",
+    entity_id: input.userId,
+    metadata_preview: `Removed member ${targetEmail}`,
+  });
+
+  revalidatePath("/admin/team");
+  revalidatePath("/admin");
+
+  return { status: "success" };
+}
+
+export async function resendTeamInviteAction(input: {
+  userId: string;
+  email: string;
+}): Promise<{ status: "success" | "error"; message?: string; inviteLink?: string }> {
+  const admin = createAdminClient();
+  const origin = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://www.wowexperience.com.ng";
+  const redirectTo = `${origin}/admin/set-password`;
+
+  try {
+    const { data: profile } = await admin.from("profiles").select("*").eq("id", input.userId).maybeSingle();
+    const { data: roles } = await admin.from("profile_roles").select("role").eq("profile_id", input.userId);
+    const role = (roles?.[0]?.role as AdminRole) || "content_editor";
+    const fullName = String(profile?.full_name || input.email.split("@")[0]);
+    const department = String(profile?.department || "General");
+
+    const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+      type: "magiclink",
+      email: input.email,
+      options: { redirectTo, data: { full_name: fullName, role, department } },
+    });
+    if (linkErr) throw linkErr;
+
+    const inviteLink = linkData.properties.action_link;
+    const roleDef = ROLE_DEFINITIONS[role] || ROLE_DEFINITIONS.content_editor;
+
+    const inviteHtml = renderRichEmailHtml({
+      title: "WOW Experience Team Invitation (Reminder)",
+      preheader: `Reminder: You have an active invitation to join the WOW Experience Team.`,
+      badgeText: `${department.toUpperCase()} • INVITATION REMINDER`,
+      headline: `Invitation Reminder: Welcome to the Workforce, ${fullName}!`,
+      leadParagraph: `This is a reminder that your administrative credential link is active. Click below to accept and set up your password.`,
+      detailsGrid: [
+        { label: "Appointed Role", value: roleDef.label, badge: "Pending" },
+        { label: "Department", value: department },
+        { label: "Access Tier", value: roleDef.tierLabel },
+      ],
+      primaryAction: {
+        text: "Accept Invitation & Set Password",
+        url: inviteLink,
+      },
+      venueCard: true,
+      scriptureQuote: true,
+      recipientEmail: input.email,
+    });
+
+    await sendEmail({
+      id: crypto.randomUUID(),
+      channel: "email",
+      to: input.email,
+      subject: `Invitation Reminder: WOW Experience Team (${department})`,
+      body: `Dear ${fullName}, your invitation to the WOW Experience team as ${roleDef.label} is ready: ${inviteLink}`,
+      html: inviteHtml,
+    });
+
+    return { status: "success", inviteLink };
+  } catch (err) {
+    console.error("Resend invite error:", err);
+    return { status: "error", message: err instanceof Error ? err.message : "Failed to resend invite" };
+  }
+}
+
 
