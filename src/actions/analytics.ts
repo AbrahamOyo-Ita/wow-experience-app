@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { authorizeAdmin } from "@/lib/supabase/admin-access";
 
 export type AnalyticsListItem = { label: string; value: number };
 export type AnalyticsSnapshot = {
@@ -26,19 +27,9 @@ export type AnalyticsResult =
 
 export async function loadAnalyticsSnapshot(days = 30): Promise<AnalyticsResult> {
   const range = [7, 30, 90, 365].includes(days) ? days : 30;
+  const authorization = await authorizeAdmin("analytics.view");
+  if (!authorization) return { status: "error", message: "You do not have permission to view analytics." };
   const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const userId = claimsData?.claims?.sub as string | undefined;
-  if (!userId) return { status: "error", message: "Sign in to view analytics." };
-
-  const { data: roles, error: roleError } = await supabase
-    .from("profile_roles")
-    .select("role")
-    .eq("profile_id", userId)
-    .limit(1);
-  if (roleError || !roles?.length) {
-    return { status: "error", message: "Admin access is required." };
-  }
 
   const { data, error } = await supabase.rpc("get_analytics_dashboard", { p_days: range });
   if (error || !data) {
@@ -49,4 +40,3 @@ export async function loadAnalyticsSnapshot(days = 30): Promise<AnalyticsResult>
   }
   return { status: "success", data: data as AnalyticsSnapshot };
 }
-

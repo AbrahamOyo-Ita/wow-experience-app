@@ -12,6 +12,8 @@ import {
 import { campaignScheduleSchema, ministerSchema, newsletterPublishSchema } from "@/lib/validation";
 import { mapMinister } from "@/lib/ministers";
 import { createAdminClient, hasServiceRole } from "@/lib/supabase/admin";
+import { authorizeAdmin } from "@/lib/supabase/admin-access";
+import { getAppOrigin } from "@/lib/app-origin";
 import { renderRichEmailHtml } from "@/lib/notifications/email-template";
 import { sendEmail } from "@/lib/notifications/providers";
 import { labelRole, ROLE_DEFINITIONS } from "@/lib/admin";
@@ -1376,6 +1378,10 @@ export async function loadTeamMembersAction(): Promise<{
   members: AdminUser[];
   error?: string;
 }> {
+  const authorization = await authorizeAdmin("team.invite");
+  if (!authorization) {
+    return { members: [], error: "You do not have permission to view the team roster." };
+  }
   if (!isSupabaseConfigured() || !hasServiceRole()) {
     return { members: mockAdminUsers };
   }
@@ -1450,35 +1456,22 @@ export async function inviteTeamMemberAction(input: {
     return { status: "error", message: "Please enter the member's full name." };
   }
 
-  const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const callerId = claimsData?.claims?.sub as string | undefined;
-  const callerEmail = claimsData?.claims?.email as string | undefined;
-
-  const { data: callerRoles } = await supabase
-    .from("profile_roles")
-    .select("role")
-    .eq("profile_id", callerId ?? "");
-
-  const callerRole = callerRoles?.[0]?.role as AdminRole | undefined;
-  const isSuperAdmin = callerRole === "super_admin";
-  const isEventAdmin = callerRole === "event_admin";
-
-  if (!isSuperAdmin && !isEventAdmin) {
+  const authorization = await authorizeAdmin("team.invite");
+  if (!authorization) {
     return { status: "error", message: "You do not have permission to invite team members." };
   }
-
-  if (!isSuperAdmin && input.role === "super_admin") {
-    return { status: "error", message: "Only Super Admins can appoint another Super Admin." };
+  const { userId: callerId, email: callerEmail, role: callerRole } = authorization;
+  if (callerRole !== "super_admin" && (input.role === "super_admin" || input.role === "event_admin")) {
+    return { status: "error", message: "Only Super Admins can appoint senior administrators." };
   }
 
   const admin = createAdminClient();
-  const baseOrigin = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://www.wowexperience.com.ng").replace(/\/$/, "");
+  const baseOrigin = getAppOrigin();
 
   // NOTE: We intentionally DON'T use redirectTo here because Supabase will override it
   // with the Site URL if our app URL is not in the allowed list.
   // Instead, we extract the token from Supabase's action_link and build our own URL.
-  const supabaseSiteUrl = "https://www.wowexperience.com.ng"; // Supabase site_url in dashboard
+  const callbackUrl = `${baseOrigin}/auth/callback?next=%2Fadmin%2Fset-password`;
 
   const inviteUserMeta = {
     full_name: input.fullName,
@@ -1524,7 +1517,7 @@ export async function inviteTeamMemberAction(input: {
         email,
         options: {
           // Use Supabase's own site URL here — it WILL match the allowlist
-          redirectTo: supabaseSiteUrl,
+          redirectTo: callbackUrl,
           data: inviteUserMeta,
         },
       });
@@ -1537,14 +1530,14 @@ export async function inviteTeamMemberAction(input: {
         type: "invite",
         email,
         options: {
-          redirectTo: supabaseSiteUrl,
+          redirectTo: callbackUrl,
           data: inviteUserMeta,
         },
       });
       if (linkErr) {
         // Fallback: inviteUserByEmail
         const { data: invData, error: invErr } = await admin.auth.admin.inviteUserByEmail(email, {
-          redirectTo: supabaseSiteUrl,
+          redirectTo: callbackUrl,
           data: inviteUserMeta,
         });
         if (invErr) throw invErr;
@@ -1571,9 +1564,7 @@ export async function inviteTeamMemberAction(input: {
       role: input.role,
     });
 
-    // Attempt to log in team_invitations table
-    try {
-      await admin.from("team_invitations").insert({
+    const { data: invitation } = await admin.from("team_invitations").insert({
         email,
         full_name: input.fullName,
         role: input.role,
@@ -1584,10 +1575,10 @@ export async function inviteTeamMemberAction(input: {
         invite_url: inviteLink,
         notes: input.notes ?? null,
         status: "pending",
-      });
-    } catch {
-      // Table may be pending migration
-    }
+        delivery_status: "pending",
+        last_sent_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      }).select("id").maybeSingle();
 
     // Send custom luxury invitation email via Resend
     const roleDef = ROLE_DEFINITIONS[input.role] || ROLE_DEFINITIONS.content_editor;
@@ -1618,7 +1609,7 @@ export async function inviteTeamMemberAction(input: {
       recipientEmail: email,
     });
 
-    await sendEmail({
+    const delivery = await sendEmail({
       id: crypto.randomUUID(),
       channel: "email",
       to: email,
@@ -1626,6 +1617,22 @@ export async function inviteTeamMemberAction(input: {
       body: `Dear ${input.fullName}, you have been appointed to the WOW Experience team as ${roleDef.label}. Follow your invitation link: ${inviteLink}`,
       html: inviteHtml,
     });
+
+    if (invitation?.id) {
+      await admin.from("team_invitations").update({
+        delivery_status: delivery.status,
+        provider_message_id: delivery.providerMessageId ?? null,
+        last_error: delivery.reason ?? null,
+      }).eq("id", invitation.id);
+    }
+
+    if (delivery.status !== "sent") {
+      return {
+        status: "error",
+        message: `The account and secure invitation link were created, but email delivery failed: ${delivery.reason ?? "the provider did not accept the message"}. Copy the link below while the sender configuration is corrected.`,
+        inviteLink,
+      };
+    }
 
     // Audit log
     await admin.from("audit_logs").insert({
@@ -1668,23 +1675,30 @@ export async function updateTeamMemberRoleAction(input: {
   department?: string;
   status?: "active" | "invited" | "disabled";
 }): Promise<{ status: "success" | "error"; message?: string }> {
-  const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const callerId = claimsData?.claims?.sub as string | undefined;
-
-  const { data: callerRoles } = await supabase
-    .from("profile_roles")
-    .select("role")
-    .eq("profile_id", callerId ?? "");
-
-  const callerRole = callerRoles?.[0]?.role as AdminRole | undefined;
-  if (callerRole !== "super_admin" && callerRole !== "event_admin") {
+  const authorization = await authorizeAdmin("team.invite");
+  if (!authorization) {
     return { status: "error", message: "Only administrators can update team roles." };
   }
+  const { userId: callerId, email: callerEmail, role: callerRole } = authorization;
 
   const admin = createAdminClient();
   const { data: targetUser } = await admin.auth.admin.getUserById(input.userId);
   const targetEmail = targetUser?.user?.email?.toLowerCase();
+  const { data: targetRoleRow } = await admin
+    .from("profile_roles")
+    .select("role")
+    .eq("profile_id", input.userId)
+    .maybeSingle();
+
+  if (
+    callerRole !== "super_admin" &&
+    (targetRoleRow?.role === "super_admin" ||
+      targetRoleRow?.role === "event_admin" ||
+      input.role === "super_admin" ||
+      input.role === "event_admin")
+  ) {
+    return { status: "error", message: "Only Super Admins can manage senior administrator accounts." };
+  }
 
   // Guard: Cannot demote primary super admin
   if (targetEmail === "oyoitaabraham@gmail.com" && input.role !== "super_admin") {
@@ -1727,7 +1741,7 @@ export async function updateTeamMemberRoleAction(input: {
   // Audit log
   await admin.from("audit_logs").insert({
     actor_id: callerId,
-    actor_name: claimsData?.claims?.email || "Admin",
+    actor_name: callerEmail || "Admin",
     action: "team.updated_role",
     entity_type: "team_member",
     entity_id: input.userId,
@@ -1743,18 +1757,11 @@ export async function updateTeamMemberRoleAction(input: {
 export async function deleteTeamMemberAction(input: {
   userId: string;
 }): Promise<{ status: "success" | "error"; message?: string }> {
-  const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const callerId = claimsData?.claims?.sub as string | undefined;
-
-  const { data: callerRoles } = await supabase
-    .from("profile_roles")
-    .select("role")
-    .eq("profile_id", callerId ?? "");
-
-  if (callerRoles?.[0]?.role !== "super_admin") {
+  const authorization = await authorizeAdmin("team.manage");
+  if (!authorization) {
     return { status: "error", message: "Only Super Admins can remove team members." };
   }
+  const { userId: callerId, email: callerEmail } = authorization;
 
   if (callerId === input.userId) {
     return { status: "error", message: "You cannot remove your own account." };
@@ -1774,7 +1781,7 @@ export async function deleteTeamMemberAction(input: {
 
   await admin.from("audit_logs").insert({
     actor_id: callerId,
-    actor_name: claimsData?.claims?.email || "Super Admin",
+    actor_name: callerEmail || "Super Admin",
     action: "team.removed_member",
     entity_type: "team_member",
     entity_id: input.userId,
@@ -1791,15 +1798,24 @@ export async function resendTeamInviteAction(input: {
   userId: string;
   email: string;
 }): Promise<{ status: "success" | "error"; message?: string; inviteLink?: string }> {
+  const authorization = await authorizeAdmin("team.invite");
+  if (!authorization) {
+    return { status: "error", message: "You do not have permission to resend invitations." };
+  }
   const admin = createAdminClient();
-  const baseOrigin = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://www.wowexperience.com.ng").replace(/\/$/, "");
-  // Use the Supabase site URL as redirectTo (matches allowlist), then extract token to build our own link
-  const supabaseSiteUrl = "https://www.wowexperience.com.ng";
+  const baseOrigin = getAppOrigin();
+  const callbackUrl = `${baseOrigin}/auth/callback?next=%2Fadmin%2Fset-password`;
 
   try {
     const { data: profile } = await admin.from("profiles").select("*").eq("id", input.userId).maybeSingle();
+    if (!profile || profile.status !== "invited") {
+      return { status: "error", message: "Only pending invitations can be resent." };
+    }
     const { data: roles } = await admin.from("profile_roles").select("role").eq("profile_id", input.userId);
     const role = (roles?.[0]?.role as AdminRole) || "content_editor";
+    if (authorization.role !== "super_admin" && (role === "super_admin" || role === "event_admin")) {
+      return { status: "error", message: "Only Super Admins can resend senior administrator invitations." };
+    }
     const fullName = String(profile?.full_name || input.email.split("@")[0]);
     const department = String(profile?.department || "General");
 
@@ -1811,7 +1827,7 @@ export async function resendTeamInviteAction(input: {
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
       type: "magiclink",
       email: input.email,
-      options: { redirectTo: supabaseSiteUrl, data: inviteUserMeta },
+      options: { redirectTo: callbackUrl, data: inviteUserMeta },
     });
     if (linkErr) throw linkErr;
 
@@ -1848,7 +1864,7 @@ export async function resendTeamInviteAction(input: {
       recipientEmail: input.email,
     });
 
-    await sendEmail({
+    const delivery = await sendEmail({
       id: crypto.randomUUID(),
       channel: "email",
       to: input.email,
@@ -1856,6 +1872,23 @@ export async function resendTeamInviteAction(input: {
       body: `Dear ${fullName}, your invitation to the WOW Experience team as ${roleDef.label} is ready: ${inviteLink}`,
       html: inviteHtml,
     });
+
+    await admin.from("team_invitations").update({
+      invite_url: inviteLink,
+      delivery_status: delivery.status,
+      provider_message_id: delivery.providerMessageId ?? null,
+      last_error: delivery.reason ?? null,
+      last_sent_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    }).eq("email", input.email.toLowerCase()).eq("status", "pending");
+
+    if (delivery.status !== "sent") {
+      return {
+        status: "error",
+        message: delivery.reason ?? "The email provider did not accept the invitation.",
+        inviteLink,
+      };
+    }
 
     return { status: "success", inviteLink };
   } catch (err) {
@@ -1869,6 +1902,10 @@ export async function updateProfileAvatarAction(formData: FormData): Promise<{
   avatarUrl?: string;
   message?: string;
 }> {
+  const authorization = await authorizeAdmin("profile.update");
+  if (!authorization) {
+    return { status: "error", message: "You do not have permission to update this profile." };
+  }
   const file = formData.get("avatar") as File | null;
   if (!file || file.size === 0) {
     return { status: "error", message: "Please select an image file to upload." };
@@ -1882,13 +1919,7 @@ export async function updateProfileAvatarAction(formData: FormData): Promise<{
     return { status: "error", message: "Profile picture must be under 5MB." };
   }
 
-  const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const userId = claimsData?.claims?.sub as string | undefined;
-
-  if (!userId) {
-    return { status: "error", message: "Your session has expired. Please sign in again." };
-  }
+  const userId = authorization.userId;
 
   const admin = createAdminClient();
   const fileExt = file.name.split(".").pop()?.toLowerCase() || "png";
@@ -1925,7 +1956,7 @@ export async function updateProfileAvatarAction(formData: FormData): Promise<{
     // Log to audit
     await admin.from("audit_logs").insert({
       actor_id: userId,
-      actor_name: claimsData?.claims?.email || "Admin",
+      actor_name: authorization.email || "Admin",
       action: "profile.updated_avatar",
       entity_type: "profile",
       entity_id: userId,
@@ -1941,5 +1972,3 @@ export async function updateProfileAvatarAction(formData: FormData): Promise<{
     return { status: "error", message: err instanceof Error ? err.message : "Failed to update profile picture" };
   }
 }
-
-

@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase/env";
+import { canAccessAdminPath, isAdminRole } from "@/lib/admin-rbac";
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -44,10 +45,43 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isLogin && data?.claims) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/admin";
-    redirectUrl.search = "";
-    return NextResponse.redirect(redirectUrl);
+    const userId = data.claims.sub as string;
+    const [{ data: roleRow }, { data: profileRow }] = await Promise.all([
+      supabase.from("profile_roles").select("role").eq("profile_id", userId).limit(1).maybeSingle(),
+      supabase.from("profiles").select("status").eq("id", userId).maybeSingle(),
+    ]);
+    if (isAdminRole(roleRow?.role) && profileRow?.status === "invited") {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/admin/set-password";
+      redirectUrl.search = "";
+      return NextResponse.redirect(redirectUrl);
+    }
+    if (isAdminRole(roleRow?.role) && profileRow?.status === "active") {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/admin";
+      redirectUrl.search = "";
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
+  if (isAdmin && !isLogin && !isSetPassword && data?.claims) {
+    const userId = data.claims.sub as string;
+    const [{ data: roleRow }, { data: profileRow }] = await Promise.all([
+      supabase.from("profile_roles").select("role").eq("profile_id", userId).limit(1).maybeSingle(),
+      supabase.from("profiles").select("status").eq("id", userId).maybeSingle(),
+    ]);
+
+    if (
+      !isAdminRole(roleRow?.role) ||
+      profileRow?.status !== "active" ||
+      !canAccessAdminPath(roleRow.role, path)
+    ) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/admin/login";
+      redirectUrl.search = "";
+      redirectUrl.searchParams.set("error", profileRow?.status === "disabled" ? "disabled" : "forbidden");
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   return supabaseResponse;

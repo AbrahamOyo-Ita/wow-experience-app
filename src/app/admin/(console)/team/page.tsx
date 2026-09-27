@@ -45,7 +45,7 @@ const DEPARTMENTS = [
 ];
 
 export default function AdminTeamPage() {
-  const { adminUsers: initialAdminUsers, refresh: refreshAdminData } = useAdminData();
+  const { adminUsers: initialAdminUsers, profile, refresh: refreshAdminData } = useAdminData();
   const [members, setMembers] = useState<AdminUser[]>(initialAdminUsers);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -157,12 +157,13 @@ export default function AdminTeamPage() {
         notes: inviteNotes,
       });
 
+      if (res.inviteLink) {
+        setInviteSuccessLink(res.inviteLink);
+      }
+
       if (res.status === "error") {
         setInviteError(res.message || "Failed to invite member.");
       } else {
-        if (res.inviteLink) {
-          setInviteSuccessLink(res.inviteLink);
-        }
         if (res.member) {
           setMembers((prev) => [res.member!, ...prev.filter((m) => m.email !== res.member!.email)]);
         }
@@ -679,7 +680,9 @@ export default function AdminTeamPage() {
                   Role-Based Access Control (RBAC) Tier *
                 </label>
                 <div className="space-y-2">
-                  {(Object.keys(ROLE_DEFINITIONS) as AdminRole[]).map((r) => {
+                  {(Object.keys(ROLE_DEFINITIONS) as AdminRole[])
+                    .filter((r) => profile?.role === "super_admin" || (r !== "super_admin" && r !== "event_admin"))
+                    .map((r) => {
                     const def = ROLE_DEFINITIONS[r];
                     const isSelected = inviteRole === r;
 
