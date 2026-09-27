@@ -107,7 +107,7 @@ export async function updateAccountPassword(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
-  if (!password || password.length < 6) {
+  if (!password || password.length < 8) {
     redirect("/admin/set-password?error=short");
   }
 

@@ -32,8 +32,11 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAdmin = path.startsWith("/admin");
   const isLogin = path === "/admin/login" || path.startsWith("/admin/login/");
+  // Allow set-password and auth callback without session (invite flow)
+  const isSetPassword = path === "/admin/set-password" || path.startsWith("/admin/set-password/");
+  const isAuthCallback = path === "/auth/callback" || path.startsWith("/auth/callback/");
 
-  if (isAdmin && !isLogin && !data?.claims) {
+  if (isAdmin && !isLogin && !isSetPassword && !isAuthCallback && !data?.claims) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/admin/login";
     redirectUrl.searchParams.set("next", path);

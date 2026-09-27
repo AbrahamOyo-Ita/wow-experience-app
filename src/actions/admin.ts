@@ -1473,8 +1473,16 @@ export async function inviteTeamMemberAction(input: {
   }
 
   const admin = createAdminClient();
-  const origin = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://www.wowexperience.com.ng";
-  const redirectTo = `${origin}/admin/set-password`;
+  const baseOrigin = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://www.wowexperience.com.ng").replace(/\/$/, "");
+  // CRITICAL: redirectTo must point to /auth/callback so Supabase can exchange the token first.
+  // The callback handler will then forward the user to /admin/set-password.
+  const redirectTo = `${baseOrigin}/auth/callback?next=%2Fadmin%2Fset-password`;
+
+  const inviteUserMeta = {
+    full_name: input.fullName,
+    role: input.role,
+    department: input.department,
+  };
 
   try {
     const { data: userList } = await admin.auth.admin.listUsers({ perPage: 1000 });
@@ -1484,45 +1492,41 @@ export async function inviteTeamMemberAction(input: {
     let inviteLink = "";
 
     if (existing) {
+      // User already exists in auth.users — update their metadata and generate a fresh magic link
       userId = existing.id;
+      // Update metadata so role is current
+      await admin.auth.admin.updateUserById(userId, { user_metadata: inviteUserMeta });
+
       const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
         type: "magiclink",
         email,
         options: {
           redirectTo,
-          data: {
-            full_name: input.fullName,
-            role: input.role,
-            department: input.department,
-          },
+          data: inviteUserMeta,
         },
       });
       if (linkErr) throw linkErr;
       inviteLink = linkData.properties.action_link;
     } else {
+      // Brand new user — generate invite link (creates user with no password)
       const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
         type: "invite",
         email,
         options: {
           redirectTo,
-          data: {
-            full_name: input.fullName,
-            role: input.role,
-            department: input.department,
-          },
+          data: inviteUserMeta,
         },
       });
       if (linkErr) {
+        // Fallback: inviteUserByEmail (sends Supabase's built-in invite email too)
         const { data: invData, error: invErr } = await admin.auth.admin.inviteUserByEmail(email, {
           redirectTo,
-          data: {
-            full_name: input.fullName,
-            role: input.role,
-            department: input.department,
-          },
+          data: inviteUserMeta,
         });
         if (invErr) throw invErr;
         userId = invData.user.id;
+        // inviteUserByEmail does not return an action_link, set inviteLink to empty
+        inviteLink = "";
       } else {
         inviteLink = linkData.properties.action_link;
         userId = linkData.user.id;
@@ -1765,8 +1769,9 @@ export async function resendTeamInviteAction(input: {
   email: string;
 }): Promise<{ status: "success" | "error"; message?: string; inviteLink?: string }> {
   const admin = createAdminClient();
-  const origin = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://www.wowexperience.com.ng";
-  const redirectTo = `${origin}/admin/set-password`;
+  const baseOrigin = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://www.wowexperience.com.ng").replace(/\/$/, "");
+  // Must route through /auth/callback for PKCE token exchange
+  const redirectTo = `${baseOrigin}/auth/callback?next=%2Fadmin%2Fset-password`;
 
   try {
     const { data: profile } = await admin.from("profiles").select("*").eq("id", input.userId).maybeSingle();
@@ -1775,10 +1780,15 @@ export async function resendTeamInviteAction(input: {
     const fullName = String(profile?.full_name || input.email.split("@")[0]);
     const department = String(profile?.department || "General");
 
+    const inviteUserMeta = { full_name: fullName, role, department };
+
+    // Refresh user metadata so role is always current
+    await admin.auth.admin.updateUserById(input.userId, { user_metadata: inviteUserMeta });
+
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
       type: "magiclink",
       email: input.email,
-      options: { redirectTo, data: { full_name: fullName, role, department } },
+      options: { redirectTo, data: inviteUserMeta },
     });
     if (linkErr) throw linkErr;
 
