@@ -848,3 +848,152 @@ export async function writeAuditLog(action: string, entityType: string, entityId
     metadata_preview: preview,
   });
 }
+
+export async function getAdminFlyerTemplateAction() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("flyer_templates")
+    .select("id, name, file_name, mime_type, image_url, is_published, updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return {
+    id: data.id,
+    name: data.name,
+    fileName: data.file_name,
+    mimeType: data.mime_type,
+    imageUrl: data.image_url,
+    published: data.is_published,
+    updatedAt: data.updated_at,
+  };
+}
+
+export async function saveFlyerTemplateAction(formData: FormData) {
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub as string | undefined;
+  if (!userId) {
+    return { status: "error" as const, message: "Sign in to publish flyer templates." };
+  }
+
+  const { data: roles } = await supabase.from("profile_roles").select("role").eq("profile_id", userId);
+  if (!roles?.length) {
+    return { status: "error" as const, message: "You do not have permission to manage flyer templates." };
+  }
+
+  const name = String(formData.get("name") ?? "Main attending flyer").trim() || "Main attending flyer";
+  const file = formData.get("file");
+  if (!file || typeof file === "string" || file.size === 0) {
+    return { status: "error" as const, message: "Please select an image file to upload." };
+  }
+
+  const allowedTypes = new Map([
+    ["image/jpeg", "jpg"],
+    ["image/png", "png"],
+    ["image/webp", "webp"],
+  ]);
+  const extension = allowedTypes.get(file.type);
+  if (!extension) {
+    return { status: "error" as const, message: "Upload a JPG, PNG, or WebP image." };
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    return { status: "error" as const, message: "Keep the flyer under 10 MB." };
+  }
+
+  const storagePath = `templates/${crypto.randomUUID()}.${extension}`;
+  const { error: uploadError } = await supabase.storage
+    .from("flyer-templates")
+    .upload(storagePath, await file.arrayBuffer(), {
+      contentType: file.type,
+      cacheControl: "31536000",
+      upsert: true,
+    });
+
+  if (uploadError) {
+    return { status: "error" as const, message: `Storage error: ${uploadError.message}` };
+  }
+
+  const imageUrl = supabase.storage.from("flyer-templates").getPublicUrl(storagePath).data.publicUrl;
+
+  await supabase.from("flyer_templates").update({ is_published: false }).eq("is_published", true);
+
+  const { data, error } = await supabase
+    .from("flyer_templates")
+    .upsert({
+      id: "active-attending-flyer",
+      name,
+      file_name: file.name,
+      mime_type: file.type,
+      image_url: imageUrl,
+      storage_path: storagePath,
+      is_published: true,
+      updated_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error || !data) {
+    return { status: "error" as const, message: error?.message ?? "Could not save flyer template metadata." };
+  }
+
+  await supabase.from("audit_logs").insert({
+    actor_id: userId,
+    actor_name: "Admin",
+    action: "Published flyer template",
+    entity_type: "flyer_template",
+    entity_id: "active-attending-flyer",
+    metadata_preview: `${name} / ${file.name}`,
+  });
+
+  revalidatePath("/flyer");
+  revalidatePath("/admin/flyer");
+
+  return {
+    status: "success" as const,
+    data: {
+      id: data.id,
+      name: data.name,
+      fileName: data.file_name,
+      mimeType: data.mime_type,
+      imageUrl: data.image_url,
+      published: data.is_published,
+      updatedAt: data.updated_at,
+    },
+  };
+}
+
+export async function unpublishFlyerTemplateAction() {
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub as string | undefined;
+  if (!userId) {
+    return { status: "error" as const, message: "Sign in to manage flyer templates." };
+  }
+
+  const { error } = await supabase
+    .from("flyer_templates")
+    .update({ is_published: false, updated_at: new Date().toISOString() })
+    .eq("id", "active-attending-flyer");
+
+  if (error) {
+    return { status: "error" as const, message: error.message };
+  }
+
+  await supabase.from("audit_logs").insert({
+    actor_id: userId,
+    actor_name: "Admin",
+    action: "Unpublished flyer template",
+    entity_type: "flyer_template",
+    entity_id: "active-attending-flyer",
+    metadata_preview: "Unpublished active flyer template",
+  });
+
+  revalidatePath("/flyer");
+  revalidatePath("/admin/flyer");
+
+  return { status: "success" as const };
+}
+

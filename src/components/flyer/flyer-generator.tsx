@@ -239,8 +239,11 @@ function FlyerStudioInteractive() {
       try {
         const template = await getPublishedFlyerTemplate();
         if (cancelled || !template) return;
-        templateUrl = URL.createObjectURL(template.blob);
+        const source = template.imageUrl || (template.blob ? URL.createObjectURL(template.blob) : null);
+        if (!source) return;
+        templateUrl = source;
         const image = new Image();
+        image.crossOrigin = "anonymous";
         image.onload = () => {
           if (!cancelled) {
             setTemplateOverlay(image);
@@ -254,7 +257,7 @@ function FlyerStudioInteractive() {
     };
 
     const onTemplateUpdated = () => {
-      if (templateUrl) URL.revokeObjectURL(templateUrl);
+      if (templateUrl && templateUrl.startsWith("blob:")) URL.revokeObjectURL(templateUrl);
       templateUrl = null;
       void loadPublishedTemplate();
     };
@@ -264,7 +267,7 @@ function FlyerStudioInteractive() {
     return () => {
       cancelled = true;
       window.removeEventListener(FLYER_TEMPLATE_UPDATED_EVENT, onTemplateUpdated);
-      if (templateUrl) URL.revokeObjectURL(templateUrl);
+      if (templateUrl && templateUrl.startsWith("blob:")) URL.revokeObjectURL(templateUrl);
     };
   }, []);
 

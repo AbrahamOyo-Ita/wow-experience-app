@@ -164,3 +164,47 @@ export async function listPublishedNewsletters(): Promise<Newsletter[]> {
     updatedAt: String(row.updated_at),
   }));
 }
+
+export type PublishedFlyerResult = {
+  id: string;
+  name: string;
+  fileName: string;
+  mimeType: string;
+  imageUrl: string;
+  published: boolean;
+  updatedAt: string;
+};
+
+export async function getPublishedFlyerAction(): Promise<PublishedFlyerResult | null> {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("flyer_templates")
+      .select("id, name, file_name, mime_type, image_url, is_published, updated_at")
+      .eq("is_published", true)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return {
+      id: data.id,
+      name: data.name,
+      fileName: data.file_name,
+      mimeType: data.mime_type,
+      imageUrl: data.image_url,
+      published: data.is_published,
+      updatedAt: data.updated_at,
+    };
+  } catch (err) {
+    console.error("Failed to load published flyer template", err);
+    return null;
+  }
+}
+

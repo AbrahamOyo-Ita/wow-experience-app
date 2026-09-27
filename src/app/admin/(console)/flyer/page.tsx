@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Field, TextInput } from "@/components/ui/field";
 import { PageHeader, Surface } from "@/components/admin/page-header";
 import {
-  getPublishedFlyerTemplate,
+  getAdminFlyerTemplate,
   savePublishedFlyerTemplate,
   unpublishFlyerTemplate,
   type PublishedFlyerTemplate,
@@ -22,13 +22,14 @@ export default function AdminFlyerPage() {
   const [saving, setSaving] = useState(false);
 
   const previewUrl = useMemo(() => {
-    const source = selectedFile ?? asset?.blob ?? null;
-    if (!source) return null;
-    return URL.createObjectURL(source);
-  }, [asset?.blob, selectedFile]);
+    if (selectedFile) return URL.createObjectURL(selectedFile);
+    if (asset?.imageUrl) return asset.imageUrl;
+    if (asset?.blob) return URL.createObjectURL(asset.blob);
+    return null;
+  }, [asset?.blob, asset?.imageUrl, selectedFile]);
 
   useEffect(() => {
-    void getPublishedFlyerTemplate().then((item) => {
+    void getAdminFlyerTemplate().then((item) => {
       if (!item) return;
       setAsset(item);
       setTemplateName(item.name);
@@ -37,7 +38,7 @@ export default function AdminFlyerPage() {
 
   useEffect(() => {
     return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (previewUrl && previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
 
@@ -55,9 +56,9 @@ export default function AdminFlyerPage() {
       });
       setAsset(next);
       setSelectedFile(null);
-      setMessage("Main attending flyer published to the flyer generator.");
-    } catch {
-      setMessage("Could not publish the flyer. Try a smaller PNG or JPG file.");
+      setMessage("Main attending flyer uploaded to Supabase Storage and published to the flyer studio.");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Could not publish the flyer. Try a smaller PNG or JPG file.");
     } finally {
       setSaving(false);
     }
@@ -68,11 +69,11 @@ export default function AdminFlyerPage() {
     setMessage(null);
     try {
       await unpublishFlyerTemplate();
-      setAsset(null);
+      setAsset((prev) => (prev ? { ...prev, published: false } : null));
       setSelectedFile(null);
       setMessage("Main attending flyer unpublished.");
-    } catch {
-      setMessage("Could not unpublish the flyer.");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Could not unpublish the flyer.");
     } finally {
       setSaving(false);
     }
@@ -101,17 +102,17 @@ export default function AdminFlyerPage() {
         <Surface title="Template status">
           <div className="grid gap-4">
             <div className="flex items-center gap-3">
-              {asset ? (
+              {asset?.published ? (
                 <CheckCircle2 className="h-5 w-5 text-green-600" aria-hidden />
               ) : (
                 <XCircle className="h-5 w-5 text-muted" aria-hidden />
               )}
               <div>
                 <p className="font-semibold text-ink">
-                  {asset ? "Published" : "No flyer published yet"}
+                  {asset?.published ? "Published to Cloud Storage" : "No flyer published yet"}
                 </p>
                 <p className="text-sm text-muted">
-                  {asset
+                  {asset?.published
                     ? `${asset.fileName} / ${formatDateTime(asset.updatedAt)}`
                     : "Upload the final design when it is ready."}
                 </p>
@@ -160,7 +161,7 @@ export default function AdminFlyerPage() {
               <Button
                 type="button"
                 variant="outlineDark"
-                disabled={saving || !asset}
+                disabled={saving || !asset?.published}
                 onClick={() => void unpublish()}
               >
                 Unpublish
@@ -168,7 +169,7 @@ export default function AdminFlyerPage() {
             </div>
 
             <p className="text-xs leading-relaxed text-muted">
-              Current implementation stores this mock admin upload in this browser. When the final production flyer is ready, we can connect this same screen to Supabase Storage or the hosting asset pipeline.
+              Flyer templates are securely uploaded to Supabase Storage and served to all public visitors on the flyer studio.
             </p>
           </div>
         </Surface>
