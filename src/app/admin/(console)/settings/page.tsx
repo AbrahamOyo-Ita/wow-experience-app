@@ -60,6 +60,18 @@ export default function AdminSettingsPage() {
             detail={systemHealth.appUrl || "NEXT_PUBLIC_APP_URL or APP_URL is missing"}
           />
         </ul>
+        {systemHealth.configurationIssues.length ? (
+          <div className="mt-4 border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+            <p className="font-semibold">Configuration actions required</p>
+            <ul className="mt-2 grid gap-2">
+              {systemHealth.configurationIssues.map((issue) => (
+                <li key={issue.label}><span className="font-semibold">{issue.label}:</span> {issue.detail}</li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-emerald-700">All required production configuration checks are passing.</p>
+        )}
       </Surface>
 
       <Surface title="Users and roles">

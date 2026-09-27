@@ -86,21 +86,41 @@ export type AdminBundle = {
     whatsAppConfigured: boolean;
     appUrl: string;
     sender: string;
+    senderDomain: string;
+    configurationIssues: { label: string; detail: string }[];
   };
   error?: string;
 };
 
 function systemHealth(): AdminBundle["systemHealth"] {
   const sender = process.env.RESEND_FROM ?? "";
+  const senderMatch = sender.match(/<([^>]+)>|^([^\s]+)$/);
+  const senderAddress = senderMatch?.[1] ?? senderMatch?.[2] ?? "";
+  const senderDomain = senderAddress.split("@")[1]?.toLowerCase() ?? "";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? "";
+  const issues: { label: string; detail: string }[] = [];
+  if (!isSupabaseConfigured()) issues.push({ label: "Supabase client", detail: "Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY." });
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) issues.push({ label: "Supabase admin access", detail: "Set SUPABASE_SERVICE_ROLE_KEY for admin actions." });
+  if (!process.env.RESEND_API_KEY) issues.push({ label: "Resend API", detail: "Set RESEND_API_KEY in the production environment." });
+  if (!senderAddress) issues.push({ label: "Resend sender", detail: "Set RESEND_FROM to a verified sender address." });
+  else if (!senderDomain || senderDomain === "resend.dev") issues.push({ label: "Resend sender domain", detail: "Use a sender on your verified domain, not onboarding@resend.dev." });
+  if (!process.env.RESEND_WEBHOOK_SECRET) issues.push({ label: "Resend webhook", detail: "Set RESEND_WEBHOOK_SECRET and configure the Resend webhook endpoint." });
+  if (!process.env.CRON_SECRET) issues.push({ label: "Notification scheduler", detail: "Set CRON_SECRET and configure the host scheduler to call /api/cron/notifications." });
+  if (!appUrl || !/^https?:\/\//i.test(appUrl) || /localhost|127\.0\.0\.1/i.test(appUrl)) issues.push({ label: "Public application URL", detail: "Set NEXT_PUBLIC_APP_URL to the deployed HTTPS URL so links work on other devices." });
+  const openWaBase = Boolean(process.env.OPENWA_BASE_URL);
+  const openWaKey = Boolean(process.env.OPENWA_API_KEY);
+  if (openWaBase !== openWaKey) issues.push({ label: "OpenWA WhatsApp", detail: "Set both OPENWA_BASE_URL and OPENWA_API_KEY, or leave both empty." });
   return {
     databaseConfigured: isSupabaseConfigured() && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
     emailConfigured: Boolean(process.env.RESEND_API_KEY && sender),
-    emailCustomDomain: Boolean(sender && !sender.toLowerCase().includes("resend.dev")),
+    emailCustomDomain: Boolean(senderDomain && senderDomain !== "resend.dev"),
     emailWebhookConfigured: Boolean(process.env.RESEND_WEBHOOK_SECRET),
     cronConfigured: Boolean(process.env.CRON_SECRET),
-    whatsAppConfigured: Boolean(process.env.OPENWA_BASE_URL && process.env.OPENWA_API_KEY),
-    appUrl: process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? "",
+    whatsAppConfigured: openWaBase && openWaKey,
+    appUrl,
     sender,
+    senderDomain,
+    configurationIssues: issues,
   };
 }
 
@@ -1509,7 +1529,8 @@ export async function inviteTeamMemberAction(input: {
     if (existing) {
       // User already exists — update metadata and generate fresh magic link
       userId = existing.id;
-      await admin.auth.admin.updateUserById(userId, { user_metadata: inviteUserMeta });
+      const { error: metadataError } = await admin.auth.admin.updateUserById(userId, { user_metadata: inviteUserMeta });
+      if (metadataError) throw metadataError;
 
       const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
         type: "magiclink",
@@ -1536,22 +1557,23 @@ export async function inviteTeamMemberAction(input: {
       userId = linkData.user.id;
     }
 
-    // Upsert profile
-    await admin.from("profiles").upsert({
+    // Upsert profile and role, failing loudly if the database rejects either write.
+    const { error: profileError } = await admin.from("profiles").upsert({
       id: userId,
       email,
       full_name: input.fullName,
       department: input.department,
       status: "invited",
     });
+    if (profileError) throw new Error(`Could not create the team profile: ${profileError.message}`);
 
-    // Upsert profile_role
-    await admin.from("profile_roles").upsert({
+    const { error: roleError } = await admin.from("profile_roles").upsert({
       profile_id: userId,
       role: input.role,
     });
+    if (roleError) throw new Error(`Could not assign the team role: ${roleError.message}`);
 
-    const { data: invitation } = await admin.from("team_invitations").insert({
+    const { data: invitation, error: invitationError } = await admin.from("team_invitations").insert({
         email,
         full_name: input.fullName,
         role: input.role,
@@ -1566,6 +1588,7 @@ export async function inviteTeamMemberAction(input: {
         last_sent_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
       }).select("id").maybeSingle();
+    if (invitationError) throw new Error(`Could not save the invitation record: ${invitationError.message}`);
 
     // Send custom luxury invitation email via Resend
     const roleDef = ROLE_DEFINITIONS[input.role] || ROLE_DEFINITIONS.content_editor;
@@ -1669,7 +1692,10 @@ export async function updateTeamMemberRoleAction(input: {
   const { userId: callerId, email: callerEmail, role: callerRole } = authorization;
 
   const admin = createAdminClient();
-  const { data: targetUser } = await admin.auth.admin.getUserById(input.userId);
+  const { data: targetUser, error: targetUserError } = await admin.auth.admin.getUserById(input.userId);
+  if (targetUserError || !targetUser?.user) {
+    return { status: "error", message: targetUserError?.message ?? "The team member account could not be found." };
+  }
   const targetEmail = targetUser?.user?.email?.toLowerCase();
   const { data: targetRoleRow } = await admin
     .from("profile_roles")
@@ -1704,26 +1730,29 @@ export async function updateTeamMemberRoleAction(input: {
   }
 
   // Update role
-  await admin.from("profile_roles").upsert({
+  const { error: roleError } = await admin.from("profile_roles").upsert({
     profile_id: input.userId,
     role: input.role,
   });
+  if (roleError) return { status: "error", message: `Could not update the role: ${roleError.message}` };
 
   // Update profile
   const profileUpdates: Record<string, unknown> = {};
   if (input.department) profileUpdates.department = input.department;
   if (input.status) profileUpdates.status = input.status;
   if (Object.keys(profileUpdates).length) {
-    await admin.from("profiles").update(profileUpdates).eq("id", input.userId);
+    const { error: profileError } = await admin.from("profiles").update(profileUpdates).eq("id", input.userId);
+    if (profileError) return { status: "error", message: `Could not update the profile: ${profileError.message}` };
   }
 
   // Update user_metadata in auth
-  await admin.auth.admin.updateUserById(input.userId, {
+  const { error: authError } = await admin.auth.admin.updateUserById(input.userId, {
     user_metadata: {
       role: input.role,
       ...(input.department ? { department: input.department } : {}),
     },
   });
+  if (authError) return { status: "error", message: `Could not update the account: ${authError.message}` };
 
   // Audit log
   await admin.from("audit_logs").insert({
@@ -1762,9 +1791,12 @@ export async function deleteTeamMemberAction(input: {
     return { status: "error", message: "The primary Super Admin cannot be removed." };
   }
 
-  await admin.from("profile_roles").delete().eq("profile_id", input.userId);
-  await admin.from("profiles").delete().eq("id", input.userId);
-  await admin.auth.admin.deleteUser(input.userId);
+  const { error: roleDeleteError } = await admin.from("profile_roles").delete().eq("profile_id", input.userId);
+  if (roleDeleteError) return { status: "error", message: `Could not remove the team role: ${roleDeleteError.message}` };
+  const { error: profileDeleteError } = await admin.from("profiles").delete().eq("id", input.userId);
+  if (profileDeleteError) return { status: "error", message: `Could not remove the team profile: ${profileDeleteError.message}` };
+  const { error: authDeleteError } = await admin.auth.admin.deleteUser(input.userId);
+  if (authDeleteError) return { status: "error", message: `Could not remove the login account: ${authDeleteError.message}` };
 
   await admin.from("audit_logs").insert({
     actor_id: callerId,
@@ -1808,7 +1840,8 @@ export async function resendTeamInviteAction(input: {
     const inviteUserMeta = { full_name: fullName, role, department };
 
     // Refresh user metadata so role is always current
-    await admin.auth.admin.updateUserById(input.userId, { user_metadata: inviteUserMeta });
+    const { error: metadataError } = await admin.auth.admin.updateUserById(input.userId, { user_metadata: inviteUserMeta });
+    if (metadataError) throw metadataError;
 
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
       type: "magiclink",
@@ -1928,16 +1961,13 @@ export async function updateProfileAvatarAction(formData: FormData): Promise<{
     const avatarUrl = publicUrlData.publicUrl;
 
     // Update user_metadata in auth.users
-    await admin.auth.admin.updateUserById(userId, {
+    const { error: authError } = await admin.auth.admin.updateUserById(userId, {
       user_metadata: { avatar_url: avatarUrl },
     });
+    if (authError) return { status: "error", message: `Image uploaded, but the account was not updated: ${authError.message}` };
 
-    // Also attempt updating profiles table if column exists
-    try {
-      await admin.from("profiles").update({ avatar_url: avatarUrl }).eq("id", userId);
-    } catch {
-      // Graceful fallback
-    }
+    const { error: profileError } = await admin.from("profiles").update({ avatar_url: avatarUrl }).eq("id", userId);
+    if (profileError) return { status: "error", message: `Image uploaded, but the profile was not updated: ${profileError.message}` };
 
     // Log to audit
     await admin.from("audit_logs").insert({

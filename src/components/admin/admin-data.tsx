@@ -39,6 +39,8 @@ const empty: AdminBundle = {
     whatsAppConfigured: false,
     appUrl: "",
     sender: "",
+    senderDomain: "",
+    configurationIssues: [],
   },
 };
 

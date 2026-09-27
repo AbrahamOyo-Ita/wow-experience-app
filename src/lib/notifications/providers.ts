@@ -63,13 +63,16 @@ export async function sendEmail(message: OutboundMessage): Promise<ProviderResul
   if (!key) {
     return { status: "skipped", skipped: true, reason: "RESEND_API_KEY is not set." };
   }
+  const from = process.env.RESEND_FROM?.trim();
+  if (!from) {
+    return { status: "skipped", skipped: true, reason: "RESEND_FROM is not set." };
+  }
   if (!message.to || !message.to.includes("@")) {
     return { status: "skipped", skipped: true, reason: "Email recipient is missing or invalid." };
   }
 
   try {
     const resend = new Resend(key);
-    const from = process.env.RESEND_FROM ?? "onboarding@resend.dev";
     const subject = message.subject || "Wonders of Worship Experience";
     const attachments = resendAttachments(message);
     const html =
@@ -119,6 +122,9 @@ export async function sendWhatsApp(message: OutboundMessage): Promise<ProviderRe
       return sendEmail(message);
     }
     return { status: "skipped", skipped: true, reason: "OPENWA_BASE_URL is not set." };
+  }
+  if (!apiKey) {
+    return { status: "skipped", skipped: true, reason: "OPENWA_API_KEY is not set." };
   }
   if (!message.to) {
     return { status: "skipped", skipped: true, reason: "WhatsApp recipient is missing." };
