@@ -1,179 +1,187 @@
-# OpenWA Setup and Operations Guide
+# OpenWA on Railway: exact setup for WOW Experience
 
-This application connects to an external OpenWA-compatible WhatsApp service. OpenWA must run continuously on a separate server; the Vercel application does not host the WhatsApp session itself.
+This guide deploys the current OpenWA repository and connects it to the production Vercel app.
 
-## 1. Choose an always-on host
+**Repository:** https://github.com/rmyndharis/OpenWA  
+**Railway API port:** `2785`  
+**Send route:** `/api/sessions/{sessionId}/messages/send-text`
 
-Deploy OpenWA on a persistent VPS or container host such as:
+OpenWA is an unofficial WhatsApp Web gateway. Use a dedicated number, send only to opted-in contacts, and understand that WhatsApp can restrict unofficial automation accounts.
 
-- A VPS with Docker or PM2
-- Railway
-- Render
-- Fly.io
-- Another server that supports long-running processes
+Railway may provide trial credits or limited usage rather than a permanently free unlimited tier. Check Railway billing before deploying. OpenWA is open source; hosting and persistent storage are separate costs.
 
-Do not run OpenWA only on a personal laptop. If the laptop sleeps, loses internet, or shuts down, WhatsApp sending stops.
+## 1. Create accounts
 
-The OpenWA service should be reachable over HTTPS, for example:
+1. Create or sign in to a GitHub account at https://github.com.
+2. Sign in to https://railway.app using GitHub.
+3. Confirm that Railway shows available trial/free credits before deploying.
 
-```text
-https://whatsapp-api.example.com
-```
+## 2. Deploy OpenWA from GitHub
 
-Use a reverse proxy such as Nginx, Caddy, or the hosting provider's HTTPS proxy. Do not expose an unprotected OpenWA server publicly.
+1. In Railway, click **New Project**.
+2. Select **Deploy from GitHub repo**.
+3. Choose the repository `rm myndharis/OpenWA` as displayed by GitHub. The exact URL is:
 
-## 2. Configure the OpenWA service
+   ```text
+   https://github.com/rmyndharis/OpenWA
+   ```
 
-The OpenWA service used by this application must provide:
+4. Approve Railway's GitHub access request.
+5. Select the repository and create the service.
+6. Let Railway build the included `Dockerfile`.
 
-```text
-POST /sendText
-```
+If Railway does not detect the Dockerfile, open the service's **Settings → Build** section and select **Dockerfile**. Do not use the local development command for production.
 
-It must accept JSON similar to:
+## 3. Add OpenWA variables in Railway
 
-```json
-{
-  "to": "2348012345678",
-  "content": "Test message from WOW Experience"
-}
-```
-
-The application sends the API key in these headers:
-
-```text
-X-Api-Key: your-secret-api-key
-api_key: your-secret-api-key
-```
-
-Configure the OpenWA server to accept one of those headers. Keep the API key private and use a long random value.
-
-## 3. Connect the WhatsApp account
-
-1. Start the OpenWA service.
-2. Open its session or QR-code page.
-3. Scan the QR code using the dedicated WhatsApp account.
-4. Wait until the session reports `connected` or `ready`.
-5. Confirm that the session data is stored persistently.
-
-Use a dedicated business WhatsApp number where possible. Do not connect the same account to multiple automation services at the same time.
-
-## 4. Configure the WOW Experience application
-
-Add these variables to the Vercel Production environment:
+Open the Railway service → **Variables**, then add:
 
 ```env
-OPENWA_BASE_URL=https://whatsapp-api.example.com
-OPENWA_API_KEY=replace-with-the-openwa-secret
+NODE_ENV=production
+PORT=2785
+DATABASE_TYPE=sqlite
+STORAGE_TYPE=local
+ENGINE_TYPE=whatsapp-web.js
 ```
 
-Both variables are required. Set them in Vercel under:
+The current OpenWA image serves the API and dashboard on port `2785`. Railway supplies the public HTTPS routing.
 
-```text
-Project Settings → Environment Variables → Production
-```
+## 4. Generate the Railway URL
 
-After saving them, redeploy the application. Environment variables are not reliably applied to an already-running deployment until it is rebuilt.
+1. Open Railway service **Settings → Networking**.
+2. Click **Generate Domain**.
+3. Copy the generated URL, for example:
 
-Never add these values to `NEXT_PUBLIC_*` variables, browser code, Git, or a public README.
+   ```text
+   https://openwa-production-xxxx.up.railway.app
+   ```
 
-## 5. Test OpenWA directly
+4. Open that URL in a browser and confirm the OpenWA dashboard loads.
 
-Run this from a machine that can reach the OpenWA server:
+If it does not load, open **Deployments → View Logs** and fix the first startup error before continuing.
+
+## 5. Create an OpenWA API key
+
+1. In the OpenWA dashboard, open **API Keys** or **Authentication**.
+2. Create a key for WOW Experience.
+3. Use an operator key scoped only to the intended WhatsApp session when possible.
+4. Copy the secret immediately; OpenWA may show it only once.
+
+Do not put this key in GitHub or a `NEXT_PUBLIC_*` variable.
+
+## 6. Create and connect the WhatsApp session
+
+1. Open **Sessions** in the OpenWA dashboard.
+2. Click **Create session**.
+3. Name it `wow-primary`.
+4. Start the session and open its QR-code screen.
+5. On the dedicated WhatsApp phone, open **WhatsApp → Linked devices → Link a device**.
+6. Scan the QR code.
+7. Wait until the session reports `connected` or `ready`.
+8. Copy the actual session ID returned by OpenWA. If it differs from `wow-primary`, use the returned ID later.
+
+Keep the Railway service and its storage running. Deleting session storage can require another QR scan.
+
+## 7. Test OpenWA directly
+
+Replace the placeholders below. Nigerian numbers use country code format without `+`, followed by `@c.us`.
+
+Check the session:
 
 ```bash
-curl -X POST "https://whatsapp-api.example.com/sendText" \
+curl "https://YOUR-RAILWAY-DOMAIN/api/sessions/SESSION_ID" \
+  -H "X-API-Key: YOUR_OPENWA_API_KEY"
+```
+
+Send a test message:
+
+```bash
+curl -X POST "https://YOUR-RAILWAY-DOMAIN/api/sessions/SESSION_ID/messages/send-text" \
   -H "Content-Type: application/json" \
-  -H "X-Api-Key: replace-with-the-openwa-secret" \
-  -d '{"to":"2348012345678","content":"OpenWA test from WOW Experience"}'
+  -H "X-API-Key: YOUR_OPENWA_API_KEY" \
+  -d '{"chatId":"2348012345678@c.us","text":"OpenWA test from WOW Experience"}'
 ```
 
-Expected result:
+Do not continue until this direct test delivers. It proves Railway, OpenWA, the API key, the session, and WhatsApp are working independently of Vercel.
 
-- HTTP `200` or the success status documented by the OpenWA service
-- A response confirming that the message was accepted
-- The message arriving on the destination phone
+## 8. Add variables to Vercel
 
-For Nigerian numbers, use international format without the leading plus sign:
+Open Vercel → WOW Experience project → **Settings → Environment Variables**. Add each variable to **Production**:
+
+```env
+OPENWA_BASE_URL=https://YOUR-RAILWAY-DOMAIN
+OPENWA_API_KEY=YOUR_OPENWA_API_KEY
+OPENWA_SESSION_ID=SESSION_ID
+```
+
+Use the real OpenWA session ID, not necessarily the display name. Never use `NEXT_PUBLIC_` for these values.
+
+Save the variables, then open **Deployments** and click **Redeploy** on the latest production deployment. Vercel environment changes require a rebuild.
+
+## 9. Verify WOW Experience
+
+1. Open the production admin dashboard.
+2. Go to `/admin/settings`.
+3. Confirm **OpenWA WhatsApp** says **Configured**.
+4. Confirm the WhatsApp session card says `connected`.
+5. Send one small test campaign to your own opted-in number.
+6. Check the notification result for `sent` or `delivered`.
+
+## 10. Keep it production-ready
+
+- Keep the Railway service running continuously.
+- Persist OpenWA session storage; do not rely on disposable storage.
+- Enable automatic restarts where Railway provides them.
+- Watch Railway logs after restarts and deployments.
+- Use a dedicated WhatsApp number.
+- Send slowly and only to opted-in contacts.
+- Keep email available as a fallback.
+- Rotate the OpenWA API key immediately if exposed.
+
+## Troubleshooting
+
+### Railway service does not start
+
+Check **Deployments → Logs**. Confirm Dockerfile deployment and port `2785`.
+
+### 401 or 403
+
+The API key is wrong or not allowed to use the session. Create a new operator key scoped to the session and update Vercel.
+
+### 404
+
+Use the current route:
 
 ```text
-2348012345678
+/api/sessions/{sessionId}/messages/send-text
 ```
 
-If the direct test fails, fix OpenWA before testing the admin dashboard.
+Do not use the older `/sendText` route with the current repository.
 
-## 6. Verify from the admin dashboard
+### Session disconnected
 
-After deployment:
+Open the session in OpenWA, restart it, and scan a new QR code if requested. Confirm `OPENWA_SESSION_ID` matches the connected session.
 
-1. Open `/admin/settings`.
-2. Confirm **OpenWA WhatsApp** is marked **Configured**.
-3. Open the WhatsApp session card.
-4. Confirm the session status is `connected`.
-5. Confirm the last activity and health note are current.
-6. Send a small test campaign to one consenting recipient.
+### Direct curl works but the app fails
 
-The application intentionally reports OpenWA as incomplete when only one of `OPENWA_BASE_URL` or `OPENWA_API_KEY` is present.
+Check all three Vercel variables, redeploy, and inspect the notification failure reason in the admin dashboard.
 
-## 7. Keep OpenWA reliable
+### Railway sleeps or runs out of credits
 
-- Enable automatic process restarts with Docker restart policies, PM2, or the host's process manager.
-- Persist the OpenWA session directory or volume so a server restart does not require scanning a new QR code.
-- Monitor CPU, memory, disk, and network availability.
-- Use a health check for the OpenWA service and alert when it is unavailable.
-- Keep the OpenWA host and the Vercel application on HTTPS.
-- Rotate the API key if it is exposed, and update Vercel immediately afterward.
-- Keep WhatsApp consent records intact and send only to opted-in recipients.
-- Respect WhatsApp messaging limits and avoid bulk bursts that may trigger account restrictions.
+That is a hosting-plan limitation. A WhatsApp Web session needs an always-on process and persistent storage. Move to a paid Railway plan or a low-cost VPS if the free allowance cannot keep it running.
 
-## 8. Common failures
+## Final checklist
 
-### “Action required” in `/admin/settings`
-
-Check that both production variables exist exactly as named:
-
-```text
-OPENWA_BASE_URL
-OPENWA_API_KEY
-```
-
-Redeploy after changing them.
-
-### HTTP 401 or 403 from OpenWA
-
-The API key is missing, incorrect, expired, or the server expects a different header. Confirm that OpenWA accepts `X-Api-Key` or `api_key`.
-
-### HTTP 404 from `/sendText`
-
-The OpenWA implementation uses a different route. Configure a compatible `/sendText` endpoint or update the provider adapter in `src/lib/notifications/providers.ts`.
-
-### HTTP 5xx, timeout, or connection refused
-
-The host is down, asleep, blocked by a firewall, using the wrong port, or missing HTTPS. Test the base URL from outside the OpenWA server.
-
-### Session disconnected or QR required
-
-Open the OpenWA session manager, reconnect the WhatsApp account, and confirm that session storage is persistent. Do not delete the session volume unless you intentionally want to pair again.
-
-### Message rejected
-
-Check the recipient format, WhatsApp consent, provider logs, and whether the destination number is registered on WhatsApp. Test with a known valid number first.
-
-### Dashboard says configured but messages still fail
-
-“Configured” only confirms that both environment variables exist. It does not prove that the external OpenWA host is reachable or that the WhatsApp session is connected. Use the direct `curl` test and inspect the OpenWA logs.
-
-## 9. Production checklist
-
-- [ ] OpenWA is deployed on an always-on host.
-- [ ] The host has a public HTTPS URL.
-- [ ] The `/sendText` endpoint works.
-- [ ] API-key authentication works.
-- [ ] The WhatsApp account is connected.
-- [ ] Session data survives a restart.
-- [ ] `OPENWA_BASE_URL` is set in Vercel Production.
-- [ ] `OPENWA_API_KEY` is set in Vercel Production.
-- [ ] The application was redeployed after setting variables.
-- [ ] `/admin/settings` reports OpenWA as configured.
-- [ ] A one-recipient test message was delivered.
-- [ ] Monitoring and automatic restarts are enabled.
+- [ ] OpenWA repository deployed from GitHub
+- [ ] Railway HTTPS domain generated
+- [ ] OpenWA dashboard loads
+- [ ] API key created
+- [ ] `wow-primary` session created
+- [ ] QR code scanned and session is connected
+- [ ] Direct curl test delivered
+- [ ] `OPENWA_BASE_URL` set in Vercel Production
+- [ ] `OPENWA_API_KEY` set in Vercel Production
+- [ ] `OPENWA_SESSION_ID` set in Vercel Production
+- [ ] Vercel redeployed
+- [ ] `/admin/settings` reports OpenWA configured
+- [ ] Dashboard test message delivered

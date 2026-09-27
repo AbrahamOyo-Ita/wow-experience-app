@@ -131,15 +131,17 @@ export async function sendWhatsApp(message: OutboundMessage): Promise<ProviderRe
   }
 
   try {
-    const response = await fetch(`${base.replace(/\/$/, "")}/sendText`, {
+    const sessionId = process.env.OPENWA_SESSION_ID?.trim() || "wow-primary";
+    const chatId = message.to.replace(/^\+/, "").replace(/@c\.us$/i, "") + "@c.us";
+    const response = await fetch(`${base.replace(/\/$/, "")}/api/sessions/${encodeURIComponent(sessionId)}/messages/send-text`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...(apiKey ? { "X-Api-Key": apiKey, api_key: apiKey } : {}),
       },
       body: JSON.stringify({
-        to: message.to.replace(/^\+/, ""),
-        content: message.body,
+        chatId,
+        text: message.body,
         attachments: message.attachments ?? [],
       }),
     });
