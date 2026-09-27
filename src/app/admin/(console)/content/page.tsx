@@ -2,23 +2,49 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Image from "next/image";
-import { Eye, Newspaper, Send, UserPlus } from "lucide-react";
-import { deleteMinisterAction, saveMinisterAction, saveNewsletterAction } from "@/actions/admin";
+import { Eye, FileText, HelpCircle, Newspaper, Send, UserPlus } from "lucide-react";
+import {
+  deleteArticleAction,
+  deleteFaqAction,
+  deleteMinisterAction,
+  saveArticleAction,
+  saveFaqAction,
+  saveMinisterAction,
+  saveNewsletterAction,
+} from "@/actions/admin";
 import { Button } from "@/components/ui/button";
-import { Field, TextArea, TextInput } from "@/components/ui/field";
+import { Field, SelectInput, TextArea, TextInput } from "@/components/ui/field";
 import { DataTable, type DataTableColumn } from "@/components/admin/data-table";
 import { Drawer } from "@/components/admin/drawer";
 import { PageHeader } from "@/components/admin/page-header";
 import { useAdminData } from "@/components/admin/admin-data";
 import { useEdition } from "@/components/admin/edition-context";
-import { articles } from "@/data/articles";
 import { galleryAlbums } from "@/data/content";
-import { faqs } from "@/data/faqs";
 import { SITE } from "@/data/site";
 import { formatDateTime } from "@/lib/utils";
 import type { Article, FaqItem, GalleryAlbum, Minister, Newsletter, NewsletterSubscriber } from "@/types";
 
 const TABS = ["Newsletters", "Articles", "Ministers", "FAQ", "Gallery", "Reusable"] as const;
+
+const FAQ_CATEGORIES = [
+  { value: "general", label: "General" },
+  { value: "venue", label: "Venue" },
+  { value: "time", label: "Time" },
+  { value: "entry", label: "Entry" },
+  { value: "what_to_bring", label: "What to Bring" },
+  { value: "children", label: "Children" },
+  { value: "accessibility", label: "Accessibility" },
+  { value: "parking", label: "Parking" },
+  { value: "contact", label: "Contact" },
+];
+
+const ARTICLE_CATEGORIES = [
+  { value: "Worship", label: "Worship" },
+  { value: "Gathering", label: "Gathering" },
+  { value: "Service", label: "Service" },
+  { value: "Communication", label: "Communication" },
+  { value: "General", label: "General" },
+];
 
 const emptyNewsletter = (): Partial<Newsletter> => ({
   title: "",
@@ -41,11 +67,40 @@ const emptyMinister = (editionId: string, order: number): Minister => ({
   order,
 });
 
+const emptyArticle = (): Article => ({
+  id: "",
+  slug: "",
+  title: "",
+  excerpt: "",
+  body: [],
+  coverImageSrc: "",
+  coverImageAlt: "",
+  author: "Abraham Oyo-Ita",
+  authorRole: "Communications lead",
+  category: "Worship",
+  tags: ["worship", "gathering"],
+  status: "published",
+  publishedAt: new Date().toISOString(),
+  seoTitle: "",
+  seoDescription: "",
+});
+
+const emptyFaq = (editionId: string, order: number): FaqItem => ({
+  id: "",
+  editionId,
+  category: "general" as FaqItem["category"],
+  question: "",
+  answer: "",
+  order,
+});
+
 export default function AdminContentPage() {
   const { edition } = useEdition();
-  const { newsletters, newsletterSubscribers, ministers, refresh } = useAdminData();
+  const { newsletters, newsletterSubscribers, ministers, articles, faqs, refresh } = useAdminData();
   const [tab, setTab] = useState<(typeof TABS)[number]>("Newsletters");
   const [article, setArticle] = useState<Article | null>(null);
+  const [articleImage, setArticleImage] = useState<File | null>(null);
+  const [articleBodyText, setArticleBodyText] = useState("");
   const [minister, setMinister] = useState<Minister | null>(null);
   const [ministerImage, setMinisterImage] = useState<File | null>(null);
   const [faq, setFaq] = useState<FaqItem | null>(null);
@@ -63,7 +118,16 @@ export default function AdminContentPage() {
         header: "Title",
         sortValue: (row) => row.title,
         render: (row) => (
-          <button type="button" className="text-left font-semibold" onClick={() => setArticle(row)}>
+          <button
+            type="button"
+            className="text-left font-semibold hover:underline"
+            onClick={() => {
+              setErrors({});
+              setArticleImage(null);
+              setArticle(row);
+              setArticleBodyText(Array.isArray(row.body) ? row.body.join("\n\n") : String(row.body ?? ""));
+            }}
+          >
             {row.title}
           </button>
         ),
@@ -74,7 +138,7 @@ export default function AdminContentPage() {
         key: "published",
         header: "Published",
         sortValue: (row) => row.publishedAt,
-        render: (row) => formatDateTime(row.publishedAt),
+        render: (row) => (row.publishedAt ? formatDateTime(row.publishedAt) : "Draft"),
       },
     ],
     [],
@@ -110,12 +174,20 @@ export default function AdminContentPage() {
       header: "Question",
       sortValue: (row) => row.question,
       render: (row) => (
-        <button type="button" className="text-left font-semibold" onClick={() => setFaq(row)}>
+        <button
+          type="button"
+          className="text-left font-semibold hover:underline"
+          onClick={() => {
+            setErrors({});
+            setFaq(row);
+          }}
+        >
           {row.question}
         </button>
       ),
     },
     { key: "category", header: "Category", render: (row) => row.category.replaceAll("_", " ") },
+    { key: "order", header: "Order", sortValue: (row) => row.order, render: (row) => row.order },
   ];
 
   const albumCols: DataTableColumn<GalleryAlbum>[] = [
@@ -246,30 +318,168 @@ export default function AdminContentPage() {
     });
   };
 
+  const saveArticle = () => {
+    if (!article) return;
+    setErrors({});
+    setSaved(null);
+    const formData = new FormData();
+    if (article.id) formData.set("id", article.id);
+    formData.set("slug", article.slug);
+    formData.set("title", article.title);
+    formData.set("excerpt", article.excerpt);
+    formData.set("body", articleBodyText);
+    formData.set("author", article.author);
+    formData.set("authorRole", article.authorRole);
+    formData.set("category", article.category);
+    formData.set("tags", Array.isArray(article.tags) ? article.tags.join(",") : "");
+    formData.set("status", article.status);
+    formData.set("publishedAt", article.publishedAt || new Date().toISOString());
+    formData.set("seoTitle", article.seoTitle);
+    formData.set("seoDescription", article.seoDescription);
+    formData.set("coverImageSrc", article.coverImageSrc);
+    formData.set("coverImageAlt", article.coverImageAlt);
+    if (articleImage) formData.set("image", articleImage);
+
+    startTransition(async () => {
+      const result = await saveArticleAction(formData);
+      if (result.status === "success") {
+        setSaved(
+          result.data.status === "published"
+            ? "Article saved and published to Insights."
+            : "Article saved as draft.",
+        );
+        setArticle(null);
+        setArticleImage(null);
+        setArticleBodyText("");
+        await refresh();
+        return;
+      }
+      if ("errors" in result && Array.isArray(result.errors)) {
+        setErrors(Object.fromEntries(result.errors.map((error) => [error.field, error.message])));
+        return;
+      }
+      setSaved(result.message ?? "Article could not be saved.");
+    });
+  };
+
+  const deleteArticle = (id: string) => {
+    if (!id) return;
+    setErrors({});
+    setSaved(null);
+    startTransition(async () => {
+      const result = await deleteArticleAction(id);
+      if (result.status === "success") {
+        setSaved("Article deleted.");
+        setArticle(null);
+        setArticleImage(null);
+        setArticleBodyText("");
+        await refresh();
+      } else {
+        setSaved(result.message ?? "Could not delete article.");
+      }
+    });
+  };
+
+  const saveFaq = () => {
+    if (!faq) return;
+    setErrors({});
+    setSaved(null);
+    const formData = new FormData();
+    if (faq.id) formData.set("id", faq.id);
+    if (faq.editionId) formData.set("editionId", faq.editionId);
+    formData.set("category", faq.category);
+    formData.set("question", faq.question);
+    formData.set("answer", faq.answer);
+    formData.set("order", String(faq.order));
+
+    startTransition(async () => {
+      const result = await saveFaqAction(formData);
+      if (result.status === "success") {
+        setSaved("FAQ saved.");
+        setFaq(null);
+        await refresh();
+        return;
+      }
+      if ("errors" in result && Array.isArray(result.errors)) {
+        setErrors(Object.fromEntries(result.errors.map((error) => [error.field, error.message])));
+        return;
+      }
+      setSaved(result.message ?? "FAQ could not be saved.");
+    });
+  };
+
+  const deleteFaq = (id: string) => {
+    if (!id) return;
+    setErrors({});
+    setSaved(null);
+    startTransition(async () => {
+      const result = await deleteFaqAction(id);
+      if (result.status === "success") {
+        setSaved("FAQ deleted.");
+        setFaq(null);
+        await refresh();
+      } else {
+        setSaved(result.message ?? "Could not delete FAQ.");
+      }
+    });
+  };
+
   return (
     <div className="grid gap-6">
       <PageHeader
         title="Content"
         description="Newsletters, public copy, ministers, FAQ and gallery pointers."
-        actions={tab === "Ministers" ? (
-          <Button
-            type="button"
-            className="bg-red text-white hover:bg-red-deep"
-            onClick={() => {
-              setErrors({});
-              setMinisterImage(null);
-              setMinister(emptyMinister(edition.id, ministers.length + 1));
-            }}
-          >
-            <UserPlus className="mr-2 h-4 w-4" aria-hidden="true" />
-            New minister
-          </Button>
-        ) : (
-          <Button type="button" className="bg-red text-white hover:bg-red-deep" onClick={() => setNewsletter(emptyNewsletter())}>
-            <Newspaper className="mr-2 h-4 w-4" aria-hidden="true" />
-            New newsletter
-          </Button>
-        )}
+        actions={
+          tab === "Ministers" ? (
+            <Button
+              type="button"
+              className="bg-red text-white hover:bg-red-deep"
+              onClick={() => {
+                setErrors({});
+                setMinisterImage(null);
+                setMinister(emptyMinister(edition.id, ministers.length + 1));
+              }}
+            >
+              <UserPlus className="mr-2 h-4 w-4" aria-hidden="true" />
+              New minister
+            </Button>
+          ) : tab === "Articles" ? (
+            <Button
+              type="button"
+              className="bg-red text-white hover:bg-red-deep"
+              onClick={() => {
+                setErrors({});
+                setArticleImage(null);
+                setArticle(emptyArticle());
+                setArticleBodyText("");
+              }}
+            >
+              <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+              New article
+            </Button>
+          ) : tab === "FAQ" ? (
+            <Button
+              type="button"
+              className="bg-red text-white hover:bg-red-deep"
+              onClick={() => {
+                setErrors({});
+                setFaq(emptyFaq(edition.id, faqs.length + 1));
+              }}
+            >
+              <HelpCircle className="mr-2 h-4 w-4" aria-hidden="true" />
+              New FAQ
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              className="bg-red text-white hover:bg-red-deep"
+              onClick={() => setNewsletter(emptyNewsletter())}
+            >
+              <Newspaper className="mr-2 h-4 w-4" aria-hidden="true" />
+              New newsletter
+            </Button>
+          )
+        }
       />
       {saved ? (
         <p className="border border-border bg-white px-4 py-3 text-sm" role="status">
@@ -410,44 +620,168 @@ export default function AdminContentPage() {
         ) : null}
       </Drawer>
 
+      {/* Article Drawer */}
       <Drawer
         open={Boolean(article)}
-        onClose={() => setArticle(null)}
-        title={article?.title ?? "Article"}
-        footer={
-          <Button
-            type="button"
-            className="bg-ink text-white hover:bg-ink/90"
-            onClick={() => {
-              setSaved("Article saved (mock).");
-              setArticle(null);
-            }}
-          >
-            Save
-          </Button>
-        }
+        onClose={() => {
+          setArticle(null);
+          setArticleImage(null);
+          setArticleBodyText("");
+        }}
+        title={article?.id ? "Edit article" : "New article"}
         wide
       >
         {article ? (
           <div className="grid gap-4">
-            <Field id="a-title" label="Title">
+            <Field id="a-title" label="Title" error={errors.title}>
               <TextInput
                 id="a-title"
                 value={article.title}
+                error={errors.title}
                 onChange={(event) => setArticle({ ...article, title: event.target.value })}
               />
             </Field>
-            <Field id="a-excerpt" label="Excerpt">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field id="a-slug" label="URL Slug" hint="Leave blank to auto-generate from title.">
+                <TextInput
+                  id="a-slug"
+                  value={article.slug}
+                  placeholder="e.g. why-we-gather"
+                  onChange={(event) => setArticle({ ...article, slug: event.target.value })}
+                />
+              </Field>
+              <Field id="a-category" label="Category">
+                <SelectInput
+                  id="a-category"
+                  value={article.category}
+                  options={ARTICLE_CATEGORIES}
+                  onValueChange={(val) => setArticle({ ...article, category: val })}
+                />
+              </Field>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field id="a-author" label="Author">
+                <TextInput
+                  id="a-author"
+                  value={article.author}
+                  onChange={(event) => setArticle({ ...article, author: event.target.value })}
+                />
+              </Field>
+              <Field id="a-role" label="Author role">
+                <TextInput
+                  id="a-role"
+                  value={article.authorRole}
+                  onChange={(event) => setArticle({ ...article, authorRole: event.target.value })}
+                />
+              </Field>
+            </div>
+            <Field id="a-excerpt" label="Excerpt" hint="One or two sentences summarizing the article.">
               <TextArea
                 id="a-excerpt"
                 value={article.excerpt}
+                className="min-h-20"
                 onChange={(event) => setArticle({ ...article, excerpt: event.target.value })}
               />
             </Field>
+            <Field id="a-body" label="Article Body" hint="Separate paragraphs with a blank line.">
+              <TextArea
+                id="a-body"
+                className="min-h-56 font-mono text-sm leading-relaxed"
+                value={articleBodyText}
+                onChange={(event) => setArticleBodyText(event.target.value)}
+              />
+            </Field>
+            {article.coverImageSrc ? (
+              <div className="relative aspect-[16/10] w-full max-w-sm overflow-hidden rounded-md border border-border bg-paper">
+                <Image
+                  src={article.coverImageSrc}
+                  alt={article.coverImageAlt || article.title}
+                  fill
+                  sizes="384px"
+                  className="object-cover"
+                />
+              </div>
+            ) : null}
+            <Field
+              id="a-image"
+              label="Cover Image"
+              hint={articleImage ? `Selected: ${articleImage.name}` : "Upload JPG, PNG, or WebP. Up to 5 MB."}
+              error={errors.image}
+            >
+              <input
+                id="a-image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                aria-invalid={Boolean(errors.image)}
+                aria-describedby={errors.image ? "a-image-error" : "a-image-hint"}
+                className="w-full rounded-md border border-border bg-white px-3 py-3 text-sm text-ink file:mr-3 file:rounded-sm file:border-0 file:bg-paper file:px-3 file:py-2 file:font-semibold"
+                onChange={(event) => setArticleImage(event.target.files?.[0] ?? null)}
+              />
+            </Field>
+            <Field id="a-alt" label="Image Alt Description">
+              <TextInput
+                id="a-alt"
+                value={article.coverImageAlt}
+                placeholder="A description for screen readers"
+                onChange={(event) => setArticle({ ...article, coverImageAlt: event.target.value })}
+              />
+            </Field>
+            <Field id="a-tags" label="Tags" hint="Comma-separated (e.g. worship, wonder, gathering)">
+              <TextInput
+                id="a-tags"
+                value={Array.isArray(article.tags) ? article.tags.join(", ") : ""}
+                onChange={(event) =>
+                  setArticle({
+                    ...article,
+                    tags: event.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                  })
+                }
+              />
+            </Field>
+            <label className="flex items-start gap-3 rounded-md border border-border bg-white p-4 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={article.status === "published"}
+                onChange={(event) =>
+                  setArticle({
+                    ...article,
+                    status: event.target.checked ? "published" : "draft",
+                  })
+                }
+                className="mt-0.5 h-4 w-4 accent-red"
+              />
+              <span>
+                <span className="block font-semibold">Published on Insights</span>
+                <span className="mt-1 block text-muted">When checked, the article is publicly visible to all visitors.</span>
+              </span>
+            </label>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+              {article.id ? (
+                <Button
+                  type="button"
+                  variant="outlineDark"
+                  disabled={isPending}
+                  onClick={() => deleteArticle(article.id)}
+                  className="text-red border-red/30 hover:bg-red/10"
+                >
+                  Delete article
+                </Button>
+              ) : <div />}
+              <Button
+                type="button"
+                className="bg-ink text-white hover:bg-ink/90"
+                disabled={isPending}
+                onClick={saveArticle}
+              >
+                {isPending ? "Saving..." : "Save article"}
+              </Button>
+            </div>
           </div>
         ) : null}
       </Drawer>
 
+      {/* Minister Drawer */}
       <Drawer
         open={Boolean(minister)}
         onClose={() => {
@@ -569,40 +903,78 @@ export default function AdminContentPage() {
                 disabled={isPending}
                 onClick={saveMinister}
               >
-                {isPending ? "Saving" : "Save minister"}
+                {isPending ? "Saving..." : "Save minister"}
               </Button>
             </div>
           </div>
         ) : null}
       </Drawer>
 
-      <Drawer open={Boolean(faq)} onClose={() => setFaq(null)} title="FAQ" wide>
+      {/* FAQ Drawer */}
+      <Drawer
+        open={Boolean(faq)}
+        onClose={() => setFaq(null)}
+        title={faq?.id ? "Edit FAQ" : "New FAQ"}
+        wide
+      >
         {faq ? (
           <div className="grid gap-4">
-            <Field id="f-q" label="Question">
+            <Field id="f-category" label="Category">
+              <SelectInput
+                id="f-category"
+                value={faq.category}
+                options={FAQ_CATEGORIES}
+                onValueChange={(val) => setFaq({ ...faq, category: val as FaqItem["category"] })}
+              />
+            </Field>
+            <Field id="f-q" label="Question" error={errors.question}>
               <TextInput
                 id="f-q"
                 value={faq.question}
+                error={errors.question}
                 onChange={(event) => setFaq({ ...faq, question: event.target.value })}
               />
             </Field>
-            <Field id="f-a" label="Answer">
+            <Field id="f-a" label="Answer" error={errors.answer}>
               <TextArea
                 id="f-a"
+                className="min-h-36"
                 value={faq.answer}
+                error={errors.answer}
                 onChange={(event) => setFaq({ ...faq, answer: event.target.value })}
               />
             </Field>
-            <Button
-              type="button"
-              className="bg-ink text-white hover:bg-ink/90"
-              onClick={() => {
-                setSaved("FAQ saved (mock).");
-                setFaq(null);
-              }}
-            >
-              Save
-            </Button>
+            <Field id="f-order" label="Display order">
+              <TextInput
+                id="f-order"
+                type="number"
+                min={1}
+                max={100}
+                value={faq.order}
+                onChange={(event) => setFaq({ ...faq, order: Number(event.target.value) })}
+              />
+            </Field>
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+              {faq.id ? (
+                <Button
+                  type="button"
+                  variant="outlineDark"
+                  disabled={isPending}
+                  onClick={() => deleteFaq(faq.id)}
+                  className="text-red border-red/30 hover:bg-red/10"
+                >
+                  Delete FAQ
+                </Button>
+              ) : <div />}
+              <Button
+                type="button"
+                className="bg-ink text-white hover:bg-ink/90"
+                disabled={isPending}
+                onClick={saveFaq}
+              >
+                {isPending ? "Saving..." : "Save FAQ"}
+              </Button>
+            </div>
           </div>
         ) : null}
       </Drawer>

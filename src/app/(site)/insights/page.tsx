@@ -3,8 +3,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { PageIntro, PageShell } from "@/components/site/page-shell";
 import { InsightsSearchForm } from "@/components/insights/search-form";
-import { articleCategories, getPublishedArticles } from "@/data/articles";
+import { articleCategories } from "@/data/articles";
+import { fetchPublishedArticles } from "@/actions/public";
 import { cn, paginate } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 6;
 
@@ -29,7 +32,7 @@ export default async function InsightsPage({
   const query = firstParam(params.q).trim();
   const requestedPage = Number(firstParam(params.page)) || 1;
 
-  const all = getPublishedArticles();
+  const all = await fetchPublishedArticles();
   const filtered = all.filter((article) => {
     const inCategory = category === "All" || article.category === category;
     if (!inCategory) return false;

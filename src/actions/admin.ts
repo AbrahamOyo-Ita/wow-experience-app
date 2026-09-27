@@ -14,6 +14,7 @@ import { mapMinister } from "@/lib/ministers";
 import type { AttendanceInput, MockSubmitResult } from "@/services/contracts";
 import type {
   AdminUser,
+  Article,
   AttendanceRecord,
   AuditLog,
   AutomationRule,
@@ -21,6 +22,7 @@ import type {
   Contact,
   ContactConsent,
   EventEdition,
+  FaqItem,
   MessageTemplate,
   Minister,
   Newsletter,
@@ -46,6 +48,8 @@ import {
 } from "@/data/admin";
 import { editions as mockEditions } from "@/data/editions";
 import { ministers as mockMinisters } from "@/data/ministers";
+import { articles as mockArticles } from "@/data/articles";
+import { faqs as mockFaqs } from "@/data/faqs";
 
 export type AdminBundle = {
   profile: AdminUser | null;
@@ -58,6 +62,8 @@ export type AdminBundle = {
   newsletters: Newsletter[];
   newsletterSubscribers: NewsletterSubscriber[];
   ministers: Minister[];
+  articles: Article[];
+  faqs: FaqItem[];
   templates: MessageTemplate[];
   automations: AutomationRule[];
   auditLogs: AuditLog[];
@@ -144,6 +150,42 @@ function mapContact(row: Record<string, unknown>): Contact {
   };
 }
 
+function mapArticle(row: Record<string, unknown>): Article {
+  return {
+    id: String(row.id),
+    slug: String(row.slug),
+    title: String(row.title),
+    excerpt: String(row.excerpt ?? ""),
+    body: Array.isArray(row.body) ? (row.body as string[]) : [],
+    coverImageSrc: String(row.cover_image_src ?? ""),
+    coverImageAlt: String(row.cover_image_alt ?? ""),
+    author: String(row.author ?? ""),
+    authorRole: String(row.author_role ?? ""),
+    category: String(row.category ?? "General"),
+    tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
+    status: (row.status as Article["status"]) ?? "draft",
+    publishedAt: String(row.published_at ?? row.created_at ?? ""),
+    seoTitle: String(row.seo_title ?? ""),
+    seoDescription: String(row.seo_description ?? ""),
+  };
+}
+
+function mapFaq(row: Record<string, unknown>): FaqItem {
+  const nested = row.event_editions as Record<string, unknown> | null;
+  return {
+    id: String(row.id),
+    editionId: nested?.legacy_key
+      ? String(nested.legacy_key)
+      : row.edition_id
+      ? String(row.edition_id)
+      : null,
+    category: (row.category as FaqItem["category"]) ?? "general",
+    question: String(row.question),
+    answer: String(row.answer),
+    order: Number(row.sort_order ?? 1),
+  };
+}
+
 function emptyBundle(error?: string): AdminBundle {
   return {
     profile: null,
@@ -156,6 +198,8 @@ function emptyBundle(error?: string): AdminBundle {
     newsletters: [],
     newsletterSubscribers: [],
     ministers: [],
+    articles: [],
+    faqs: [],
     templates: [],
     automations: [],
     auditLogs: [],
@@ -186,6 +230,8 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
       newsletters: [],
       newsletterSubscribers: [],
       ministers: mockMinisters,
+      articles: mockArticles,
+      faqs: mockFaqs,
       templates: mockTemplates,
       automations: mockAutomations,
       auditLogs: mockAuditLogs,
@@ -215,6 +261,8 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
     profilesRes,
     allRolesRes,
     ministersRes,
+    articlesRes,
+    faqsRes,
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
     supabase.from("profile_roles").select("role").eq("profile_id", userId),
@@ -234,6 +282,8 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
     supabase.from("profiles").select("*").order("created_at"),
     supabase.from("profile_roles").select("profile_id, role"),
     supabase.from("ministers").select("*, event_editions(legacy_key)").order("sort_order"),
+    supabase.from("articles").select("*").order("created_at", { ascending: false }),
+    supabase.from("faqs").select("*, event_editions(legacy_key)").order("sort_order", { ascending: true }),
   ]);
 
   const firstError =
@@ -372,6 +422,12 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
       unsubscribedAt: row.unsubscribed_at ? String(row.unsubscribed_at) : null,
     })),
     ministers: ((ministersRes.data as Record<string, unknown>[] | null) ?? []).map(mapMinister),
+    articles: articlesRes.data && articlesRes.data.length > 0
+      ? (articlesRes.data as Record<string, unknown>[]).map(mapArticle)
+      : mockArticles,
+    faqs: faqsRes.data && faqsRes.data.length > 0
+      ? (faqsRes.data as Record<string, unknown>[]).map(mapFaq)
+      : mockFaqs,
     templates: ((templatesRes.data as Record<string, unknown>[] | null) ?? []).map((row) => ({
       id: String(row.id),
       eventId: row.edition_id ? (editionKey.get(String(row.edition_id)) ?? String(row.edition_id)) : null,
@@ -993,6 +1049,283 @@ export async function unpublishFlyerTemplateAction() {
 
   revalidatePath("/flyer");
   revalidatePath("/admin/flyer");
+
+  return { status: "success" as const };
+}
+
+export async function saveArticleAction(formData: FormData) {
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub as string | undefined;
+  if (!userId) {
+    return { status: "error" as const, message: "Sign in to manage articles." };
+  }
+
+  const { data: roles } = await supabase.from("profile_roles").select("role").eq("profile_id", userId);
+  if (!roles?.length) {
+    return { status: "error" as const, message: "You do not have permission to manage articles." };
+  }
+
+  const idInput = String(formData.get("id") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  if (!title) {
+    return { status: "validation" as const, errors: [{ field: "title", message: "Enter an article title." }] };
+  }
+
+  let slug = String(formData.get("slug") ?? "").trim();
+  if (!slug) {
+    slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "");
+  }
+
+  const excerpt = String(formData.get("excerpt") ?? "").trim();
+  const bodyRaw = String(formData.get("body") ?? "");
+  const body = bodyRaw
+    .split(/\n\s*\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const author = String(formData.get("author") ?? "Abraham Oyo-Ita").trim() || "Abraham Oyo-Ita";
+  const authorRole = String(formData.get("authorRole") ?? "Communications lead").trim();
+  const category = String(formData.get("category") ?? "General").trim() || "General";
+  const tagsRaw = String(formData.get("tags") ?? "");
+  const tags = tagsRaw
+    .split(",")
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
+  const status = (String(formData.get("status") ?? "published").trim() as Article["status"]) || "published";
+  const publishedAt = String(formData.get("publishedAt") ?? "").trim() || new Date().toISOString();
+  const seoTitle = String(formData.get("seoTitle") ?? "").trim() || `${title} | Wonders of Worship Experience`;
+  const seoDescription = String(formData.get("seoDescription") ?? "").trim() || excerpt;
+  const coverImageAlt = String(formData.get("coverImageAlt") ?? "").trim() || title;
+
+  let coverImageSrc = String(formData.get("coverImageSrc") ?? "").trim();
+  const image = formData.get("image");
+
+  let uploadedPath: string | null = null;
+  if (image && typeof image !== "string" && image.size > 0) {
+    const allowedTypes = new Map([
+      ["image/jpeg", "jpg"],
+      ["image/png", "png"],
+      ["image/webp", "webp"],
+    ]);
+    const extension = allowedTypes.get(image.type);
+    if (!extension) {
+      return { status: "validation" as const, errors: [{ field: "image", message: "Upload a JPG, PNG, or WebP cover image." }] };
+    }
+    if (image.size > 5 * 1024 * 1024) {
+      return { status: "validation" as const, errors: [{ field: "image", message: "Cover image must be 5 MB or smaller." }] };
+    }
+
+    uploadedPath = `${crypto.randomUUID()}.${extension}`;
+    const { error: uploadError } = await supabase.storage
+      .from("article-covers")
+      .upload(uploadedPath, await image.arrayBuffer(), {
+        contentType: image.type,
+        cacheControl: "31536000",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      return { status: "error" as const, message: uploadError.message };
+    }
+    coverImageSrc = supabase.storage.from("article-covers").getPublicUrl(uploadedPath).data.publicUrl;
+  }
+
+  if (!coverImageSrc) {
+    coverImageSrc = "/images/insight-posture.jpg";
+  }
+
+  const id = idInput || `art-${crypto.randomUUID()}`;
+  const row = {
+    id,
+    slug,
+    title,
+    excerpt,
+    body,
+    cover_image_src: coverImageSrc,
+    cover_image_alt: coverImageAlt,
+    author,
+    author_role: authorRole,
+    category,
+    tags,
+    status,
+    published_at: publishedAt,
+    seo_title: seoTitle,
+    seo_description: seoDescription,
+    updated_at: new Date().toISOString(),
+  };
+
+  const query = idInput
+    ? supabase.from("articles").update(row).eq("id", idInput)
+    : supabase.from("articles").insert(row);
+
+  const { data, error } = await query.select().maybeSingle();
+  if (error || !data) {
+    if (uploadedPath) {
+      await supabase.storage.from("article-covers").remove([uploadedPath]);
+    }
+    return { status: "error" as const, message: error?.message ?? "Could not save article." };
+  }
+
+  await supabase.from("audit_logs").insert({
+    actor_id: userId,
+    actor_name: "Admin",
+    action: idInput ? "Updated article" : "Created article",
+    entity_type: "article",
+    entity_id: id,
+    metadata_preview: `${title} (${status})`,
+  });
+
+  revalidatePath("/insights");
+  revalidatePath(`/insights/${slug}`);
+  revalidatePath("/admin/content");
+
+  return { status: "success" as const, data: mapArticle(data as Record<string, unknown>) };
+}
+
+export async function deleteArticleAction(id: string) {
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub as string | undefined;
+  if (!userId) {
+    return { status: "error" as const, message: "Sign in to delete articles." };
+  }
+
+  const { data: roles } = await supabase.from("profile_roles").select("role").eq("profile_id", userId);
+  if (!roles?.length) {
+    return { status: "error" as const, message: "You do not have permission to delete articles." };
+  }
+
+  const { error } = await supabase.from("articles").delete().eq("id", id);
+  if (error) {
+    return { status: "error" as const, message: error.message };
+  }
+
+  await supabase.from("audit_logs").insert({
+    actor_id: userId,
+    actor_name: "Admin",
+    action: "Deleted article",
+    entity_type: "article",
+    entity_id: id,
+    metadata_preview: `Deleted article ${id}`,
+  });
+
+  revalidatePath("/insights");
+  revalidatePath("/admin/content");
+
+  return { status: "success" as const };
+}
+
+export async function saveFaqAction(formData: FormData) {
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub as string | undefined;
+  if (!userId) {
+    return { status: "error" as const, message: "Sign in to manage FAQs." };
+  }
+
+  const { data: roles } = await supabase.from("profile_roles").select("role").eq("profile_id", userId);
+  if (!roles?.length) {
+    return { status: "error" as const, message: "You do not have permission to manage FAQs." };
+  }
+
+  const idInput = String(formData.get("id") ?? "").trim();
+  const question = String(formData.get("question") ?? "").trim();
+  const answer = String(formData.get("answer") ?? "").trim();
+  const category = String(formData.get("category") ?? "general").trim();
+  const order = Number(formData.get("order") ?? 1);
+  const editionInput = String(formData.get("editionId") ?? "").trim();
+
+  if (!question) {
+    return { status: "validation" as const, errors: [{ field: "question", message: "Enter a question." }] };
+  }
+  if (!answer) {
+    return { status: "validation" as const, errors: [{ field: "answer", message: "Enter an answer." }] };
+  }
+
+  let editionUuid: string | null = null;
+  if (editionInput) {
+    const { data: edition } = await supabase
+      .from("event_editions")
+      .select("id")
+      .or(`id.eq.${editionInput},legacy_key.eq.${editionInput}`)
+      .maybeSingle();
+    editionUuid = edition?.id ?? null;
+  }
+
+  const id = idInput || `faq-${crypto.randomUUID()}`;
+  const row = {
+    id,
+    edition_id: editionUuid,
+    category,
+    question,
+    answer,
+    sort_order: order,
+    is_published: true,
+    updated_at: new Date().toISOString(),
+  };
+
+  const query = idInput
+    ? supabase.from("faqs").update(row).eq("id", idInput)
+    : supabase.from("faqs").insert(row);
+
+  const { data, error } = await query
+    .select("*, event_editions(legacy_key)")
+    .maybeSingle();
+
+  if (error || !data) {
+    return { status: "error" as const, message: error?.message ?? "Could not save FAQ." };
+  }
+
+  await supabase.from("audit_logs").insert({
+    actor_id: userId,
+    actor_name: "Admin",
+    action: idInput ? "Updated FAQ" : "Created FAQ",
+    entity_type: "faq",
+    entity_id: id,
+    metadata_preview: `${question.slice(0, 60)}...`,
+  });
+
+  revalidatePath("/admin/content");
+  revalidatePath("/admin/events");
+  revalidatePath("/volunteer");
+
+  return { status: "success" as const, data: mapFaq(data as Record<string, unknown>) };
+}
+
+export async function deleteFaqAction(id: string) {
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub as string | undefined;
+  if (!userId) {
+    return { status: "error" as const, message: "Sign in to delete FAQs." };
+  }
+
+  const { data: roles } = await supabase.from("profile_roles").select("role").eq("profile_id", userId);
+  if (!roles?.length) {
+    return { status: "error" as const, message: "You do not have permission to delete FAQs." };
+  }
+
+  const { error } = await supabase.from("faqs").delete().eq("id", id);
+  if (error) {
+    return { status: "error" as const, message: error.message };
+  }
+
+  await supabase.from("audit_logs").insert({
+    actor_id: userId,
+    actor_name: "Admin",
+    action: "Deleted FAQ",
+    entity_type: "faq",
+    entity_id: id,
+    metadata_preview: `Deleted FAQ ${id}`,
+  });
+
+  revalidatePath("/admin/content");
+  revalidatePath("/admin/events");
+  revalidatePath("/volunteer");
 
   return { status: "success" as const };
 }

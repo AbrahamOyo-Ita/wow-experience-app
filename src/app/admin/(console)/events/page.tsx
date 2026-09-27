@@ -18,7 +18,7 @@ import type { EventEdition } from "@/types";
 
 export default function AdminEventsPage() {
   const { setYear } = useEdition();
-  const { editions: liveEditions } = useAdminData();
+  const { editions: liveEditions, faqs: liveFaqs } = useAdminData();
   const [list, setList] = useState<EventEdition[]>(editions);
   const [editing, setEditing] = useState<EventEdition | null>(null);
   const [qr, setQr] = useState<EventEdition | null>(null);
@@ -52,8 +52,9 @@ export default function AdminEventsPage() {
   const ministerCount = (edition: EventEdition) =>
     ministers.filter((row) => row.editionId === edition.id).length || ministers.length;
 
+  const faqList = liveFaqs.length ? liveFaqs : faqs;
   const faqCount = (edition: EventEdition) =>
-    faqs.filter((row) => row.editionId === edition.id || row.editionId === null).length;
+    faqList.filter((row) => row.editionId === edition.id || row.editionId === null).length;
 
   return (
     <div className="grid gap-6">

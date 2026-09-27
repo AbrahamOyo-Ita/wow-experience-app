@@ -5,12 +5,11 @@ import { notFound } from "next/navigation";
 import { PageShell } from "@/components/site/page-shell";
 import { ShareButton } from "@/components/insights/share-button";
 import { OpenRsvpButton } from "@/components/rsvp/open-button";
-import { getArticleBySlug, getPublishedArticles, getRelatedArticles } from "@/data/articles";
+import { getPublishedArticles } from "@/data/articles";
+import { fetchArticleBySlug, fetchPublishedArticles } from "@/actions/public";
 import { formatShortDate } from "@/lib/utils";
 
-export function generateStaticParams() {
-  return getPublishedArticles().map((article) => ({ slug: article.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -18,7 +17,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
+  const article = await fetchArticleBySlug(slug);
   if (!article) return { title: "Insight" };
   return {
     title: article.seoTitle,
@@ -32,10 +31,15 @@ export default async function InsightArticlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
+  const article = await fetchArticleBySlug(slug);
   if (!article) notFound();
 
-  const related = getRelatedArticles(article.slug, 2);
+  const allArticles = await fetchPublishedArticles();
+  const relatedPool = allArticles.filter((item) => item.slug !== article.slug);
+  const matched = relatedPool.filter(
+    (item) => item.category === article.category || item.tags.some((t) => article.tags.includes(t)),
+  );
+  const related = matched.length > 0 ? matched.slice(0, 2) : relatedPool.slice(0, 2);
 
   return (
     <PageShell>

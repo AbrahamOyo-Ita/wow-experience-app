@@ -20,6 +20,8 @@ const empty: AdminBundle = {
   newsletters: [],
   newsletterSubscribers: [],
   ministers: [],
+  articles: [],
+  faqs: [],
   templates: [],
   automations: [],
   auditLogs: [],
