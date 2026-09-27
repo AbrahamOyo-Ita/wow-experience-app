@@ -546,6 +546,9 @@ export async function toggleAutomationAction(id: string, enabled: boolean) {
 
 export async function saveEditionAction(edition: EventEdition) {
   const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub as string | undefined;
+
   const { error } = await supabase
     .from("event_editions")
     .update({
@@ -573,6 +576,22 @@ export async function saveEditionAction(edition: EventEdition) {
     .or(`legacy_key.eq.${edition.id},slug.eq.${edition.slug},year.eq.${edition.year}`);
 
   if (error) return { status: "error" as const, message: error.message };
+
+  if (userId) {
+    await supabase.from("audit_logs").insert({
+      actor_id: userId,
+      actor_name: "Admin",
+      action: "Updated event edition",
+      entity_type: "event_edition",
+      entity_id: edition.id,
+      metadata_preview: `${edition.name} (${edition.status})`,
+    });
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin/events");
+  revalidatePath(`/attend/${edition.year}`);
+
   return { status: "success" as const, data: edition };
 }
 

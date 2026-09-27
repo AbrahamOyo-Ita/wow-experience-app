@@ -10,6 +10,7 @@ import { useEdition } from "@/components/admin/edition-context";
 import { useAdminData } from "@/components/admin/admin-data";
 import { consentSummary, inEdition, labelChannel } from "@/lib/admin";
 import { formatDateTime } from "@/lib/utils";
+import { writeAuditLog } from "@/actions/admin";
 import type { Channel, Contact } from "@/types";
 
 export default function AdminAudiencePage() {
@@ -53,8 +54,14 @@ export default function AdminAudiencePage() {
     a.download = `wow-audience-${edition.year}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    void writeAuditLog(
+      "Exported audience CSV",
+      "contact",
+      `edition-${edition.year}`,
+      `Downloaded ${rows.length} contact rows for ${edition.year}`,
+    );
     setBanner(
-      `Mock CSV downloaded (${rows.length} rows). In production this export would be audited before leaving the server.`,
+      `Audience CSV downloaded (${rows.length} rows). Action logged in security audit trail.`,
     );
   };
 

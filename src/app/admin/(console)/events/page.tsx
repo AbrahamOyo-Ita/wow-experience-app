@@ -18,7 +18,7 @@ import type { EventEdition } from "@/types";
 
 export default function AdminEventsPage() {
   const { setYear } = useEdition();
-  const { editions: liveEditions, faqs: liveFaqs } = useAdminData();
+  const { editions: liveEditions, faqs: liveFaqs, refresh } = useAdminData();
   const [list, setList] = useState<EventEdition[]>(editions);
   const [editing, setEditing] = useState<EventEdition | null>(null);
   const [qr, setQr] = useState<EventEdition | null>(null);
@@ -44,6 +44,7 @@ export default function AdminEventsPage() {
       });
       setBanner("Edition saved.");
       setEditing(null);
+      await refresh();
     } else if ("message" in result) {
       setBanner(result.message);
     }
@@ -146,7 +147,7 @@ export default function AdminEventsPage() {
             ? "Create edition"
             : "Edit edition"
         }
-        description="Mock save only. Dates stay in Africa/Lagos."
+        description="Configure dates, venue, and attendance details. Dates stay in Africa/Lagos."
         wide
         footer={
           <div className="flex justify-end gap-2">
