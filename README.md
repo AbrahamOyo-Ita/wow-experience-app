@@ -93,7 +93,7 @@ npm start
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes for admin repairs, cron, privileged reads | Server-only Supabase service role key |
 | `SUPER_ADMIN_EMAILS` | Yes for owner access | Comma-separated owner emails that should self-heal to `super_admin` |
 | `RESEND_API_KEY` | Yes for email | Resend API key |
-| `RESEND_FROM` | Yes for email | Sender address, currently `wowexperience7@gmail.com` |
+| `RESEND_FROM` | Yes for email | Verified sender, e.g. `WOW Experience <updates@wowexperience.com.ng>` |
 | `OPENWA_BASE_URL` | Optional | WhatsApp provider endpoint |
 | `OPENWA_API_KEY` | Optional | WhatsApp provider API key |
 | `APP_URL` | Yes for auth redirects | Public app URL (`https://wow-experience-app.vercel.app`) |
@@ -303,7 +303,7 @@ Required variables:
 
 ```env
 RESEND_API_KEY=...
-RESEND_FROM=wowexperience7@gmail.com
+RESEND_FROM=WOW Experience <updates@wowexperience.com.ng>
 ```
 
 Important Resend note: the sender address must be allowed by Resend. If `wowexperience7@gmail.com` is not verified or permitted by the Resend account/domain setup, the code can be correct while delivery still fails.
@@ -411,4 +411,3 @@ Check:
 - Applied migrations.
 - RLS policies.
 - Browser console and server logs.
-

@@ -95,7 +95,7 @@ export async function sendEmail(message: OutboundMessage): Promise<ProviderResul
     });
 
     if (error) {
-      const reason = error.message;
+      const reason = `${error.message} (sender: ${from})`;
       return { status: "failed", reason: reason.slice(0, 500), preview: JSON.stringify(error) };
     }
 
