@@ -364,6 +364,7 @@ export interface AdminUser {
   department?: string;
   phone?: string | null;
   status: "active" | "invited" | "disabled";
+  avatarUrl?: string | null;
   createdAt?: string;
   lastSignInAt?: string | null;
   inviteUrl?: string | null;

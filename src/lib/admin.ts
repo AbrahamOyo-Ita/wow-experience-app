@@ -138,7 +138,7 @@ export const ROLE_DEFINITIONS: Record<AdminRole, RoleDefinition> = {
     label: "Super Admin",
     tier: 1,
     tierLabel: "Tier 1 • Full Authority",
-    badgeClass: "bg-red-500/15 text-red-400 border-red-500/30",
+    badgeClass: "bg-rose-50 text-rose-700 border-rose-200 ring-1 ring-rose-500/10",
     description: "Executive system control. Can invite and manage team members, edit roles, access audit logs, manage database and configuration.",
     permissions: [
       "Manage team & RBAC roles",
@@ -154,7 +154,7 @@ export const ROLE_DEFINITIONS: Record<AdminRole, RoleDefinition> = {
     label: "Event Director",
     tier: 2,
     tierLabel: "Tier 2 • Operational Authority",
-    badgeClass: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+    badgeClass: "bg-purple-50 text-purple-700 border-purple-200 ring-1 ring-purple-500/10",
     description: "Operational leadership. Manages event editions, attendee registrations, workforce teams, and communications.",
     permissions: [
       "Invite staff (Tiers 3-5)",
@@ -169,7 +169,7 @@ export const ROLE_DEFINITIONS: Record<AdminRole, RoleDefinition> = {
     label: "Communications Lead",
     tier: 3,
     tierLabel: "Tier 3 • Public Outreach",
-    badgeClass: "bg-sky-500/15 text-sky-400 border-sky-500/30",
+    badgeClass: "bg-sky-50 text-sky-700 border-sky-200 ring-1 ring-sky-500/10",
     description: "Manages public communications, email/WhatsApp broadcasts, attendee newsletters, and message templates.",
     permissions: [
       "Create & schedule broadcast campaigns",
@@ -183,7 +183,7 @@ export const ROLE_DEFINITIONS: Record<AdminRole, RoleDefinition> = {
     label: "Content & Media Editor",
     tier: 3,
     tierLabel: "Tier 3 • Creative & Editorial",
-    badgeClass: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 ring-1 ring-emerald-500/10",
     description: "Responsible for editorial insights, church FAQs, flyer graphics generation, minister lineups, and gallery uploads.",
     permissions: [
       "Create & edit published articles / insights",
@@ -197,7 +197,7 @@ export const ROLE_DEFINITIONS: Record<AdminRole, RoleDefinition> = {
     label: "Workforce Coordinator",
     tier: 4,
     tierLabel: "Tier 4 • Department Coordination",
-    badgeClass: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    badgeClass: "bg-amber-50 text-amber-800 border-amber-200 ring-1 ring-amber-500/10",
     description: "Oversees workforce departments (Ushering, Sound & Media, Choir, Security, Protocol). Reviews applications and assigns roles.",
     permissions: [
       "Review volunteer applications",
@@ -211,7 +211,7 @@ export const ROLE_DEFINITIONS: Record<AdminRole, RoleDefinition> = {
     label: "Check-in Usher / Scanner",
     tier: 5,
     tierLabel: "Tier 5 • Sanctuary Field Access",
-    badgeClass: "bg-slate-500/15 text-slate-400 border-slate-500/30",
+    badgeClass: "bg-zinc-100 text-zinc-700 border-zinc-200 ring-1 ring-zinc-500/10",
     description: "Event day sanctuary check-in. Scans QR passes and checks in attendees at Sanctified Mount Zion Church.",
     permissions: [
       "QR code pass scanner access",

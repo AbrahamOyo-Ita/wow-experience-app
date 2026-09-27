@@ -5,8 +5,6 @@ import {
   Check,
   Copy,
   Mail,
-  MoreVertical,
-  Plus,
   RefreshCw,
   Search,
   Shield,
@@ -96,6 +94,12 @@ export default function AdminTeamPage() {
   };
 
   useEffect(() => {
+    if (initialAdminUsers && initialAdminUsers.length > 0) {
+      setMembers(initialAdminUsers);
+    }
+  }, [initialAdminUsers]);
+
+  useEffect(() => {
     void fetchTeam();
   }, []);
 
@@ -103,7 +107,12 @@ export default function AdminTeamPage() {
   const filtered = useMemo(() => {
     return members.filter((m) => {
       const q = search.trim().toLowerCase();
-      if (q && !m.name.toLowerCase().includes(q) && !m.email.toLowerCase().includes(q) && !(m.department ?? "").toLowerCase().includes(q)) {
+      if (
+        q &&
+        !m.name.toLowerCase().includes(q) &&
+        !m.email.toLowerCase().includes(q) &&
+        !(m.department ?? "").toLowerCase().includes(q)
+      ) {
         return false;
       }
       if (roleFilter !== "all" && m.role !== roleFilter) return false;
@@ -117,7 +126,12 @@ export default function AdminTeamPage() {
   const stats = useMemo(() => {
     const total = members.length;
     const superAdmins = members.filter((m) => m.role === "super_admin" || m.role === "event_admin").length;
-    const leads = members.filter((m) => m.role === "communications_manager" || m.role === "content_editor" || m.role === "workforce_coordinator").length;
+    const leads = members.filter(
+      (m) =>
+        m.role === "communications_manager" ||
+        m.role === "content_editor" ||
+        m.role === "workforce_coordinator",
+    ).length;
     const pending = members.filter((m) => m.status === "invited").length;
     return { total, superAdmins, leads, pending };
   }, [members]);
@@ -207,7 +221,7 @@ export default function AdminTeamPage() {
   };
 
   const handleResendInvite = async (member: AdminUser) => {
-    setActionFeedback({ id: member.id, message: "Sending fresh invitation...", type: "success" });
+    setActionFeedback({ id: member.id, message: "Sending invitation...", type: "success" });
     try {
       const res = await resendTeamInviteAction({ userId: member.id, email: member.email });
       if (res.status === "error") {
@@ -215,7 +229,7 @@ export default function AdminTeamPage() {
       } else {
         setActionFeedback({
           id: member.id,
-          message: "Invitation resent! Direct link updated.",
+          message: "Invitation resent! Link refreshed.",
           type: "success",
         });
       }
@@ -246,27 +260,27 @@ export default function AdminTeamPage() {
     <div className="space-y-6">
       {/* Top Header */}
       <PageHeader
-        title="Team & Role-Based Access Control (RBAC)"
+        title="Team & Role-Based Access Control"
         description="Manage leadership appointments, department assignments, granular access tiers, and active staff invitations."
         actions={
           <div className="flex items-center gap-2">
             <Button
-              variant="outline"
+              variant="outlineDark"
               size="sm"
               onClick={() => setRbacMatrixOpen(true)}
-              className="border-neutral-800 bg-neutral-900/60 text-xs text-neutral-300 hover:bg-neutral-800"
+              className="gap-1.5"
             >
-              <Shield className="mr-1.5 h-3.5 w-3.5 text-neutral-400" />
+              <Shield className="h-3.5 w-3.5 text-muted" />
               RBAC Matrix
             </Button>
             <Button
-              variant="outline"
+              variant="outlineDark"
               size="sm"
               onClick={fetchTeam}
               disabled={loading}
-              className="border-neutral-800 bg-neutral-900/60 text-xs text-neutral-300 hover:bg-neutral-800"
+              className="gap-1.5"
             >
-              <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
               Refresh
             </Button>
             <Button
@@ -276,63 +290,91 @@ export default function AdminTeamPage() {
                 setInviteError(null);
                 setInviteOpen(true);
               }}
-              className="bg-red-600 text-xs font-semibold text-white shadow-lg shadow-red-900/20 hover:bg-red-500"
+              className="gap-1.5 shadow-sm"
             >
-              <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+              <UserPlus className="h-3.5 w-3.5" />
               Invite Team Member
             </Button>
           </div>
         }
       />
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/40 p-4 backdrop-blur-sm">
-          <div className="flex items-center justify-between text-neutral-400">
-            <span className="text-xs font-medium uppercase tracking-wider">Total Workforce</span>
-            <Users className="h-4 w-4 text-neutral-400" />
+      {/* Metric Cards - Sleek Light SaaS Aesthetic */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        {/* Total Workforce */}
+        <div className="rounded-xl border border-border bg-white p-4 sm:p-5 shadow-xs transition-shadow hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+              Total Workforce
+            </span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-100 text-ink">
+              <Users className="h-4 w-4" />
+            </div>
           </div>
-          <div className="mt-2 text-2xl font-bold text-white">{stats.total}</div>
-          <p className="mt-1 text-[11px] text-neutral-400">Active accounts & staff</p>
+          <div className="mt-2 font-display text-2xl sm:text-3xl font-bold tabular-nums text-ink">
+            {stats.total}
+          </div>
+          <p className="mt-1 text-xs text-muted">Active accounts & staff</p>
         </div>
 
-        <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/40 p-4 backdrop-blur-sm">
-          <div className="flex items-center justify-between text-neutral-400">
-            <span className="text-xs font-medium uppercase tracking-wider">Executive Directorship</span>
-            <ShieldCheck className="h-4 w-4 text-red-400" />
+        {/* Executive Directorship */}
+        <div className="rounded-xl border border-border bg-white p-4 sm:p-5 shadow-xs transition-shadow hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+              Executive Directorship
+            </span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+              <ShieldCheck className="h-4 w-4" />
+            </div>
           </div>
-          <div className="mt-2 text-2xl font-bold text-red-400">{stats.superAdmins}</div>
-          <p className="mt-1 text-[11px] text-neutral-400">Super Admins & Event Directors</p>
+          <div className="mt-2 font-display text-2xl sm:text-3xl font-bold tabular-nums text-ink">
+            {stats.superAdmins}
+          </div>
+          <p className="mt-1 text-xs text-muted">Super Admins & Event Directors</p>
         </div>
 
-        <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/40 p-4 backdrop-blur-sm">
-          <div className="flex items-center justify-between text-neutral-400">
-            <span className="text-xs font-medium uppercase tracking-wider">Department Leads</span>
-            <UserCheck className="h-4 w-4 text-amber-400" />
+        {/* Department Leads */}
+        <div className="rounded-xl border border-border bg-white p-4 sm:p-5 shadow-xs transition-shadow hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+              Department Leads
+            </span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+              <UserCheck className="h-4 w-4" />
+            </div>
           </div>
-          <div className="mt-2 text-2xl font-bold text-amber-400">{stats.leads}</div>
-          <p className="mt-1 text-[11px] text-neutral-400">Comms, Content & Workforce</p>
+          <div className="mt-2 font-display text-2xl sm:text-3xl font-bold tabular-nums text-ink">
+            {stats.leads}
+          </div>
+          <p className="mt-1 text-xs text-muted">Comms, Content & Workforce</p>
         </div>
 
-        <div className="rounded-xl border border-neutral-800/80 bg-neutral-900/40 p-4 backdrop-blur-sm">
-          <div className="flex items-center justify-between text-neutral-400">
-            <span className="text-xs font-medium uppercase tracking-wider">Pending Invites</span>
-            <Mail className="h-4 w-4 text-sky-400" />
+        {/* Pending Invites */}
+        <div className="rounded-xl border border-border bg-white p-4 sm:p-5 shadow-xs transition-shadow hover:shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+              Pending Invites
+            </span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+              <Mail className="h-4 w-4" />
+            </div>
           </div>
-          <div className="mt-2 text-2xl font-bold text-sky-400">{stats.pending}</div>
-          <p className="mt-1 text-[11px] text-neutral-400">Awaiting password creation</p>
+          <div className="mt-2 font-display text-2xl sm:text-3xl font-bold tabular-nums text-ink">
+            {stats.pending}
+          </div>
+          <p className="mt-1 text-xs text-muted">Awaiting initial sign in</p>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
           <TextInput
             placeholder="Search by name, email, department..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 text-xs"
+            className="pl-9 text-xs bg-white"
           />
         </div>
 
@@ -340,7 +382,7 @@ export default function AdminTeamPage() {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="h-9 w-36 rounded-md border border-neutral-700 bg-neutral-900 px-3 text-xs text-neutral-200 focus:border-red-500 focus:outline-none"
+            className="h-9 rounded-lg border border-border bg-white px-3 text-xs text-ink shadow-2xs focus:border-red focus:outline-none"
           >
             <option value="all">All Roles</option>
             <option value="super_admin">Super Admin</option>
@@ -354,21 +396,34 @@ export default function AdminTeamPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-9 w-32 rounded-md border border-neutral-700 bg-neutral-900 px-3 text-xs text-neutral-200 focus:border-red-500 focus:outline-none"
+            className="h-9 rounded-lg border border-border bg-white px-3 text-xs text-ink shadow-2xs focus:border-red focus:outline-none"
           >
             <option value="all">All Status</option>
             <option value="active">Active</option>
             <option value="invited">Pending Invite</option>
             <option value="disabled">Suspended</option>
           </select>
+
+          <select
+            value={departmentFilter}
+            onChange={(e) => setDepartmentFilter(e.target.value)}
+            className="h-9 rounded-lg border border-border bg-white px-3 text-xs text-ink shadow-2xs focus:border-red focus:outline-none"
+          >
+            <option value="all">All Departments</option>
+            {DEPARTMENTS.map((dept) => (
+              <option key={dept} value={dept}>
+                {dept}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Team Roster Card */}
-      <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 overflow-hidden shadow-xl">
+      {/* Team Roster Card - Pristine SaaS Table */}
+      <div className="rounded-xl border border-border bg-white shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-neutral-800 bg-neutral-950/60 text-neutral-400 font-semibold uppercase tracking-wider">
+            <thead className="border-b border-border bg-neutral-50/80 text-[11px] font-semibold uppercase tracking-wider text-muted">
               <tr>
                 <th className="px-5 py-3.5">Team Member</th>
                 <th className="px-5 py-3.5">Department</th>
@@ -377,10 +432,10 @@ export default function AdminTeamPage() {
                 <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-800/60">
+            <tbody className="divide-y divide-border">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-neutral-400">
+                  <td colSpan={5} className="py-12 text-center text-muted">
                     <UserX className="mx-auto h-8 w-8 text-neutral-400 mb-2" />
                     No team members found matching your search criteria.
                   </td>
@@ -391,30 +446,38 @@ export default function AdminTeamPage() {
                   const isPrimaryAdmin = member.email.toLowerCase() === "oyoitaabraham@gmail.com";
 
                   return (
-                    <tr key={member.id} className="transition-colors hover:bg-neutral-800/30">
-                      {/* Member Info */}
+                    <tr key={member.id} className="transition-colors hover:bg-neutral-50/70">
+                      {/* Member Info with Avatar */}
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${roleDef.badgeClass}`}>
-                            {initials(member.name)}
+                          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-ink text-xs font-bold text-white shadow-xs">
+                            {member.avatarUrl ? (
+                              <img
+                                src={member.avatarUrl}
+                                alt={member.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span>{initials(member.name)}</span>
+                            )}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-white">{member.name}</span>
+                              <span className="font-semibold text-sm text-ink">{member.name}</span>
                               {isPrimaryAdmin && (
-                                <span className="rounded bg-red-950 px-1.5 py-0.5 text-[10px] font-bold text-red-400 border border-red-800/50">
+                                <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200 ring-1 ring-rose-500/10">
                                   Primary
                                 </span>
                               )}
                             </div>
-                            <span className="text-neutral-400 text-[11px] block">{member.email}</span>
+                            <span className="text-xs text-muted block mt-0.5">{member.email}</span>
                           </div>
                         </div>
                       </td>
 
                       {/* Department */}
                       <td className="px-5 py-4">
-                        <span className="inline-block rounded-md bg-neutral-800/80 px-2.5 py-1 text-[11px] font-medium text-neutral-200 border border-neutral-700/50">
+                        <span className="inline-flex items-center rounded-md bg-neutral-100/90 px-2.5 py-1 text-xs font-medium text-ink border border-neutral-200/80">
                           {member.department || "Executive Leadership"}
                         </span>
                       </td>
@@ -422,10 +485,12 @@ export default function AdminTeamPage() {
                       {/* Role & Tier */}
                       <td className="px-5 py-4">
                         <div>
-                          <span className={`inline-block rounded-md px-2.5 py-1 text-[11px] font-semibold border ${roleDef.badgeClass}`}>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${roleDef.badgeClass}`}
+                          >
                             {roleDef.label}
                           </span>
-                          <span className="block mt-1 text-[10px] text-neutral-400">
+                          <span className="block mt-1 text-[11px] text-muted font-medium">
                             {roleDef.tierLabel}
                           </span>
                         </div>
@@ -433,20 +498,22 @@ export default function AdminTeamPage() {
 
                       {/* Status */}
                       <td className="px-5 py-4">
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={`h-2 w-2 rounded-full ${
-                              member.status === "active"
-                                ? "bg-emerald-400"
-                                : member.status === "invited"
-                                ? "bg-amber-400 animate-pulse"
-                                : "bg-red-400"
-                            }`}
-                          />
-                          <span className="capitalize text-neutral-300 text-[11px]">
-                            {member.status === "invited" ? "Pending Invite" : member.status}
+                        {member.status === "active" ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 border border-emerald-200">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                            Active
                           </span>
-                        </div>
+                        ) : member.status === "invited" ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800 border border-amber-200">
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                            Pending Invite
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-medium text-rose-700 border border-rose-200">
+                            <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                            Suspended
+                          </span>
+                        )}
                       </td>
 
                       {/* Actions */}
@@ -458,17 +525,17 @@ export default function AdminTeamPage() {
                               size="sm"
                               onClick={() => handleResendInvite(member)}
                               title="Resend Invitation Email"
-                              className="h-8 px-2 text-neutral-300 hover:text-white hover:bg-neutral-800"
+                              className="h-8 px-2 text-muted hover:text-ink hover:bg-neutral-100"
                             >
                               <Mail className="h-3.5 w-3.5" />
                             </Button>
                           )}
 
                           <Button
-                            variant="outline"
+                            variant="outlineDark"
                             size="sm"
                             onClick={() => handleOpenEdit(member)}
-                            className="h-8 border-neutral-700/80 bg-neutral-800/50 text-[11px] text-neutral-200 hover:bg-neutral-700"
+                            className="h-8 text-xs font-medium"
                           >
                             Edit Role
                           </Button>
@@ -479,7 +546,7 @@ export default function AdminTeamPage() {
                               size="sm"
                               onClick={() => handleDeleteMember(member)}
                               title="Remove Team Member"
-                              className="h-8 px-2 text-red-400 hover:text-red-300 hover:bg-red-950/40"
+                              className="h-8 px-2 text-muted hover:text-red hover:bg-red/5"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -487,7 +554,11 @@ export default function AdminTeamPage() {
                         </div>
 
                         {actionFeedback?.id === member.id && (
-                          <div className={`mt-1 text-[10px] ${actionFeedback.type === "error" ? "text-red-400" : "text-emerald-400"}`}>
+                          <div
+                            className={`mt-1.5 text-xs font-medium ${
+                              actionFeedback.type === "error" ? "text-red" : "text-emerald-600"
+                            }`}
+                          >
                             {actionFeedback.message}
                           </div>
                         )}
@@ -512,40 +583,40 @@ export default function AdminTeamPage() {
       >
         <form onSubmit={handleInviteSubmit} className="space-y-5">
           {inviteSuccessLink ? (
-            <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-4 text-xs space-y-3">
-              <div className="flex items-center gap-2 text-emerald-400 font-semibold">
-                <Check className="h-4 w-4" />
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 text-xs space-y-3">
+              <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm">
+                <Check className="h-4 w-4 text-emerald-600" />
                 Invitation Generated & Delivered via Resend!
               </div>
-              <p className="text-neutral-300 text-[11px] leading-relaxed">
+              <p className="text-emerald-950 text-xs leading-relaxed">
                 The official designer invitation email has been sent to the recipient. You can also copy the direct single-click credential link below to share over WhatsApp or SMS:
               </p>
               <div className="flex items-center gap-2">
                 <TextInput
                   readOnly
                   value={inviteSuccessLink}
-                  className="bg-black/50 font-mono text-[11px] text-neutral-300"
+                  className="bg-white font-mono text-[11px] text-ink"
                 />
                 <Button
                   type="button"
+                  variant="outlineDark"
                   size="sm"
                   onClick={() => handleCopyLink(inviteSuccessLink)}
-                  className="shrink-0 bg-neutral-800 hover:bg-neutral-700 text-xs"
+                  className="shrink-0 text-xs"
                 >
-                  {copiedLink ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copiedLink ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
                 </Button>
               </div>
 
               <div className="pt-2">
                 <Button
                   type="button"
-                  variant="outline"
                   size="sm"
                   onClick={() => {
                     setInviteSuccessLink(null);
                     setInviteOpen(false);
                   }}
-                  className="w-full text-xs border-neutral-700"
+                  className="w-full text-xs"
                 >
                   Done
                 </Button>
@@ -554,13 +625,13 @@ export default function AdminTeamPage() {
           ) : (
             <>
               {inviteError && (
-                <div className="rounded-lg border border-red-500/40 bg-red-950/30 p-3 text-xs text-red-300">
+                <div className="rounded-lg border border-red/20 bg-rose-50 p-3 text-xs text-red font-medium">
                   {inviteError}
                 </div>
               )}
 
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
+                <label className="text-xs font-semibold text-ink block mb-1.5">
                   Full Legal or Ministry Name *
                 </label>
                 <TextInput
@@ -568,12 +639,12 @@ export default function AdminTeamPage() {
                   placeholder="e.g. Pastor Evelyn Isua-ikoh"
                   value={inviteName}
                   onChange={(e) => setInviteName(e.target.value)}
-                  className="text-xs"
+                  className="text-xs bg-white"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
+                <label className="text-xs font-semibold text-ink block mb-1.5">
                   Official Email Address *
                 </label>
                 <TextInput
@@ -582,18 +653,18 @@ export default function AdminTeamPage() {
                   placeholder="e.g. pastor.evelyn@wowexperience.com.ng"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
-                  className="text-xs"
+                  className="text-xs bg-white"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
+                <label className="text-xs font-semibold text-ink block mb-1.5">
                   Assigned Department *
                 </label>
                 <select
                   value={inviteDepartment}
                   onChange={(e) => setInviteDepartment(e.target.value)}
-                  className="h-9 w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 text-xs text-neutral-200 focus:border-red-500 focus:outline-none"
+                  className="h-10 w-full rounded-lg border border-border bg-white px-3 text-xs text-ink focus:border-red focus:outline-none"
                 >
                   {DEPARTMENTS.map((dept) => (
                     <option key={dept} value={dept}>
@@ -604,7 +675,7 @@ export default function AdminTeamPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-2">
+                <label className="text-xs font-semibold text-ink block mb-2">
                   Role-Based Access Control (RBAC) Tier *
                 </label>
                 <div className="space-y-2">
@@ -616,19 +687,19 @@ export default function AdminTeamPage() {
                       <div
                         key={r}
                         onClick={() => setInviteRole(r)}
-                        className={`cursor-pointer rounded-lg border p-3 transition-all ${
+                        className={`cursor-pointer rounded-xl border p-3.5 transition-all ${
                           isSelected
-                            ? "border-red-500 bg-red-950/20 shadow-md shadow-red-950/30"
-                            : "border-neutral-800 bg-neutral-900/40 hover:border-neutral-700"
+                            ? "border-red bg-rose-50/50 ring-1 ring-red/20 shadow-xs"
+                            : "border-border bg-white hover:border-neutral-400"
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-xs text-white">{def.label}</span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${def.badgeClass}`}>
+                          <span className="font-bold text-xs text-ink">{def.label}</span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${def.badgeClass}`}>
                             {def.tierLabel}
                           </span>
                         </div>
-                        <p className="mt-1 text-[11px] text-neutral-400 leading-snug">
+                        <p className="mt-1.5 text-xs text-muted leading-relaxed">
                           {def.description}
                         </p>
                       </div>
@@ -638,7 +709,7 @@ export default function AdminTeamPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
+                <label className="text-xs font-semibold text-ink block mb-1.5">
                   Personal Welcome Note (Optional)
                 </label>
                 <TextArea
@@ -646,7 +717,7 @@ export default function AdminTeamPage() {
                   placeholder="Add a consecrated word of blessing or specific instructions for this appointee..."
                   value={inviteNotes}
                   onChange={(e) => setInviteNotes(e.target.value)}
-                  className="text-xs"
+                  className="text-xs bg-white"
                 />
               </div>
 
@@ -654,7 +725,7 @@ export default function AdminTeamPage() {
                 <Button
                   type="submit"
                   disabled={inviting}
-                  className="w-full bg-red-600 hover:bg-red-500 text-xs font-semibold text-white py-2.5 shadow-lg shadow-red-900/30"
+                  className="w-full text-xs font-semibold py-2.5 shadow-sm"
                 >
                   {inviting ? "Issuing Official Appointment..." : "Dispatch Official Invitation & Link"}
                 </Button>
@@ -676,25 +747,29 @@ export default function AdminTeamPage() {
         {editingMember && (
           <form onSubmit={handleEditSubmit} className="space-y-5">
             {editError && (
-              <div className="rounded-lg border border-red-500/40 bg-red-950/30 p-3 text-xs text-red-300">
+              <div className="rounded-lg border border-red/20 bg-rose-50 p-3 text-xs text-red font-medium">
                 {editError}
               </div>
             )}
 
-            <div className="rounded-lg bg-neutral-900/80 border border-neutral-800 p-3 text-xs">
-              <span className="text-neutral-400 block text-[11px]">Selected Account</span>
-              <span className="font-semibold text-white text-sm">{editingMember.name}</span>
-              <span className="text-neutral-400 block text-[11px] mt-0.5">{editingMember.email}</span>
+            <div className="rounded-xl bg-neutral-50 border border-border p-3.5 text-xs">
+              <span className="text-muted block text-[11px] font-semibold uppercase tracking-wider">
+                Selected Account
+              </span>
+              <span className="font-display font-bold text-ink text-sm mt-0.5 block">
+                {editingMember.name}
+              </span>
+              <span className="text-muted block text-xs mt-0.5">{editingMember.email}</span>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
+              <label className="text-xs font-semibold text-ink block mb-1.5">
                 Department
               </label>
               <select
                 value={editDepartment}
                 onChange={(e) => setEditDepartment(e.target.value)}
-                className="h-9 w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 text-xs text-neutral-200 focus:border-red-500 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-border bg-white px-3 text-xs text-ink focus:border-red focus:outline-none"
               >
                 {DEPARTMENTS.map((dept) => (
                   <option key={dept} value={dept}>
@@ -705,13 +780,13 @@ export default function AdminTeamPage() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
+              <label className="text-xs font-semibold text-ink block mb-1.5">
                 Assigned RBAC Role
               </label>
               <select
                 value={editRole}
                 onChange={(e) => setEditRole(e.target.value as AdminRole)}
-                className="h-9 w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 text-xs text-neutral-200 focus:border-red-500 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-border bg-white px-3 text-xs text-ink focus:border-red focus:outline-none"
               >
                 <option value="super_admin">Super Admin (Tier 1 • Full Authority)</option>
                 <option value="event_admin">Event Director (Tier 2 • Operations)</option>
@@ -720,19 +795,19 @@ export default function AdminTeamPage() {
                 <option value="workforce_coordinator">Workforce Coordinator (Tier 4 • Departments)</option>
                 <option value="scanner_usher">Check-in Usher / Scanner (Tier 5 • Field Access)</option>
               </select>
-              <p className="mt-1 text-[11px] text-neutral-400">
+              <p className="mt-1.5 text-xs text-muted leading-relaxed">
                 {ROLE_DEFINITIONS[editRole]?.description}
               </p>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
+              <label className="text-xs font-semibold text-ink block mb-1.5">
                 Account Status
               </label>
               <select
                 value={editStatus}
                 onChange={(e) => setEditStatus(e.target.value as "active" | "invited" | "disabled")}
-                className="h-9 w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 text-xs text-neutral-200 focus:border-red-500 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-border bg-white px-3 text-xs text-ink focus:border-red focus:outline-none"
               >
                 <option value="active">Active (Full Console Access)</option>
                 <option value="invited">Pending (Awaiting Initial Sign In)</option>
@@ -744,7 +819,7 @@ export default function AdminTeamPage() {
               <Button
                 type="submit"
                 disabled={savingEdit}
-                className="w-full bg-red-600 hover:bg-red-500 text-xs font-semibold text-white py-2.5"
+                className="w-full text-xs font-semibold py-2.5 shadow-sm"
               >
                 {savingEdit ? "Updating Role..." : "Save Role Assignment"}
               </Button>
@@ -766,24 +841,24 @@ export default function AdminTeamPage() {
           {(Object.keys(ROLE_DEFINITIONS) as AdminRole[]).map((r) => {
             const def = ROLE_DEFINITIONS[r];
             return (
-              <div key={r} className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4 space-y-2">
+              <div key={r} className="rounded-xl border border-border bg-white p-4 space-y-2.5 shadow-xs">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-white">{def.label}</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${def.badgeClass}`}>
+                  <span className="font-display font-bold text-sm text-ink">{def.label}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${def.badgeClass}`}>
                     {def.tierLabel}
                   </span>
                 </div>
-                <p className="text-neutral-400 text-[11px] leading-relaxed">
+                <p className="text-muted text-xs leading-relaxed">
                   {def.description}
                 </p>
-                <div className="pt-2 border-t border-neutral-800/80">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-neutral-400 block mb-1.5">
+                <div className="pt-2.5 border-t border-border">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-muted block mb-2">
                     Authorized Capabilities:
                   </span>
-                  <ul className="space-y-1 text-[11px] text-neutral-300">
+                  <ul className="grid gap-1.5 text-xs text-ink">
                     {def.permissions.map((p, idx) => (
-                      <li key={idx} className="flex items-center gap-1.5">
-                        <Check className="h-3 w-3 text-emerald-400 shrink-0" />
+                      <li key={idx} className="flex items-center gap-2">
+                        <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
                         <span>{p}</span>
                       </li>
                     ))}

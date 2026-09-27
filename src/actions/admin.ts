@@ -320,6 +320,12 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
     if (!roleByProfile.has(row.profile_id)) roleByProfile.set(row.profile_id, row.role);
   }
 
+  const claimsMeta = claimsData?.claims?.user_metadata as Record<string, unknown> | undefined;
+  const avatarUrl =
+    (profileRow?.avatar_url as string | undefined) ||
+    (claimsMeta?.avatar_url as string | undefined) ||
+    null;
+
   return {
     profile: profileRow
       ? {
@@ -327,6 +333,8 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
           name: String(profileRow.full_name || profileRow.email || "Admin"),
           email: String(profileRow.email ?? ""),
           role,
+          avatarUrl,
+          department: String(profileRow.department || claimsMeta?.department || "Executive Leadership"),
           status: "active",
         }
       : null,
@@ -1399,6 +1407,7 @@ export async function loadTeamMembersAction(): Promise<{
       const name = String(p?.full_name || u.user_metadata?.full_name || u.email?.split("@")[0] || "Staff Member");
       const department = String(p?.department || u.user_metadata?.department || "Executive Leadership");
       const status = (p?.status as AdminUser["status"]) || (u.invited_at && !u.last_sign_in_at ? "invited" : "active");
+      const avatarUrl = (p?.avatar_url as string | undefined) || (u.user_metadata?.avatar_url as string | undefined) || null;
 
       members.push({
         id: u.id,
@@ -1406,6 +1415,7 @@ export async function loadTeamMembersAction(): Promise<{
         email: u.email ?? "",
         role,
         department,
+        avatarUrl,
         phone: (p?.phone as string) || (u.phone as string) || null,
         status,
         createdAt: u.created_at,
@@ -1808,6 +1818,84 @@ export async function resendTeamInviteAction(input: {
   } catch (err) {
     console.error("Resend invite error:", err);
     return { status: "error", message: err instanceof Error ? err.message : "Failed to resend invite" };
+  }
+}
+
+export async function updateProfileAvatarAction(formData: FormData): Promise<{
+  status: "success" | "error";
+  avatarUrl?: string;
+  message?: string;
+}> {
+  const file = formData.get("avatar") as File | null;
+  if (!file || file.size === 0) {
+    return { status: "error", message: "Please select an image file to upload." };
+  }
+
+  if (!file.type.startsWith("image/")) {
+    return { status: "error", message: "Only image files (JPEG, PNG, WebP) are allowed." };
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    return { status: "error", message: "Profile picture must be under 5MB." };
+  }
+
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub as string | undefined;
+
+  if (!userId) {
+    return { status: "error", message: "Your session has expired. Please sign in again." };
+  }
+
+  const admin = createAdminClient();
+  const fileExt = file.name.split(".").pop()?.toLowerCase() || "png";
+  const filePath = `user-${userId}-${Date.now()}.${fileExt}`;
+
+  try {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const { error: uploadError } = await admin.storage
+      .from("avatars")
+      .upload(filePath, buffer, {
+        contentType: file.type,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      return { status: "error", message: uploadError.message };
+    }
+
+    const { data: publicUrlData } = admin.storage.from("avatars").getPublicUrl(filePath);
+    const avatarUrl = publicUrlData.publicUrl;
+
+    // Update user_metadata in auth.users
+    await admin.auth.admin.updateUserById(userId, {
+      user_metadata: { avatar_url: avatarUrl },
+    });
+
+    // Also attempt updating profiles table if column exists
+    try {
+      await admin.from("profiles").update({ avatar_url: avatarUrl }).eq("id", userId);
+    } catch {
+      // Graceful fallback
+    }
+
+    // Log to audit
+    await admin.from("audit_logs").insert({
+      actor_id: userId,
+      actor_name: claimsData?.claims?.email || "Admin",
+      action: "profile.updated_avatar",
+      entity_type: "profile",
+      entity_id: userId,
+      metadata_preview: "Updated profile photo",
+    });
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/team");
+
+    return { status: "success", avatarUrl };
+  } catch (err) {
+    console.error("Update profile avatar error:", err);
+    return { status: "error", message: err instanceof Error ? err.message : "Failed to update profile picture" };
   }
 }
 

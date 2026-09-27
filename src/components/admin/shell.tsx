@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Bell,
   CalendarDays,
+  Camera,
   ClipboardCheck,
   FileText,
   ImageUp,
@@ -21,6 +22,7 @@ import {
   Settings,
   ShieldCheck,
   Timer,
+  Upload,
   Users,
   X,
 } from "lucide-react";
@@ -30,6 +32,7 @@ import { SelectInput, TextInput } from "@/components/ui/field";
 import { EditionProvider, useEdition } from "@/components/admin/edition-context";
 import { useAdminData } from "@/components/admin/admin-data";
 import { signOut } from "@/actions/auth";
+import { updateProfileAvatarAction } from "@/actions/admin";
 import { ADMIN_YEARS, contactName, initials, labelRole } from "@/lib/admin";
 import { adminNav } from "@/lib/nav";
 import { cn } from "@/lib/utils";
@@ -134,12 +137,19 @@ function NavList({
 function AdminChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { year, setYear, edition } = useEdition();
-  const { profile, contacts, rsvps, auditLogs, volunteers, loading } = useAdminData();
+  const { profile, contacts, rsvps, auditLogs, volunteers, loading, refresh } = useAdminData();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [notesOpen, setNotesOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
+
+  // Avatar upload state
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarUrlOverride, setAvatarUrlOverride] = useState<string | null>(null);
+  const [avatarMessage, setAvatarMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
   const currentAdmin = profile ?? {
     id: "guest",
     name: "Administrator",
@@ -147,6 +157,57 @@ function AdminChrome({ children }: { children: React.ReactNode }) {
     role: "content_editor" as const,
     status: "active" as const,
   };
+
+  const activeAvatarUrl = avatarUrlOverride ?? currentAdmin.avatarUrl ?? null;
+
+  async function handleAvatarFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setAvatarMessage({ text: "Please select an image file (PNG, JPG, WebP).", type: "error" });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarMessage({ text: "Image file must be under 5MB.", type: "error" });
+      return;
+    }
+
+    // Set optimistic local preview immediately
+    const localPreview = URL.createObjectURL(file);
+    setAvatarUrlOverride(localPreview);
+    setUploadingAvatar(true);
+    setAvatarMessage(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const res = await updateProfileAvatarAction(formData);
+
+      if (res.status === "success" && res.avatarUrl) {
+        setAvatarUrlOverride(res.avatarUrl);
+        setAvatarMessage({ text: "Profile picture updated successfully!", type: "success" });
+        await refresh();
+      } else {
+        setAvatarUrlOverride(null);
+        setAvatarMessage({ text: res.message || "Failed to upload avatar.", type: "error" });
+      }
+    } catch (err: unknown) {
+      setAvatarUrlOverride(null);
+      setAvatarMessage({
+        text: err instanceof Error ? err.message : "Failed to upload avatar.",
+        type: "error",
+      });
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
+
   const waiting = volunteers.filter(
     (row) => row.status === "submitted" || row.status === "under_review",
   ).length;
@@ -247,7 +308,7 @@ function AdminChrome({ children }: { children: React.ReactNode }) {
                   <Bell className="h-4 w-4" />
                 </Button>
                 {notesOpen ? (
-                  <div className="absolute right-0 mt-2 w-80 border border-border bg-white p-3 shadow-sm">
+                  <div className="absolute right-0 mt-2 w-80 rounded-xl border border-border bg-white p-3 shadow-lg z-50">
                     <p className="text-xs font-semibold tracking-wide text-muted uppercase">
                       Notifications
                     </p>
@@ -269,31 +330,137 @@ function AdminChrome({ children }: { children: React.ReactNode }) {
               <div className="relative">
                 <button
                   type="button"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 rounded-full p-1 pl-1 pr-2.5 transition-all hover:bg-neutral-100 sm:rounded-xl focus-visible:outline-2 focus-visible:outline-red"
                   aria-expanded={userOpen}
+                  aria-label="User profile and photo settings"
                   onClick={() => {
                     setUserOpen((value) => !value);
                     setNotesOpen(false);
                   }}
                 >
-                  <span className="flex h-8 w-8 items-center justify-center bg-ink text-xs font-semibold text-white">
-                    {initials(currentAdmin.name)}
-                  </span>
+                  <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-ink text-xs font-semibold text-white shadow-xs">
+                    {activeAvatarUrl ? (
+                      <img
+                        src={activeAvatarUrl}
+                        alt={currentAdmin.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span>{initials(currentAdmin.name)}</span>
+                    )}
+                    {uploadingAvatar && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-xs">
+                        <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      </div>
+                    )}
+                  </div>
                   <span className="hidden text-left text-xs sm:block">
-                    <span className="block font-semibold text-ink">{currentAdmin.name}</span>
-                    <span className="text-muted">{labelRole(currentAdmin.role)}</span>
+                    <span className="block font-semibold text-ink leading-tight">{currentAdmin.name}</span>
+                    <span className="text-[11px] text-muted">{labelRole(currentAdmin.role)}</span>
                   </span>
                 </button>
+
                 {userOpen ? (
-                  <div className="absolute right-0 mt-2 w-64 border border-border bg-white p-4 shadow-sm">
-                    <p className="font-semibold text-ink">{currentAdmin.name}</p>
-                    <p className="text-sm text-muted">{currentAdmin.email}</p>
-                    <p className="mt-1 text-xs text-muted">{labelRole(currentAdmin.role)}</p>
-                    <form action={signOut}>
-                      <Button type="submit" variant="outlineDark" className="mt-4 w-full">
-                        Sign out
-                      </Button>
-                    </form>
+                  <div className="absolute right-0 mt-2 w-72 rounded-xl border border-border bg-white p-4 shadow-xl z-50">
+                    {/* Hidden file input */}
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleAvatarFileSelect}
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="hidden"
+                      aria-label="Upload profile photo"
+                    />
+
+                    {/* Profile Header & Avatar with Camera Button */}
+                    <div className="flex flex-col items-center text-center pb-3 border-b border-border">
+                      <div
+                        className="relative group cursor-pointer mb-2.5"
+                        onClick={() => fileInputRef.current?.click()}
+                        title="Click to update profile photo"
+                      >
+                        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-border bg-ink text-lg font-bold text-white shadow-md ring-4 ring-neutral-50 transition-transform group-hover:scale-105">
+                          {activeAvatarUrl ? (
+                            <img
+                              src={activeAvatarUrl}
+                              alt={currentAdmin.name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span>{initials(currentAdmin.name)}</span>
+                          )}
+                        </div>
+
+                        {/* Camera hover overlay */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                          <Camera className="h-4 w-4" />
+                          <span className="text-[9px] font-semibold mt-0.5 uppercase tracking-wide">Edit</span>
+                        </div>
+
+                        {uploadingAvatar && (
+                          <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/70">
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          </div>
+                        )}
+                      </div>
+
+                      <p className="font-display text-sm font-bold text-ink">{currentAdmin.name}</p>
+                      <p className="text-xs text-muted truncate max-w-full px-1">{currentAdmin.email}</p>
+                      
+                      <div className="mt-2">
+                        <span className="inline-flex items-center rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] font-semibold text-ink border border-border">
+                          {labelRole(currentAdmin.role)}
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingAvatar}
+                        className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-ink hover:bg-neutral-100 transition-colors disabled:opacity-50"
+                      >
+                        <Upload className="h-3.5 w-3.5 text-muted" />
+                        {uploadingAvatar ? "Uploading photo..." : "Upload New Photo"}
+                      </button>
+
+                      {avatarMessage && (
+                        <p
+                          className={`mt-2 text-xs font-medium ${
+                            avatarMessage.type === "success" ? "text-emerald-600" : "text-red"
+                          }`}
+                        >
+                          {avatarMessage.text}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Quick navigation & options */}
+                    <div className="py-2 space-y-1">
+                      <Link
+                        href="/admin/team"
+                        onClick={() => setUserOpen(false)}
+                        className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-ink hover:bg-paper transition-colors"
+                      >
+                        <ShieldCheck className="h-4 w-4 text-muted" />
+                        <span>Team & Access Control</span>
+                      </Link>
+                      <Link
+                        href="/admin/settings"
+                        onClick={() => setUserOpen(false)}
+                        className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-ink hover:bg-paper transition-colors"
+                      >
+                        <Settings className="h-4 w-4 text-muted" />
+                        <span>Platform Settings</span>
+                      </Link>
+                    </div>
+
+                    <div className="pt-2 border-t border-border">
+                      <form action={signOut}>
+                        <Button type="submit" variant="ghost" size="sm" className="w-full text-xs text-muted hover:text-red hover:bg-red/5">
+                          Sign out
+                        </Button>
+                      </form>
+                    </div>
                   </div>
                 ) : null}
               </div>
