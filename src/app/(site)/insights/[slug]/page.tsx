@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 import { PageShell } from "@/components/site/page-shell";
 import { ShareButton } from "@/components/insights/share-button";
 import { OpenRsvpButton } from "@/components/rsvp/open-button";
-import { getPublishedArticles } from "@/data/articles";
 import { fetchArticleBySlug, fetchPublishedArticles } from "@/actions/public";
 import { formatShortDate } from "@/lib/utils";
 

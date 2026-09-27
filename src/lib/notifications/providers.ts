@@ -24,22 +24,16 @@ export type ProviderResult = {
   preview?: string;
 };
 
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
+import { renderRichEmailHtml } from "./email-template";
 
-function textToHtml(value: string) {
-  const escaped = escapeHtml(value);
-  const withBasicMarkdown = escaped
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.*?)\*/g, "<strong>$1</strong>")
-    .replace(/_(.*?)_/g, "<em>$1</em>");
-  return `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">${withBasicMarkdown.replaceAll("\n", "<br />")}</div>`;
+function textToHtml(value: string, subject?: string | null, to?: string) {
+  return renderRichEmailHtml({
+    headline: subject || "Wonders of Worship Experience",
+    bodyMarkdown: value,
+    recipientEmail: to,
+    scriptureQuote: true,
+    venueCard: true,
+  });
 }
 
 function resendAttachments(message: OutboundMessage) {
@@ -78,12 +72,25 @@ export async function sendEmail(message: OutboundMessage): Promise<ProviderResul
     const from = process.env.RESEND_FROM ?? "onboarding@resend.dev";
     const subject = message.subject || "Wonders of Worship Experience";
     const attachments = resendAttachments(message);
+    const html =
+      message.html && message.html.includes("<html")
+        ? message.html
+        : message.html
+        ? renderRichEmailHtml({
+            headline: subject,
+            bodyHtml: message.html,
+            recipientEmail: message.to,
+            scriptureQuote: true,
+            venueCard: true,
+          })
+        : textToHtml(message.body, subject, message.to);
+
     const { data, error } = await resend.emails.send({
       from,
       to: message.to,
       subject,
       text: message.body,
-      html: message.html || textToHtml(message.body),
+      html,
       ...(attachments.length ? { attachments } : {}),
     });
 

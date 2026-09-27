@@ -20,13 +20,23 @@ export default function AdminFlyerPage() {
   const [templateName, setTemplateName] = useState("WOW 2026 Main Attending Flyer");
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const assetBlob = asset?.blob ?? null;
+  const selectedFileUrl = useMemo(
+    () => (selectedFile ? URL.createObjectURL(selectedFile) : null),
+    [selectedFile],
+  );
+  const assetBlobUrl = useMemo(
+    () => (assetBlob ? URL.createObjectURL(assetBlob) : null),
+    [assetBlob],
+  );
+  const previewUrl = selectedFileUrl ?? asset?.imageUrl ?? assetBlobUrl;
 
-  const previewUrl = useMemo(() => {
-    if (selectedFile) return URL.createObjectURL(selectedFile);
-    if (asset?.imageUrl) return asset.imageUrl;
-    if (asset?.blob) return URL.createObjectURL(asset.blob);
-    return null;
-  }, [asset?.blob, asset?.imageUrl, selectedFile]);
+  useEffect(() => {
+    return () => {
+      if (selectedFileUrl) URL.revokeObjectURL(selectedFileUrl);
+      if (assetBlobUrl) URL.revokeObjectURL(assetBlobUrl);
+    };
+  }, [assetBlobUrl, selectedFileUrl]);
 
   useEffect(() => {
     void getAdminFlyerTemplate().then((item) => {
@@ -35,12 +45,6 @@ export default function AdminFlyerPage() {
       setTemplateName(item.name);
     });
   }, []);
-
-  useEffect(() => {
-    return () => {
-      if (previewUrl && previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
-    };
-  }, [previewUrl]);
 
   const publish = async () => {
     if (!selectedFile) {

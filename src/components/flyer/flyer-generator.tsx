@@ -220,7 +220,7 @@ function FlyerStudioInteractive() {
   const [fullName, setFullName] = useState("");
   const [detail, setDetail] = useState("Attending from Uyo");
   const [layout, setLayout] = useState<FlyerLayout>("portrait");
-  const [theme, setTheme] = useState<FlyerTheme>("classic");
+  const theme: FlyerTheme = "classic";
   const [frameShape, setFrameShape] = useState<FlyerFrameShape>("circle");
   const [zoom, setZoom] = useState(1.08);
   const [offsetX, setOffsetX] = useState(0);
