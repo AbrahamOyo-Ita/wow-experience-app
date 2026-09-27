@@ -12,13 +12,13 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const tokenHash = requestUrl.searchParams.get("token_hash");
-  const type = requestUrl.searchParams.get("type"); // "invite", "magiclink", "recovery" etc
+  const type = (requestUrl.searchParams.get("type") || "magiclink") as string;
   const next = safeAdminNext(requestUrl.searchParams.get("next"));
   const redirectUrl = request.nextUrl.clone();
 
   const supabase = await createClient();
 
-  // Handle PKCE code exchange (standard OAuth/magic-link flow)
+  // Handle PKCE code exchange (standard OAuth/magic-link PKCE flow)
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
   }
-  // Handle token_hash verification (invite / email-change / recovery links)
-  else if (tokenHash && type) {
+  // Handle token_hash + type (invite / recovery / email-change OTP flow)
+  else if (tokenHash) {
     const { error } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
       type: type as Parameters<typeof supabase.auth.verifyOtp>[0]["type"],
@@ -42,15 +42,16 @@ export async function GET(request: NextRequest) {
       redirectUrl.searchParams.set("error", "invalid");
       return NextResponse.redirect(redirectUrl);
     }
-  } else {
-    // No token at all — redirect to login
+  }
+  // No valid token params — redirect to login
+  else {
     redirectUrl.pathname = "/admin/login";
     redirectUrl.search = "";
     redirectUrl.searchParams.set("error", "invalid");
     return NextResponse.redirect(redirectUrl);
   }
 
-  // Get the newly-established session
+  // Session established — get the user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     redirectUrl.pathname = "/admin/login";
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // Ensure the invited user gets their role upserted
+  // Ensure super admin role for the primary admin email
   await ensureSuperAdminRole(user.id, user.email);
 
   // Upsert profile + role from user_metadata (set during invite)
@@ -79,7 +80,7 @@ export async function GET(request: NextRequest) {
     status: "active",
   });
 
-  // Ensure role is assigned
+  // Ensure role is assigned (only if not already set)
   const { data: existingRole } = await admin
     .from("profile_roles")
     .select("role")
@@ -93,14 +94,13 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Check if this is a new invite (no password set) — redirect to set-password
-  // Supabase sets last_sign_in_at on first sign-in; if user was invited they may not have a password
+  // Determine if this is a new account (needs password setup)
   const isInviteFlow =
     type === "invite" ||
     type === "signup" ||
-    !user.last_sign_in_at ||
-    // If next was explicitly set to set-password
-    next.includes("set-password");
+    next.includes("set-password") ||
+    // If user has never had a confirmed sign-in before this session, they're new
+    !user.last_sign_in_at;
 
   if (isInviteFlow) {
     redirectUrl.pathname = "/admin/set-password";
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // Check role exists (allow them through if they already have one)
+  // Regular magic-link sign-in → go to admin
   const { data: roleData } = await supabase
     .from("profile_roles")
     .select("role")
@@ -124,7 +124,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // Regular magic-link login — go to admin dashboard
   redirectUrl.pathname = next;
   redirectUrl.search = "";
   return NextResponse.redirect(redirectUrl);

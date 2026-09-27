@@ -1474,9 +1474,11 @@ export async function inviteTeamMemberAction(input: {
 
   const admin = createAdminClient();
   const baseOrigin = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://www.wowexperience.com.ng").replace(/\/$/, "");
-  // CRITICAL: redirectTo must point to /auth/callback so Supabase can exchange the token first.
-  // The callback handler will then forward the user to /admin/set-password.
-  const redirectTo = `${baseOrigin}/auth/callback?next=%2Fadmin%2Fset-password`;
+
+  // NOTE: We intentionally DON'T use redirectTo here because Supabase will override it
+  // with the Site URL if our app URL is not in the allowed list.
+  // Instead, we extract the token from Supabase's action_link and build our own URL.
+  const supabaseSiteUrl = "https://www.wowexperience.com.ng"; // Supabase site_url in dashboard
 
   const inviteUserMeta = {
     full_name: input.fullName,
@@ -1491,44 +1493,65 @@ export async function inviteTeamMemberAction(input: {
     let userId = existing?.id;
     let inviteLink = "";
 
+    // Helper: extract token_hash and type from Supabase action_link and build our own URL
+    function buildOurInviteLink(actionLink: string, linkType: string): string {
+      try {
+        const supaUrl = new URL(actionLink);
+        // The action_link looks like: https://project.supabase.co/auth/v1/verify?token=xxx&type=invite&redirect_to=...
+        // We extract token and type, then build our own link
+        const token = supaUrl.searchParams.get("token");
+        const typeParam = supaUrl.searchParams.get("type") || linkType;
+
+        if (token) {
+          // Build our own URL using token_hash — this hits our /auth/callback directly
+          // without Supabase needing to redirect us, so the allowlist doesn't matter
+          return `${baseOrigin}/auth/callback?token_hash=${encodeURIComponent(token)}&type=${typeParam}&next=%2Fadmin%2Fset-password`;
+        }
+      } catch {
+        // fallback
+      }
+      // If we can't parse it, return the original Supabase URL as fallback
+      return actionLink;
+    }
+
     if (existing) {
-      // User already exists in auth.users — update their metadata and generate a fresh magic link
+      // User already exists — update metadata and generate fresh magic link
       userId = existing.id;
-      // Update metadata so role is current
       await admin.auth.admin.updateUserById(userId, { user_metadata: inviteUserMeta });
 
       const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
         type: "magiclink",
         email,
         options: {
-          redirectTo,
+          // Use Supabase's own site URL here — it WILL match the allowlist
+          redirectTo: supabaseSiteUrl,
           data: inviteUserMeta,
         },
       });
       if (linkErr) throw linkErr;
-      inviteLink = linkData.properties.action_link;
+      // Build our own clean link using the token from the action_link
+      inviteLink = buildOurInviteLink(linkData.properties.action_link, "magiclink");
     } else {
-      // Brand new user — generate invite link (creates user with no password)
+      // Brand new user — create via invite type
       const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
         type: "invite",
         email,
         options: {
-          redirectTo,
+          redirectTo: supabaseSiteUrl,
           data: inviteUserMeta,
         },
       });
       if (linkErr) {
-        // Fallback: inviteUserByEmail (sends Supabase's built-in invite email too)
+        // Fallback: inviteUserByEmail
         const { data: invData, error: invErr } = await admin.auth.admin.inviteUserByEmail(email, {
-          redirectTo,
+          redirectTo: supabaseSiteUrl,
           data: inviteUserMeta,
         });
         if (invErr) throw invErr;
         userId = invData.user.id;
-        // inviteUserByEmail does not return an action_link, set inviteLink to empty
-        inviteLink = "";
+        inviteLink = ""; // inviteUserByEmail sends its own email, no action_link returned
       } else {
-        inviteLink = linkData.properties.action_link;
+        inviteLink = buildOurInviteLink(linkData.properties.action_link, "invite");
         userId = linkData.user.id;
       }
     }
@@ -1770,8 +1793,8 @@ export async function resendTeamInviteAction(input: {
 }): Promise<{ status: "success" | "error"; message?: string; inviteLink?: string }> {
   const admin = createAdminClient();
   const baseOrigin = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://www.wowexperience.com.ng").replace(/\/$/, "");
-  // Must route through /auth/callback for PKCE token exchange
-  const redirectTo = `${baseOrigin}/auth/callback?next=%2Fadmin%2Fset-password`;
+  // Use the Supabase site URL as redirectTo (matches allowlist), then extract token to build our own link
+  const supabaseSiteUrl = "https://www.wowexperience.com.ng";
 
   try {
     const { data: profile } = await admin.from("profiles").select("*").eq("id", input.userId).maybeSingle();
@@ -1788,11 +1811,21 @@ export async function resendTeamInviteAction(input: {
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
       type: "magiclink",
       email: input.email,
-      options: { redirectTo, data: inviteUserMeta },
+      options: { redirectTo: supabaseSiteUrl, data: inviteUserMeta },
     });
     if (linkErr) throw linkErr;
 
-    const inviteLink = linkData.properties.action_link;
+    // Extract token from Supabase action_link and build our own invite URL
+    let inviteLink = linkData.properties.action_link;
+    try {
+      const supaUrl = new URL(linkData.properties.action_link);
+      const token = supaUrl.searchParams.get("token");
+      const type = supaUrl.searchParams.get("type") || "magiclink";
+      if (token) {
+        inviteLink = `${baseOrigin}/auth/callback?token_hash=${encodeURIComponent(token)}&type=${type}&next=%2Fadmin%2Fset-password`;
+      }
+    } catch { /* fallback to original */ }
+
     const roleDef = ROLE_DEFINITIONS[role] || ROLE_DEFINITIONS.content_editor;
 
     const inviteHtml = renderRichEmailHtml({
