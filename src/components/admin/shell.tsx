@@ -35,6 +35,8 @@ import { signOut } from "@/actions/auth";
 import { updateProfileAvatarAction } from "@/actions/admin";
 import { ADMIN_YEARS, contactName, initials, labelRole } from "@/lib/admin";
 import { adminNav } from "@/lib/nav";
+import { hasAdminPermission } from "@/lib/admin-rbac";
+import type { AdminRole } from "@/types";
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -100,14 +102,17 @@ function buildHits(
 
 function NavList({
   pathname,
+  role,
   onNavigate,
 }: {
   pathname: string;
+  role: AdminRole;
   onNavigate?: () => void;
 }) {
+  const visibleNavigation = adminNav.filter((item) => hasAdminPermission(role, item.permission));
   return (
     <nav className="grid gap-0.5" aria-label="Admin">
-      {adminNav.map((item) => {
+      {visibleNavigation.map((item) => {
         const Icon = ICONS[item.href] ?? LayoutGrid;
         const active =
           item.href === "/admin"
@@ -241,7 +246,7 @@ function AdminChrome({ children }: { children: React.ReactNode }) {
           </p>
         </div>
         <div className="flex-1 overflow-y-auto py-3">
-          <NavList pathname={pathname} />
+          <NavList pathname={pathname} role={currentAdmin.role} />
         </div>
         <p className="border-t border-border px-4 py-3 text-xs text-muted">{edition.shortName}</p>
       </aside>
@@ -539,7 +544,7 @@ function AdminChrome({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto py-3">
-                <NavList pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+                <NavList pathname={pathname} role={currentAdmin.role} onNavigate={() => setMobileOpen(false)} />
               </div>
             </div>
           </div>

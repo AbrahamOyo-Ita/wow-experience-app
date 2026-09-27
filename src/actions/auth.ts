@@ -39,14 +39,12 @@ export async function signInWithPassword(formData: FormData) {
   }
   await ensureSuperAdminRole(userId, email);
 
-  const { data: role } = await supabase
-    .from("profile_roles")
-    .select("role")
-    .eq("profile_id", userId)
-    .limit(1)
-    .maybeSingle();
+  const [{ data: role }, { data: profile }] = await Promise.all([
+    supabase.from("profile_roles").select("role").eq("profile_id", userId).limit(1).maybeSingle(),
+    supabase.from("profiles").select("status").eq("id", userId).maybeSingle(),
+  ]);
 
-  if (!role) {
+  if (!role || profile?.status !== "active") {
     await supabase.auth.signOut();
     redirect(`/admin/login?error=forbidden&next=${encodeURIComponent(safeNext)}`);
   }
@@ -73,14 +71,12 @@ export async function sendAdminMagicLink(formData: FormData) {
   }
   await ensureSuperAdminRole(user.id, user.email);
 
-  const { data: role } = await admin
-    .from("profile_roles")
-    .select("role")
-    .eq("profile_id", user.id)
-    .limit(1)
-    .maybeSingle();
+  const [{ data: role }, { data: profile }] = await Promise.all([
+    admin.from("profile_roles").select("role").eq("profile_id", user.id).limit(1).maybeSingle(),
+    admin.from("profiles").select("status").eq("id", user.id).maybeSingle(),
+  ]);
 
-  if (!role) {
+  if (!role || profile?.status !== "active") {
     redirect(sentUrl);
   }
 
@@ -122,12 +118,34 @@ export async function updateAccountPassword(formData: FormData) {
     redirect("/admin/login?error=invalid");
   }
 
+  if (!hasServiceRole()) {
+    redirect("/admin/login?error=invalid");
+  }
+
+  const admin = createAdminClient();
+  const [{ data: profile }, { data: role }] = await Promise.all([
+    admin.from("profiles").select("status").eq("id", user.id).maybeSingle(),
+    admin.from("profile_roles").select("role").eq("profile_id", user.id).maybeSingle(),
+  ]);
+  if (!role || profile?.status === "disabled") {
+    await supabase.auth.signOut();
+    redirect("/admin/login?error=forbidden");
+  }
+
   const { error } = await supabase.auth.updateUser({ password });
 
   if (error) {
     redirect(`/admin/set-password?error=${encodeURIComponent(error.message)}`);
   }
 
+  await Promise.all([
+    admin.from("profiles").update({ status: "active", last_sign_in_at: new Date().toISOString() }).eq("id", user.id),
+    admin
+      .from("team_invitations")
+      .update({ status: "accepted", accepted_at: new Date().toISOString() })
+      .eq("email", user.email?.toLowerCase() ?? "")
+      .eq("status", "pending"),
+  ]);
+
   redirect("/admin?success=password_updated");
 }
-

@@ -20,11 +20,11 @@ export default async function AdminConsoleLayout({
       data.claims.sub as string,
       typeof data.claims.email === "string" ? data.claims.email : null,
     );
-    const { data: roles } = await supabase
-      .from("profile_roles")
-      .select("role")
-      .eq("profile_id", data.claims.sub as string);
-    if (!roles?.length) {
+    const [{ data: roles }, { data: profile }] = await Promise.all([
+      supabase.from("profile_roles").select("role").eq("profile_id", data.claims.sub as string),
+      supabase.from("profiles").select("status").eq("id", data.claims.sub as string).maybeSingle(),
+    ]);
+    if (!roles?.length || profile?.status !== "active") {
       redirect("/admin/login?error=forbidden");
     }
   }

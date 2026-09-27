@@ -63,44 +63,45 @@ export async function GET(request: NextRequest) {
   // Ensure super admin role for the primary admin email
   await ensureSuperAdminRole(user.id, user.email);
 
-  // Upsert profile + role from user_metadata (set during invite)
+  // Invitation roles are provisioned by an authorized administrator before the
+  // email is sent. Never authorize from user_metadata because users can edit it.
   const meta = user.user_metadata as Record<string, unknown> | undefined;
-  const metaRole = (meta?.role as string | undefined) || "content_editor";
   const metaDept = (meta?.department as string | undefined) || "Executive Leadership";
   const metaName = (meta?.full_name as string | undefined) || user.email?.split("@")[0] || "Staff Member";
 
   const admin = createAdminClient();
 
-  // Ensure profile exists
+  const [{ data: existingRole }, { data: existingProfile }] = await Promise.all([
+    admin
+    .from("profile_roles")
+    .select("role")
+    .eq("profile_id", user.id)
+    .maybeSingle(),
+    admin.from("profiles").select("status").eq("id", user.id).maybeSingle(),
+  ]);
+
+  if (!existingRole || existingProfile?.status === "disabled") {
+    await supabase.auth.signOut();
+    redirectUrl.pathname = "/admin/login";
+    redirectUrl.search = "";
+    redirectUrl.searchParams.set("error", "forbidden");
+    return NextResponse.redirect(redirectUrl);
+  }
+
   await admin.from("profiles").upsert({
     id: user.id,
     email: user.email,
     full_name: metaName,
     department: metaDept,
-    status: "active",
+    status: existingProfile?.status ?? "invited",
   });
-
-  // Ensure role is assigned (only if not already set)
-  const { data: existingRole } = await admin
-    .from("profile_roles")
-    .select("role")
-    .eq("profile_id", user.id)
-    .maybeSingle();
-
-  if (!existingRole) {
-    await admin.from("profile_roles").upsert({
-      profile_id: user.id,
-      role: metaRole,
-    });
-  }
 
   // Determine if this is a new account (needs password setup)
   const isInviteFlow =
     type === "invite" ||
     type === "signup" ||
     next.includes("set-password") ||
-    // If user has never had a confirmed sign-in before this session, they're new
-    !user.last_sign_in_at;
+    existingProfile?.status === "invited";
 
   if (isInviteFlow) {
     redirectUrl.pathname = "/admin/set-password";

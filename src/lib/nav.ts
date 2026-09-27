@@ -27,20 +27,22 @@ export const footerNav = {
   ],
 } as const;
 
-export const adminNav = [
-  { href: "/admin", label: "Overview" },
-  { href: "/admin/events", label: "Events" },
-  { href: "/admin/audience", label: "Audience" },
-  { href: "/admin/rsvps", label: "RSVPs" },
-  { href: "/admin/attendance", label: "Attendance" },
-  { href: "/admin/flyer", label: "Flyer" },
-  { href: "/admin/volunteers", label: "Volunteers" },
-  { href: "/admin/team", label: "Team & RBAC" },
-  { href: "/admin/campaigns", label: "Campaigns" },
-  { href: "/admin/templates", label: "Templates" },
-  { href: "/admin/automations", label: "Automations" },
-  { href: "/admin/content", label: "Content" },
-  { href: "/admin/analytics", label: "Analytics" },
-  { href: "/admin/settings", label: "Settings" },
-  { href: "/admin/audit", label: "Audit" },
+import type { AdminPermission } from "@/lib/admin-rbac";
+
+export const adminNav: ReadonlyArray<{ href: string; label: string; permission: AdminPermission }> = [
+  { href: "/admin", label: "Overview", permission: "dashboard.view" },
+  { href: "/admin/events", label: "Events", permission: "events.manage" },
+  { href: "/admin/audience", label: "Audience", permission: "audience.view" },
+  { href: "/admin/rsvps", label: "RSVPs", permission: "rsvps.view" },
+  { href: "/admin/attendance", label: "Attendance", permission: "attendance.manage" },
+  { href: "/admin/flyer", label: "Flyer", permission: "flyer.manage" },
+  { href: "/admin/volunteers", label: "Volunteers", permission: "volunteers.manage" },
+  { href: "/admin/team", label: "Team & RBAC", permission: "team.invite" },
+  { href: "/admin/campaigns", label: "Campaigns", permission: "campaigns.manage" },
+  { href: "/admin/templates", label: "Templates", permission: "templates.manage" },
+  { href: "/admin/automations", label: "Automations", permission: "automations.manage" },
+  { href: "/admin/content", label: "Content", permission: "content.manage" },
+  { href: "/admin/analytics", label: "Analytics", permission: "analytics.view" },
+  { href: "/admin/settings", label: "Settings", permission: "settings.manage" },
+  { href: "/admin/audit", label: "Audit", permission: "audit.view" },
 ] as const;
