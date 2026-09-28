@@ -17,6 +17,7 @@ import { getAppOrigin } from "@/lib/app-origin";
 import { renderRichEmailHtml } from "@/lib/notifications/email-template";
 import { sendEmail } from "@/lib/notifications/providers";
 import { labelRole, ROLE_DEFINITIONS } from "@/lib/admin";
+import { flyerTemplateConfigSchema } from "@/lib/flyer-template";
 import type { AttendanceInput, MockSubmitResult } from "@/services/contracts";
 import type {
   AdminRole,
@@ -964,10 +965,12 @@ export async function writeAuditLog(action: string, entityType: string, entityId
 }
 
 export async function getAdminFlyerTemplateAction() {
+  const authorization = await authorizeAdmin("flyer.manage");
+  if (!authorization || authorization.role !== "super_admin") return null;
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("flyer_templates")
-    .select("id, name, file_name, mime_type, image_url, is_published, updated_at")
+    .select("id, name, file_name, mime_type, image_url, storage_path, is_published, updated_at, config")
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -979,113 +982,100 @@ export async function getAdminFlyerTemplateAction() {
     fileName: data.file_name,
     mimeType: data.mime_type,
     imageUrl: data.image_url,
+    storagePath: data.storage_path,
     published: data.is_published,
     updatedAt: data.updated_at,
+    config: data.config,
   };
 }
 
-export async function saveFlyerTemplateAction(formData: FormData) {
-  const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const userId = claimsData?.claims?.sub as string | undefined;
-  if (!userId) {
-    return { status: "error" as const, message: "Sign in to publish flyer templates." };
-  }
+const FLYER_BUCKET = "flyer-templates";
 
-  const { data: roles } = await supabase.from("profile_roles").select("role").eq("profile_id", userId);
-  if (!roles?.length) {
-    return { status: "error" as const, message: "You do not have permission to manage flyer templates." };
-  }
-
-  const name = String(formData.get("name") ?? "Main attending flyer").trim() || "Main attending flyer";
-  const file = formData.get("file");
-  if (!file || typeof file === "string" || file.size === 0) {
-    return { status: "error" as const, message: "Please select an image file to upload." };
-  }
-
-  const allowedTypes = new Map([
-    ["image/jpeg", "jpg"],
-    ["image/png", "png"],
-    ["image/webp", "webp"],
-  ]);
-  const extension = allowedTypes.get(file.type);
-  if (!extension) {
-    return { status: "error" as const, message: "Upload a JPG, PNG, or WebP image." };
-  }
-
-  if (file.size > 10 * 1024 * 1024) {
-    return { status: "error" as const, message: "Keep the flyer under 10 MB." };
-  }
+export async function prepareFlyerTemplateUploadAction(input: {
+  fileName: string;
+  mimeType: string;
+  size: number;
+}) {
+  const authorization = await authorizeAdmin("flyer.manage");
+  if (!authorization || authorization.role !== "super_admin") return { status: "error" as const, message: "Only a super admin can manage flyer templates." };
+  const extension = new Map([["image/jpeg", "jpg"], ["image/png", "png"], ["image/webp", "webp"]]).get(input.mimeType);
+  if (!extension) return { status: "error" as const, message: "Upload a JPG, PNG, or WebP image." };
+  if (input.size <= 0 || input.size > 10 * 1024 * 1024) return { status: "error" as const, message: "Keep the flyer under 10 MB." };
 
   const storagePath = `templates/${crypto.randomUUID()}.${extension}`;
-  const { error: uploadError } = await supabase.storage
-    .from("flyer-templates")
-    .upload(storagePath, await file.arrayBuffer(), {
-      contentType: file.type,
-      cacheControl: "31536000",
-      upsert: true,
-    });
+  const admin = createAdminClient();
+  const { data, error } = await admin.storage.from(FLYER_BUCKET).createSignedUploadUrl(storagePath);
+  if (error || !data) return { status: "error" as const, message: `Storage error: ${error?.message ?? "Could not create upload URL."}` };
+  return { status: "success" as const, path: storagePath, token: data.token };
+}
 
-  if (uploadError) {
-    return { status: "error" as const, message: `Storage error: ${uploadError.message}` };
+export async function publishFlyerTemplateAction(input: {
+  name: string;
+  fileName: string;
+  mimeType: string;
+  storagePath: string;
+  config: unknown;
+}) {
+  const authorization = await authorizeAdmin("flyer.manage");
+  if (!authorization || authorization.role !== "super_admin") return { status: "error" as const, message: "Only a super admin can manage flyer templates." };
+  if (!input.storagePath.startsWith("templates/") || input.storagePath.includes("..")) {
+    return { status: "error" as const, message: "Invalid flyer storage path." };
   }
-
-  const imageUrl = supabase.storage.from("flyer-templates").getPublicUrl(storagePath).data.publicUrl;
-
-  await supabase.from("flyer_templates").update({ is_published: false }).eq("is_published", true);
-
-  const { data, error } = await supabase
-    .from("flyer_templates")
-    .upsert({
-      id: "active-attending-flyer",
-      name,
-      file_name: file.name,
-      mime_type: file.type,
-      image_url: imageUrl,
-      storage_path: storagePath,
-      is_published: true,
-      updated_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
-
-  if (error || !data) {
-    return { status: "error" as const, message: error?.message ?? "Could not save flyer template metadata." };
+  const parsedConfig = flyerTemplateConfigSchema.safeParse(input.config);
+  if (!parsedConfig.success) return { status: "error" as const, message: parsedConfig.error.issues[0]?.message ?? "Invalid flyer geometry." };
+  const admin = createAdminClient();
+  const { data: existing } = await admin.from("flyer_templates").select("storage_path, image_url").eq("id", "active-attending-flyer").maybeSingle();
+  if (existing?.storage_path !== input.storagePath) {
+    const lastSlash = input.storagePath.lastIndexOf("/");
+    const folder = input.storagePath.slice(0, lastSlash);
+    const objectName = input.storagePath.slice(lastSlash + 1);
+    const { data: objects, error: objectError } = await admin.storage.from(FLYER_BUCKET).list(folder, { search: objectName, limit: 2 });
+    const uploaded = objects?.find((item) => item.name === objectName);
+    if (objectError || !uploaded) return { status: "error" as const, message: "The uploaded flyer could not be verified in Storage." };
+    const storedSize = typeof uploaded.metadata?.size === "number" ? uploaded.metadata.size : 0;
+    const storedMime = typeof uploaded.metadata?.mimetype === "string" ? uploaded.metadata.mimetype : "";
+    if (storedSize <= 0 || storedSize > 10 * 1024 * 1024 || storedMime !== input.mimeType) {
+      await admin.storage.from(FLYER_BUCKET).remove([input.storagePath]);
+      return { status: "error" as const, message: "The uploaded flyer failed server-side type or size validation." };
+    }
   }
-
-  await supabase.from("audit_logs").insert({
-    actor_id: userId,
-    actor_name: "Admin",
+  const imageUrl = existing?.storage_path === input.storagePath && existing.image_url
+    ? existing.image_url
+    : admin.storage.from(FLYER_BUCKET).getPublicUrl(input.storagePath).data.publicUrl;
+  const { error: unpublishError } = await admin.from("flyer_templates").update({ is_published: false }).eq("is_published", true);
+  if (unpublishError) return { status: "error" as const, message: unpublishError.message };
+  const { data, error } = await admin.from("flyer_templates").upsert({
+    id: "active-attending-flyer",
+    name: input.name.trim() || "Main attending flyer",
+    file_name: input.fileName,
+    mime_type: input.mimeType,
+    image_url: imageUrl,
+    storage_path: input.storagePath,
+    base_width: parsedConfig.data.baseWidth,
+    base_height: parsedConfig.data.baseHeight,
+    config: parsedConfig.data,
+    config_version: parsedConfig.data.version,
+    is_published: true,
+    updated_at: new Date().toISOString(),
+  }).select().single();
+  if (error || !data) return { status: "error" as const, message: error?.message ?? "Could not save flyer template metadata." };
+  await admin.from("audit_logs").insert({
+    actor_id: authorization.userId,
+    actor_name: authorization.email || "Admin",
     action: "Published flyer template",
     entity_type: "flyer_template",
     entity_id: "active-attending-flyer",
-    metadata_preview: `${name} / ${file.name}`,
+    metadata_preview: `${input.name} / ${input.fileName}`,
   });
-
   revalidatePath("/flyer");
   revalidatePath("/admin/flyer");
-
-  return {
-    status: "success" as const,
-    data: {
-      id: data.id,
-      name: data.name,
-      fileName: data.file_name,
-      mimeType: data.mime_type,
-      imageUrl: data.image_url,
-      published: data.is_published,
-      updatedAt: data.updated_at,
-    },
-  };
+  return { status: "success" as const, data: { id: data.id, name: data.name, fileName: data.file_name, mimeType: data.mime_type, imageUrl: data.image_url, storagePath: data.storage_path, published: data.is_published, updatedAt: data.updated_at, config: data.config } };
 }
 
 export async function unpublishFlyerTemplateAction() {
+  const authorization = await authorizeAdmin("flyer.manage");
+  if (!authorization || authorization.role !== "super_admin") return { status: "error" as const, message: "Only a super admin can manage flyer templates." };
   const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const userId = claimsData?.claims?.sub as string | undefined;
-  if (!userId) {
-    return { status: "error" as const, message: "Sign in to manage flyer templates." };
-  }
 
   const { error } = await supabase
     .from("flyer_templates")
@@ -1097,8 +1087,8 @@ export async function unpublishFlyerTemplateAction() {
   }
 
   await supabase.from("audit_logs").insert({
-    actor_id: userId,
-    actor_name: "Admin",
+    actor_id: authorization.userId,
+    actor_name: authorization.email || "Super admin",
     action: "Unpublished flyer template",
     entity_type: "flyer_template",
     entity_id: "active-attending-flyer",

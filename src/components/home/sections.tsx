@@ -103,7 +103,7 @@ export function FlyerPromoSection() {
 
               <div className="relative z-10 border-t border-white/15 pt-3">
                 <p className="text-[0.68rem] font-semibold text-white/80 uppercase tracking-widest">
-                  October 18, 2026 • Doors Open 8:00 AM
+                  October 18, 2026 • Doors Open 4:00 PM
                 </p>
               </div>
             </div>
@@ -158,7 +158,7 @@ export function EditionBlock() {
                 <div className="border-l-2 border-red/40 pl-4 py-1">
                   <dt className="text-xs font-bold uppercase tracking-widest text-muted">Time</dt>
                   <dd className="mt-1 text-xl font-bold text-ink">
-                    {formatTime(edition.startsAt, edition.timezone)} WAT <span className="text-xs font-normal text-muted">(Doors 8:00 AM)</span>
+                    {formatTime(edition.startsAt, edition.timezone)} WAT <span className="text-xs font-normal text-muted">(Doors 4:00 PM)</span>
                   </dd>
                 </div>
                 <div className="sm:col-span-2 border-l-2 border-red/40 pl-4 py-1">

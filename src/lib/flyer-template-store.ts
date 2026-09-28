@@ -1,168 +1,54 @@
 import { getPublishedFlyerAction } from "@/actions/public";
-import {
-  getAdminFlyerTemplateAction,
-  saveFlyerTemplateAction,
-  unpublishFlyerTemplateAction,
-} from "@/actions/admin";
+import { getAdminFlyerTemplateAction, prepareFlyerTemplateUploadAction, publishFlyerTemplateAction, unpublishFlyerTemplateAction } from "@/actions/admin";
+import { createClient } from "@/lib/supabase/client";
+import { parseFlyerTemplateConfig, type FlyerTemplateConfig } from "@/lib/flyer-template";
 
 export type PublishedFlyerTemplate = {
   id: string;
   name: string;
   fileName: string;
   mimeType: string;
+  imageUrl: string;
+  storagePath?: string | null;
   published: boolean;
   updatedAt: string;
-  imageUrl?: string;
-  blob?: Blob;
+  config: FlyerTemplateConfig;
 };
 
-export const FLYER_TEMPLATE_UPDATED_EVENT = "wow:flyer-template-updated";
-
-const DB_NAME = "wow-flyer-template-db";
-const STORE_NAME = "templates";
-const ACTIVE_ID = "active-attending-flyer";
-
-function openDb() {
-  return new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
-    request.onupgradeneeded = () => {
-      request.result.createObjectStore(STORE_NAME, { keyPath: "id" });
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+function parseTemplate(value: Awaited<ReturnType<typeof getPublishedFlyerAction>>): PublishedFlyerTemplate | null {
+  if (!value) return null;
+  return { ...value, config: parseFlyerTemplateConfig(value.config) };
 }
 
-function transact<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequest<T>) {
-  return new Promise<T>(async (resolve, reject) => {
-    try {
-      const db = await openDb();
-      const tx = db.transaction(STORE_NAME, mode);
-      const request = run(tx.objectStore(STORE_NAME));
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-      tx.oncomplete = () => db.close();
-      tx.onerror = () => {
-        db.close();
-        reject(tx.error);
-      };
-    } catch (error) {
-      reject(error);
-    }
-  });
+export async function getPublishedFlyerTemplate() {
+  return parseTemplate(await getPublishedFlyerAction());
 }
 
-export async function getPublishedFlyerTemplate(): Promise<PublishedFlyerTemplate | null> {
-  try {
-    const cloud = await getPublishedFlyerAction();
-    if (cloud && cloud.published) {
-      return {
-        id: cloud.id,
-        name: cloud.name,
-        fileName: cloud.fileName,
-        mimeType: cloud.mimeType,
-        imageUrl: cloud.imageUrl,
-        published: cloud.published,
-        updatedAt: cloud.updatedAt,
-      };
-    }
-  } catch {
-    // Offline or fallback to local cache
-  }
-
-  if (typeof indexedDB === "undefined") return null;
-  try {
-    const item = await transact<PublishedFlyerTemplate | undefined>("readonly", (store) =>
-      store.get(ACTIVE_ID),
-    );
-    return item?.published ? item : null;
-  } catch {
-    return null;
-  }
+export async function getAdminFlyerTemplate() {
+  return parseTemplate(await getAdminFlyerTemplateAction());
 }
 
-export async function getAdminFlyerTemplate(): Promise<PublishedFlyerTemplate | null> {
-  try {
-    const cloud = await getAdminFlyerTemplateAction();
-    if (cloud) {
-      return {
-        id: cloud.id,
-        name: cloud.name,
-        fileName: cloud.fileName,
-        mimeType: cloud.mimeType,
-        imageUrl: cloud.imageUrl,
-        published: cloud.published,
-        updatedAt: cloud.updatedAt,
-      };
-    }
-  } catch {
-    // Fallback to getPublishedFlyerTemplate
+export async function savePublishedFlyerTemplate(input: { name: string; file?: File; storagePath?: string; fileName?: string; mimeType?: string; config: FlyerTemplateConfig }) {
+  let storagePath = input.storagePath;
+  let fileName = input.fileName;
+  let mimeType = input.mimeType;
+  if (input.file) {
+    const prepared = await prepareFlyerTemplateUploadAction({ fileName: input.file.name, mimeType: input.file.type, size: input.file.size });
+    if (prepared.status !== "success") throw new Error(prepared.message);
+    const supabase = createClient();
+    const { error } = await supabase.storage.from("flyer-templates").uploadToSignedUrl(prepared.path, prepared.token, input.file, { contentType: input.file.type });
+    if (error) throw new Error(`Storage error: ${error.message}`);
+    storagePath = prepared.path;
+    fileName = input.file.name;
+    mimeType = input.file.type;
   }
-
-  return getPublishedFlyerTemplate();
+  if (!storagePath || !fileName || !mimeType) throw new Error("Upload a flyer design before saving.");
+  const result = await publishFlyerTemplateAction({ name: input.name, fileName, mimeType, storagePath, config: input.config });
+  if (result.status !== "success") throw new Error(result.message);
+  return { ...result.data, config: parseFlyerTemplateConfig(result.data.config) };
 }
 
-export async function savePublishedFlyerTemplate(input: {
-  name: string;
-  file: File;
-}): Promise<PublishedFlyerTemplate> {
-  const formData = new FormData();
-  formData.append("name", input.name);
-  formData.append("file", input.file);
-
-  const res = await saveFlyerTemplateAction(formData);
-  if (res.status !== "success" || !res.data) {
-    throw new Error(res.message || "Failed to publish flyer template.");
-  }
-
-  const cloudItem: PublishedFlyerTemplate = {
-    id: res.data.id,
-    name: res.data.name,
-    fileName: res.data.fileName,
-    mimeType: res.data.mimeType,
-    imageUrl: res.data.imageUrl,
-    published: res.data.published,
-    updatedAt: res.data.updatedAt,
-    blob: input.file,
-  };
-
-  if (typeof indexedDB !== "undefined") {
-    try {
-      await transact("readwrite", (store) => store.put(cloudItem));
-    } catch {
-      // Cache failure is non-fatal
-    }
-  }
-
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event(FLYER_TEMPLATE_UPDATED_EVENT));
-  }
-  return cloudItem;
-}
-
-export async function unpublishFlyerTemplate(): Promise<PublishedFlyerTemplate | null> {
-  const res = await unpublishFlyerTemplateAction();
-  if (res.status !== "success") {
-    throw new Error(res.message || "Failed to unpublish flyer.");
-  }
-
-  if (typeof indexedDB !== "undefined") {
-    try {
-      const existing = await transact<PublishedFlyerTemplate | undefined>("readonly", (store) =>
-        store.get(ACTIVE_ID),
-      );
-      if (existing) {
-        await transact("readwrite", (store) =>
-          store.put({ ...existing, published: false, updatedAt: new Date().toISOString() }),
-        );
-      }
-    } catch {
-      // Ignore
-    }
-  }
-
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event(FLYER_TEMPLATE_UPDATED_EVENT));
-  }
-  return null;
+export async function unpublishFlyerTemplate() {
+  const result = await unpublishFlyerTemplateAction();
+  if (result.status !== "success") throw new Error(result.message);
 }

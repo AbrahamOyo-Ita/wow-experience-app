@@ -5,10 +5,10 @@ This file keeps a short running summary of fixes and verification notes so you d
 ## 2026 Event Details Updated
 
 - Set the 2026 event date to Sunday, October 18, 2026.
-- Kept the existing schedule times:
-  - Doors: 8:00 AM WAT
-  - Start: 9:00 AM WAT
-  - End: 2:00 PM WAT
+- Updated schedule times:
+  - Doors: 4:00 PM WAT
+  - Start: 5:00 PM WAT
+  - End: 10:00 PM WAT
 - Set the venue to Sanctified Mount Zion Church.
 - Set the address to #25 Ibiono Street, Uyo, Akwa Ibom State.
 - Updated public-facing location copy from Lagos to Uyo where it affected the 2026 event.

@@ -8,7 +8,6 @@ import {
   RefreshCw,
   Search,
   Shield,
-  ShieldAlert,
   ShieldCheck,
   Trash2,
   UserCheck,
@@ -28,7 +27,7 @@ import {
   resendTeamInviteAction,
   updateTeamMemberRoleAction,
 } from "@/actions/admin";
-import { ROLE_DEFINITIONS, initials, labelRole } from "@/lib/admin";
+import { ROLE_DEFINITIONS, initials } from "@/lib/admin";
 import type { AdminRole, AdminUser } from "@/types";
 
 const DEPARTMENTS = [
@@ -94,13 +93,16 @@ export default function AdminTeamPage() {
   };
 
   useEffect(() => {
-    if (initialAdminUsers && initialAdminUsers.length > 0) {
-      setMembers(initialAdminUsers);
-    }
+    const task = window.setTimeout(() => {
+      if (initialAdminUsers && initialAdminUsers.length > 0) setMembers(initialAdminUsers);
+    }, 0);
+    return () => window.clearTimeout(task);
   }, [initialAdminUsers]);
 
   useEffect(() => {
-    void fetchTeam();
+    const task = window.setTimeout(() => void fetchTeam(), 0);
+    return () => window.clearTimeout(task);
+    // The initial fetch is intentionally one-shot; manual refreshes call fetchTeam directly.
   }, []);
 
   // Filtered members

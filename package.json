@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:attending-flyer": "node --env-file=.env.local scripts/seed-attending-flyer.mjs",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "test:e2e": "node --experimental-strip-types --test tests/flyer-pipeline.e2e.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

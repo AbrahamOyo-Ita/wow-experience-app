@@ -1,561 +1,178 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Bell, CheckCircle2, Clock, Download, ImagePlus, Mail, Share2, Sparkles, Upload } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Download, ImagePlus, RefreshCw, Share2, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Field, TextInput } from "@/components/ui/field";
-import { subscribeNewsletter } from "@/actions/public";
-import {
-  canvasToBlob,
-  getFlyerSize,
-  renderFlyer,
-  type FlyerFrameShape,
-  type FlyerLayout,
-  type FlyerTheme,
-} from "@/lib/canvas-utils";
-import {
-  FLYER_TEMPLATE_UPDATED_EVENT,
-  getPublishedFlyerTemplate,
-} from "@/lib/flyer-template-store";
-import { cn } from "@/lib/utils";
+import { canvasToBlob, renderFlyer, type FlyerImageSource, type FlyerPhotoTransform } from "@/lib/canvas-utils";
+import { decodeFlyerImage, loadFlyerImageUrl } from "@/lib/flyer-images";
+import { flyerFileSlug, sanitizeFlyerName } from "@/lib/flyer-template";
+import { getPublishedFlyerTemplate, type PublishedFlyerTemplate } from "@/lib/flyer-template-store";
 
-type DragStart = {
-  pointerId: number;
-  x: number;
-  y: number;
-  offsetX: number;
-  offsetY: number;
-};
+const INITIAL_TRANSFORM: FlyerPhotoTransform = { zoom: 1, offsetX: 0, offsetY: 0 };
 
-const frameOptions: Array<{ value: FlyerFrameShape; label: string }> = [
-  { value: "circle", label: "Circle" },
-  { value: "rounded", label: "Rounded" },
-  { value: "square", label: "Square" },
-];
-
-const layoutOptions: Array<{ value: FlyerLayout; label: string }> = [
-  { value: "portrait", label: "4:5" },
-  { value: "square", label: "Square" },
-];
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function loadImageFromFile(file: File) {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const image = new Image();
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(image);
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Could not load image."));
-    };
-    image.src = url;
-  });
-}
-
-function FlyerComingSoonView() {
-  const [email, setEmail] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [subscribed, setSubscribed] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const handleSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) return;
-    setSubmitting(true);
-    setErrorMsg(null);
-    try {
-      const res = await subscribeNewsletter({ email, source: "flyer_page" });
-      if (res.status === "success" || res.status === "existing") {
-        setSubscribed(true);
-      } else if (res.status === "validation") {
-        setErrorMsg(res.errors[0]?.message ?? "Please enter a valid email address.");
-      } else {
-        setErrorMsg("Something went wrong. Please try again.");
-      }
-    } catch {
-      setErrorMsg("Could not subscribe. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <section className="bg-paper py-12 sm:py-20">
-      <div className="container-site max-w-5xl">
-        <div className="grid gap-10 lg:grid-cols-12 lg:items-center">
-          {/* Left Column: Notice and Email Subscription Form */}
-          <div className="lg:col-span-7 text-left">
-            <span className="inline-flex items-center gap-2 rounded-full border border-red/30 bg-red-soft px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-red-deep">
-              <Clock className="h-3.5 w-3.5" aria-hidden />
-              Attending Flyer Studio • Coming Soon
-            </span>
-
-            <h1 className="mt-4 font-display text-4xl font-bold leading-tight text-ink sm:text-6xl uppercase">
-              Official Event Flyer <span className="text-red">Coming Soon</span>
-            </h1>
-
-            <p className="mt-5 text-base sm:text-lg text-muted font-light leading-relaxed">
-              The official Wonders of Worship Experience 2026 artwork and personalized attendee flyer generator are currently being finalized by our media team.
-            </p>
-            <p className="mt-3 text-base text-muted font-light leading-relaxed">
-              Custom attending flyers cannot be generated just yet, but will open immediately after the official artwork drops. Subscribe below to get an instant email notification as soon as it launches!
-            </p>
-
-            {/* Notification Signup Card */}
-            <div className="mt-8 rounded-2xl border border-border bg-white p-6 shadow-sm">
-              <h3 className="font-display text-xl font-bold text-ink">
-                Get Notified on Launch
-              </h3>
-              <p className="mt-1 text-sm text-muted">
-                Enter your email address and we will notify you the moment the attending flyer studio is live.
-              </p>
-
-              {subscribed ? (
-                <div className="mt-5 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
-                  <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-bold">You&apos;re on the notification list!</p>
-                    <p className="mt-0.5 text-xs text-emerald-700">
-                      We will send you an email update as soon as the official attending flyer generator opens.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <form onSubmit={handleSubscribe} className="mt-5">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <div className="relative flex-1">
-                      <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden />
-                      <input
-                        type="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter your email address"
-                        className="w-full rounded-xl border border-border bg-paper py-3 pl-10 pr-4 text-sm font-medium text-ink placeholder:text-muted focus:border-red focus:outline-none"
-                      />
-                    </div>
-                    <Button type="submit" disabled={submitting} size="lg" className="gap-2 shrink-0">
-                      <Bell className="h-4 w-4" aria-hidden />
-                      {submitting ? "Subscribing..." : "Notify Me"}
-                    </Button>
-                  </div>
-                  {errorMsg && (
-                    <p className="mt-2 text-xs font-semibold text-red">{errorMsg}</p>
-                  )}
-                </form>
-              )}
-            </div>
-
-            <div className="mt-6 flex flex-wrap gap-4 text-sm text-muted">
-              <span>Looking for updates?</span>
-              <a
-                href="https://wa.me/2348101654190?text=Hi%2C%20I%20want%20to%20get%20updates%20on%20WOW%20Experience%202026."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-red hover:underline"
-              >
-                Join our WhatsApp updates &rarr;
-              </a>
-            </div>
-          </div>
-
-          {/* Right Column: Visual Preview Mockup Card */}
-          <div className="lg:col-span-5 flex justify-center">
-            <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border bg-ink p-6 text-white shadow-xl">
-              <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-b from-ink via-ink/90 to-ink p-6 flex flex-col justify-between text-center">
-                <div className="absolute inset-0 bg-cover bg-center opacity-40" style={{ backgroundImage: `url('/images/IMG_2311.jpg')` }} />
-                <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/60 to-transparent" />
-
-                <div className="relative z-10">
-                  <span className="inline-block rounded-full bg-red px-3 py-1 text-[0.65rem] font-bold uppercase tracking-widest text-white shadow-sm">
-                    Official Artwork Dropping Soon
-                  </span>
-                  <h3 className="mt-4 font-display text-3xl font-bold tracking-tight text-white uppercase leading-tight">
-                    RESOUND <span className="text-red">2026</span>
-                  </h3>
-                </div>
-
-                <div className="relative z-10 my-auto py-6">
-                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-white/40 bg-white/10 text-white/80">
-                    <Sparkles className="h-8 w-8 text-red-soft" />
-                  </div>
-                  <p className="mt-4 text-sm font-bold text-white tracking-wide uppercase">
-                    Attending Flyer Studio
-                  </p>
-                  <p className="mt-1 text-xs text-white/70">
-                    Custom Photo Upload & Frame Drop
-                  </p>
-                </div>
-
-                <div className="relative z-10 border-t border-white/20 pt-4">
-                  <p className="text-[0.7rem] font-semibold text-white/90 uppercase tracking-widest">
-                    Sunday, Oct 18, 2026 • Uyo, Akwa Ibom State
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-export function FlyerGenerator({ isFlyerReady = false }: { isFlyerReady?: boolean }) {
-  if (!isFlyerReady) {
-    return <FlyerComingSoonView />;
-  }
-  return <FlyerStudioInteractive />;
-}
-
-function FlyerStudioInteractive() {
+export function FlyerGenerator() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const dragStartRef = useRef<DragStart | null>(null);
-  const [fullName, setFullName] = useState("");
-  const [detail, setDetail] = useState("Attending from Uyo");
-  const [layout, setLayout] = useState<FlyerLayout>("portrait");
-  const theme: FlyerTheme = "classic";
-  const [frameShape, setFrameShape] = useState<FlyerFrameShape>("circle");
-  const [zoom, setZoom] = useState(1.08);
-  const [offsetX, setOffsetX] = useState(0);
-  const [offsetY, setOffsetY] = useState(0);
-  const [photo, setPhoto] = useState<HTMLImageElement | null>(null);
-  const [templateOverlay, setTemplateOverlay] = useState<HTMLImageElement | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-
-  const outputSize = useMemo(() => getFlyerSize(layout), [layout]);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const dragOrigin = useRef<{ x: number; y: number; transform: FlyerPhotoTransform } | null>(null);
+  const pinchDistance = useRef<number | null>(null);
+  const [template, setTemplate] = useState<PublishedFlyerTemplate | null>(null);
+  const [templateImage, setTemplateImage] = useState<FlyerImageSource | null>(null);
+  const [photo, setPhoto] = useState<FlyerImageSource | null>(null);
+  const [photoTransform, setPhotoTransform] = useState(INITIAL_TRANSFORM);
+  const [name, setName] = useState("");
+  const [adjusting, setAdjusting] = useState(false);
+  const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
+  const [message, setMessage] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
-    let templateUrl: string | null = null;
     let cancelled = false;
-
-    const loadPublishedTemplate = async () => {
-      try {
-        const template = await getPublishedFlyerTemplate();
-        if (cancelled || !template) return;
-        const source = template.imageUrl || (template.blob ? URL.createObjectURL(template.blob) : null);
-        if (!source) return;
-        templateUrl = source;
-        const image = new Image();
-        image.crossOrigin = "anonymous";
-        image.onload = () => {
-          if (!cancelled) {
-            setTemplateOverlay(image);
-            setNotice(`Published template loaded: ${template.name}`);
-          }
-        };
-        image.src = templateUrl;
-      } catch {
-        if (!cancelled) setNotice("Published flyer template could not be loaded.");
-      }
-    };
-
-    const onTemplateUpdated = () => {
-      if (templateUrl && templateUrl.startsWith("blob:")) URL.revokeObjectURL(templateUrl);
-      templateUrl = null;
-      void loadPublishedTemplate();
-    };
-
-    void loadPublishedTemplate();
-    window.addEventListener(FLYER_TEMPLATE_UPDATED_EVENT, onTemplateUpdated);
-    return () => {
-      cancelled = true;
-      window.removeEventListener(FLYER_TEMPLATE_UPDATED_EVENT, onTemplateUpdated);
-      if (templateUrl && templateUrl.startsWith("blob:")) URL.revokeObjectURL(templateUrl);
-    };
+    void getPublishedFlyerTemplate()
+      .then(async (next) => {
+        if (!next) { if (!cancelled) setStatus("empty"); return; }
+        const image = await loadFlyerImageUrl(next.imageUrl);
+        if (!cancelled) { setTemplate(next); setTemplateImage(image); setStatus("ready"); }
+      })
+      .catch(() => { if (!cancelled) setStatus("error"); });
+    return () => { cancelled = true; };
   }, []);
 
+  const draw = useCallback(() => {
+    if (!canvasRef.current || !template || !templateImage) return;
+    renderFlyer(canvasRef.current, { template: templateImage, config: template.config, name, photo, photoTransform });
+  }, [name, photo, photoTransform, template, templateImage]);
+
   useEffect(() => {
     let cancelled = false;
-    const draw = () => {
-      if (cancelled || !canvasRef.current) return;
-      renderFlyer(canvasRef.current, {
-        layout,
-        theme,
-        fullName,
-        detail,
-        photo,
-        templateOverlay,
-        zoom,
-        offsetX,
-        offsetY,
-        frameShape,
-      });
-    };
+    void document.fonts.ready.then(() => { if (!cancelled) draw(); });
+    return () => { cancelled = true; };
+  }, [draw]);
 
-    if (document.fonts?.ready) {
-      void document.fonts.ready.then(draw);
-    } else {
+  async function choosePhoto(file: File | undefined) {
+    if (!file) return;
+    setMessage("Preparing your photo…");
+    try {
+      const decoded = await decodeFlyerImage(file);
+      if (photo instanceof ImageBitmap) photo.close();
+      setPhoto(decoded);
+      setPhotoTransform(INITIAL_TRANSFORM);
+      setAdjusting(true);
+      setMessage("Drag to reposition. Pinch, scroll, or use the zoom control.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "The photo could not be opened.");
+    }
+  }
+
+  async function exportFlyer(share = false) {
+    if (!canvasRef.current || !template) return;
+    setExporting(true);
+    setMessage("Rendering your high-resolution flyer…");
+    try {
+      await document.fonts.ready;
       draw();
-    }
-
-    return () => {
-      cancelled = true;
-    };
-  }, [detail, frameShape, fullName, layout, offsetX, offsetY, photo, templateOverlay, theme, zoom]);
-
-  const handlePhotoUpload = async (fileList: FileList | null) => {
-    const file = fileList?.[0];
-    if (!file) return;
-    setNotice(null);
-    try {
-      const image = await loadImageFromFile(file);
-      setPhoto(image);
-      setZoom(1.08);
-      setOffsetX(0);
-      setOffsetY(0);
-    } catch {
-      setNotice("That photo could not be loaded. Try another image.");
-    }
-  };
-
-  const handleTemplateUpload = async (fileList: FileList | null) => {
-    const file = fileList?.[0];
-    if (!file) return;
-    setNotice(null);
-    try {
-      const image = await loadImageFromFile(file);
-      setTemplateOverlay(image);
-    } catch {
-      setNotice("That template overlay could not be loaded. Try a PNG file.");
-    }
-  };
-
-  const exportBlob = useCallback(async () => {
-    const canvas = canvasRef.current;
-    if (!canvas) throw new Error("Canvas is not ready.");
-    return canvasToBlob(canvas);
-  }, []);
-
-  const downloadFlyer = async () => {
-    setNotice(null);
-    try {
-      const blob = await exportBlob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `wow-attending-${layout}.png`;
-      link.click();
-      URL.revokeObjectURL(url);
-      setNotice("Flyer downloaded.");
-    } catch {
-      setNotice("Could not download the flyer. Please try again.");
-    }
-  };
-
-  const shareFlyer = async () => {
-    setNotice(null);
-    try {
-      const blob = await exportBlob();
-      const file = new File([blob], `wow-attending-${layout}.png`, { type: "image/png" });
-      const shareData = {
-        title: "Wonders of Worship Experience 2026",
-        text: "I will be attending Wonders of Worship Experience 2026.",
-        files: [file],
-      };
-
-      if (navigator.canShare?.(shareData)) {
-        await navigator.share(shareData);
-        setNotice("Share sheet opened.");
-        return;
+      const blob = await canvasToBlob(canvasRef.current);
+      const filename = `wow-attending-${flyerFileSlug(name)}.png`;
+      const file = new File([blob], filename, { type: "image/png" });
+      if (share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ title: template.name, text: "I’m attending!", files: [file] });
+        setMessage("Share sheet opened.");
+      } else {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        setMessage(share ? "Sharing is unavailable here, so the flyer was downloaded." : "Flyer downloaded.");
       }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") setMessage("Sharing cancelled.");
+      else setMessage("The flyer could not be exported. Please try again.");
+    } finally { setExporting(false); }
+  }
 
-      await downloadFlyer();
-    } catch {
-      setNotice("Sharing is not available here. Use Download Flyer instead.");
-    }
-  };
-
-  const onPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!photo) return;
+  function pointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (!photo || !adjusting) return;
     event.currentTarget.setPointerCapture(event.pointerId);
-    dragStartRef.current = {
-      pointerId: event.pointerId,
-      x: event.clientX,
-      y: event.clientY,
-      offsetX,
-      offsetY,
-    };
-  };
-
-  const onPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    const start = dragStartRef.current;
-    if (!start || start.pointerId !== event.pointerId) return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const nextX = start.offsetX + (event.clientX - start.x) / rect.width / 0.45;
-    const nextY = start.offsetY + (event.clientY - start.y) / rect.height / 0.45;
-    setOffsetX(clamp(nextX, -1, 1));
-    setOffsetY(clamp(nextY, -1, 1));
-  };
-
-  const onPointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    const start = dragStartRef.current;
-    if (start?.pointerId === event.pointerId) {
-      dragStartRef.current = null;
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.current.size === 1) dragOrigin.current = { x: event.clientX, y: event.clientY, transform: photoTransform };
+    if (pointers.current.size === 2) {
+      const [a, b] = [...pointers.current.values()];
+      pinchDistance.current = Math.hypot(a.x - b.x, a.y - b.y);
     }
-  };
+  }
 
+  function pointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (!pointers.current.has(event.pointerId) || !canvasRef.current) return;
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const values = [...pointers.current.values()];
+    if (values.length === 2 && pinchDistance.current) {
+      const distance = Math.hypot(values[0].x - values[1].x, values[0].y - values[1].y);
+      const ratio = distance / pinchDistance.current;
+      pinchDistance.current = distance;
+      setPhotoTransform((current) => ({ ...current, zoom: clamp(current.zoom * ratio, 1, 4) }));
+      return;
+    }
+    const origin = dragOrigin.current;
+    if (!origin) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    setPhotoTransform({ ...origin.transform, offsetX: clamp(origin.transform.offsetX + ((event.clientX - origin.x) / rect.width) * 3, -1, 1), offsetY: clamp(origin.transform.offsetY + ((event.clientY - origin.y) / rect.height) * 3, -1, 1) });
+  }
+
+  function pointerUp(event: React.PointerEvent<HTMLCanvasElement>) {
+    pointers.current.delete(event.pointerId);
+    if (pointers.current.size < 2) pinchDistance.current = null;
+    if (pointers.current.size === 0) dragOrigin.current = null;
+  }
+
+  if (status === "loading") return <StudioState title="Loading flyer studio" detail="Preparing the published design and its editor settings…" />;
+  if (status === "empty") return <StudioState title="Flyer studio is not open yet" detail="The event team has not published an attending flyer." />;
+  if (status === "error" || !template) return <StudioState title="Flyer studio could not load" detail="Check your connection and refresh the page." retry />;
+
+  const text = template.config.textArea;
   return (
-    <section className="bg-paper py-10 sm:py-16">
-      <div className="container-site">
-        <div className="grid gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-start">
-          <div className="rounded-3xl border border-border bg-white p-5 shadow-xs sm:p-6 lg:sticky lg:top-24">
-            <p className="text-xs font-bold uppercase tracking-widest text-red">
-              Flyer Studio
-            </p>
-            <h1 className="mt-2 font-display text-5xl font-bold leading-none text-ink sm:text-6xl">
-              I&apos;ll Be Attending
-            </h1>
-            <p className="mt-3 text-sm leading-relaxed text-muted">
-              Add your photo and name, then download a branded social flyer.
-            </p>
+    <section className="bg-paper py-8 sm:py-14">
+      <div className="container-site grid gap-6 xl:grid-cols-[22rem_minmax(0,1fr)] xl:items-start">
+        <aside className="rounded-2xl border border-border bg-white p-5 xl:sticky xl:top-24">
+          <p className="text-xs font-bold uppercase tracking-[.18em] text-red">Attending flyer studio</p>
+          <h1 className="mt-2 font-display text-5xl leading-none text-ink">Make it yours</h1>
+          <p className="mt-3 text-sm leading-relaxed text-muted">Add your photo and name, adjust the crop, then download the exact high-resolution design.</p>
 
-            <div className="mt-6 grid gap-5">
-              <Field id="flyer-photo" label="Portrait photo">
-                <label className="flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-red/40 bg-red-soft px-4 py-3 text-sm font-bold text-red-deep transition hover:bg-white">
-                  <ImagePlus className="h-4 w-4" aria-hidden />
-                  <span>{photo ? "Change photo" : "Upload photo"}</span>
-                  <input
-                    id="flyer-photo"
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={(event) => void handlePhotoUpload(event.target.files)}
-                  />
-                </label>
-              </Field>
-
-              <Field id="flyer-name" label="Full name">
-                <TextInput
-                  id="flyer-name"
-                  value={fullName}
-                  placeholder="Minister Grace Davies"
-                  maxLength={42}
-                  onChange={(event) => setFullName(event.target.value)}
-                />
-              </Field>
-
-              <Field id="flyer-detail" label="Title or location" optional>
-                <TextInput
-                  id="flyer-detail"
-                  value={detail}
-                  placeholder="Attending from Uyo"
-                  maxLength={54}
-                  onChange={(event) => setDetail(event.target.value)}
-                />
-              </Field>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <SegmentedControl
-                  label="Format"
-                  value={layout}
-                  options={layoutOptions}
-                  onChange={(value) => setLayout(value as FlyerLayout)}
-                />
-                <SegmentedControl
-                  label="Frame"
-                  value={frameShape}
-                  options={frameOptions}
-                  onChange={(value) => setFrameShape(value as FlyerFrameShape)}
-                />
-              </div>
-
-              <div className="rounded-2xl border border-border bg-paper p-4.5">
-                <p className="mb-3 text-xs font-bold uppercase tracking-wider text-ink">
-                  Photo framing
-                </p>
-                <RangeControl
-                  label="Zoom"
-                  min={0.75}
-                  max={2.25}
-                  step={0.01}
-                  value={zoom}
-                  onChange={setZoom}
-                />
-                <RangeControl
-                  label="Left / Right"
-                  min={-1}
-                  max={1}
-                  step={0.01}
-                  value={offsetX}
-                  onChange={setOffsetX}
-                />
-                <RangeControl
-                  label="Up / Down"
-                  min={-1}
-                  max={1}
-                  step={0.01}
-                  value={offsetY}
-                  onChange={setOffsetY}
-                />
-              </div>
-
-              <Field id="flyer-template" label="Template overlay" optional hint="Upload a transparent PNG frame if the event team provides one.">
-                <label className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-md border border-border bg-white px-4 py-3 text-sm font-bold text-ink transition hover:border-red/50">
-                  <Upload className="h-4 w-4" aria-hidden />
-                  <span>{templateOverlay ? "Change overlay" : "Upload overlay PNG"}</span>
-                  <input
-                    id="flyer-template"
-                    type="file"
-                    accept="image/png,image/*"
-                    className="sr-only"
-                    onChange={(event) => void handleTemplateUpload(event.target.files)}
-                  />
-                </label>
-              </Field>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Button type="button" size="lg" className="gap-2" onClick={() => void downloadFlyer()}>
-                  <Download className="h-4 w-4" aria-hidden />
-                  Download Flyer
-                </Button>
-                <Button type="button" size="lg" variant="outlineDark" className="gap-2" onClick={() => void shareFlyer()}>
-                  <Share2 className="h-4 w-4" aria-hidden />
-                  Share
-                </Button>
-              </div>
-
-              {notice ? (
-                <p className="rounded-md bg-paper px-3 py-2 text-sm font-semibold text-ink" role="status">
-                  {notice}
-                </p>
-              ) : null}
+          <div className="mt-6 grid gap-5">
+            <div>
+              <label className="text-sm font-bold text-ink" htmlFor="attendee-photo">Your photo</label>
+              <button type="button" className="mt-2 flex min-h-14 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-red/45 bg-red-soft px-4 text-sm font-bold text-red-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red" onClick={() => fileRef.current?.click()}>
+                <ImagePlus className="h-4 w-4" aria-hidden />{photo ? "Choose another photo" : "Choose a photo"}
+              </button>
+              <input ref={fileRef} id="attendee-photo" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" className="sr-only" onChange={(event) => void choosePhoto(event.target.files?.[0])} />
             </div>
+
+            <label className="grid gap-2 text-sm font-bold text-ink" htmlFor="attendee-name">
+              Your name
+              <input id="attendee-name" value={name} maxLength={text.maxChars} placeholder={text.placeholder} onChange={(event) => setName(sanitizeFlyerName(event.target.value))} className="min-h-12 rounded-xl border border-border bg-white px-3 text-base font-medium outline-none focus:border-red focus:ring-2 focus:ring-red/15" />
+              <span className="text-right text-xs font-medium text-muted">{name.length}/{text.maxChars}</span>
+            </label>
+
+            {photo ? <div className="rounded-xl border border-border bg-paper p-4">
+              <div className="flex items-center justify-between gap-3"><p className="text-sm font-bold text-ink">Photo crop</p><button type="button" className="text-xs font-bold text-red underline-offset-4 hover:underline" onClick={() => setPhotoTransform(INITIAL_TRANSFORM)}><RefreshCw className="mr-1 inline h-3.5 w-3.5" aria-hidden />Reset</button></div>
+              <label className="mt-3 grid gap-2 text-xs font-semibold text-muted" htmlFor="photo-zoom"><span className="flex items-center gap-1"><ZoomIn className="h-3.5 w-3.5" aria-hidden /> Zoom</span><input id="photo-zoom" type="range" min="1" max="4" step="0.01" value={photoTransform.zoom} onChange={(event) => setPhotoTransform((value) => ({ ...value, zoom: Number(event.target.value) }))} className="accent-red" /></label>
+              <Button type="button" variant="outlineDark" className="mt-4 w-full" onClick={() => { setAdjusting(false); setMessage("Photo crop confirmed."); }}>Done adjusting</Button>
+            </div> : null}
+
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              <Button type="button" size="lg" disabled={exporting} onClick={() => void exportFlyer(false)}><Download className="mr-2 h-4 w-4" aria-hidden />{exporting ? "Rendering…" : "Download PNG"}</Button>
+              <Button type="button" size="lg" variant="outlineDark" disabled={exporting} onClick={() => void exportFlyer(true)}><Share2 className="mr-2 h-4 w-4" aria-hidden />Share</Button>
+            </div>
+            <p className="min-h-10 rounded-lg bg-paper px-3 py-2 text-xs leading-relaxed text-muted" role="status" aria-live="polite">{message || `${template.config.baseWidth} × ${template.config.baseHeight}px PNG`}</p>
           </div>
+        </aside>
 
-          <div className="rounded-3xl border border-border bg-white p-4 shadow-xs sm:p-6">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-bold text-ink">Live Preview</p>
-                <p className="text-xs text-muted">
-                  {outputSize.width} x {outputSize.height}px PNG
-                </p>
-              </div>
-              <p className="rounded-md bg-paper px-3 py-1 text-xs font-bold text-muted">
-                Drag photo to adjust
-              </p>
-            </div>
-            <div className="flex justify-center overflow-hidden rounded-2xl bg-ink p-3 sm:p-5">
-              <canvas
-                ref={canvasRef}
-                className={cn(
-                  "h-auto max-h-[78vh] w-full max-w-[520px] touch-none rounded-xl bg-white shadow-2xl",
-                  photo && "cursor-grab active:cursor-grabbing",
-                )}
-                style={{ aspectRatio: `${outputSize.width} / ${outputSize.height}` }}
-                onPointerDown={onPointerDown}
-                onPointerMove={onPointerMove}
-                onPointerUp={onPointerUp}
-                onPointerCancel={onPointerUp}
-                aria-label="Generated attendance flyer preview"
-              />
-            </div>
+        <div className="rounded-2xl border border-border bg-white p-3 sm:p-5">
+          <div className="mb-3 flex items-center justify-between gap-3"><div><p className="text-sm font-bold text-ink">Live preview</p><p className="text-xs text-muted">Preview and export use the same renderer</p></div>{photo && adjusting ? <span className="rounded-lg bg-red-soft px-2.5 py-1 text-xs font-bold text-red-deep">Drag or pinch photo</span> : null}</div>
+          <div className="relative mx-auto max-w-[720px] overflow-hidden rounded-xl bg-ink shadow-[0_24px_70px_rgba(47,15,8,.22)]" style={{ aspectRatio: `${template.config.baseWidth}/${template.config.baseHeight}` }}>
+            <canvas ref={canvasRef} className={`h-auto w-full touch-none ${photo && adjusting ? "cursor-grab active:cursor-grabbing" : ""}`} onClick={() => { if (!photo) fileRef.current?.click(); }} onWheel={(event) => { if (!photo || !adjusting) return; event.preventDefault(); setPhotoTransform((value) => ({ ...value, zoom: clamp(value.zoom - event.deltaY * 0.002, 1, 4) })); }} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp} aria-label="Personalized attending flyer preview" />
+            <input aria-label="Name shown on flyer" value={name} maxLength={text.maxChars} placeholder={text.placeholder} onChange={(event) => setName(sanitizeFlyerName(event.target.value))} className="absolute border border-dashed border-white/70 bg-black/10 px-1 text-center text-transparent caret-white outline-none focus:border-white focus:ring-2 focus:ring-white/70" style={{ left: `${text.x * 100}%`, top: `${text.y * 100}%`, width: `${text.w * 100}%`, height: `${text.h * 100}%` }} />
           </div>
         </div>
       </div>
@@ -563,73 +180,8 @@ function FlyerStudioInteractive() {
   );
 }
 
-function SegmentedControl({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: Array<{ value: string; label: string }>;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div>
-      <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted">{label}</p>
-      <div className="flex rounded-xl border border-border bg-paper p-1 shadow-2xs">
-        {options.map((option) => {
-          const active = option.value === value;
-          return (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => onChange(option.value)}
-              className={cn(
-                "flex-1 rounded-lg py-2 px-2.5 text-center text-xs font-bold transition-all duration-200 active:scale-[0.97]",
-                active
-                  ? "bg-red text-white shadow-xs"
-                  : "bg-transparent text-ink/75 hover:text-ink",
-              )}
-            >
-              {option.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
+function StudioState({ title, detail, retry = false }: { title: string; detail: string; retry?: boolean }) {
+  return <section className="bg-paper py-24"><div className="container-site"><div className="mx-auto max-w-xl rounded-2xl border border-border bg-white p-8 text-center"><h1 className="font-display text-4xl text-ink">{title}</h1><p className="mt-3 text-sm text-muted">{detail}</p>{retry ? <Button type="button" className="mt-6" onClick={() => location.reload()}>Try again</Button> : null}</div></div></section>;
 }
 
-function RangeControl({
-  label,
-  min,
-  max,
-  step,
-  value,
-  onChange,
-}: {
-  label: string;
-  min: number;
-  max: number;
-  step: number;
-  value: number;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <label className="mt-3 grid gap-1 text-xs">
-      <div className="flex items-center justify-between font-semibold text-muted">
-        <span>{label}</span>
-      </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-        className="mt-1 h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-border accent-red"
-      />
-    </label>
-  );
-}
+function clamp(value: number, min: number, max: number) { return Math.min(max, Math.max(min, value)); }

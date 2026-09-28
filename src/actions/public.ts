@@ -183,6 +183,7 @@ export type PublishedFlyerResult = {
   imageUrl: string;
   published: boolean;
   updatedAt: string;
+  config: unknown;
 };
 
 export async function getPublishedFlyerAction(): Promise<PublishedFlyerResult | null> {
@@ -193,7 +194,7 @@ export async function getPublishedFlyerAction(): Promise<PublishedFlyerResult | 
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("flyer_templates")
-      .select("id, name, file_name, mime_type, image_url, is_published, updated_at")
+      .select("id, name, file_name, mime_type, image_url, is_published, updated_at, config")
       .eq("is_published", true)
       .order("updated_at", { ascending: false })
       .limit(1)
@@ -211,6 +212,7 @@ export async function getPublishedFlyerAction(): Promise<PublishedFlyerResult | 
       imageUrl: data.image_url,
       published: data.is_published,
       updatedAt: data.updated_at,
+      config: data.config,
     };
   } catch (err) {
     console.error("Failed to load published flyer template", err);
@@ -335,5 +337,4 @@ export async function fetchPublishedFaqs(editionId?: string): Promise<FaqItem[]>
     return editionId ? getFaqsByEdition(editionId) : staticFaqs;
   }
 }
-
 

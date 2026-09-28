@@ -213,7 +213,7 @@ select
 from (
   values
     ('faq-venue', 'venue', 'Where is Wonders of Worship Experience 2026 holding?', 'Wonders of Worship Experience 2026 is holding at Sanctified Mount Zion Church, #25 Ibiono Street, Uyo, Akwa Ibom State, Nigeria. Reminder messages will carry the address and directions link.', 1),
-    ('faq-time', 'time', 'What time should I arrive?', 'Doors are planned for 8:00 AM West Africa Time. The gathering begins at 9:00 AM. Arrive early if you want a seat near the front or if you are serving on a volunteer team.', 2),
+    ('faq-time', 'time', 'What time should I arrive?', 'Doors are planned for 4:00 PM West Africa Time. The gathering begins at 5:00 PM. Arrive early if you want a seat near the front or if you are serving on a volunteer team.', 2),
     ('faq-entry', 'entry', 'Is there a ticket or registration fee?', 'No. RSVP is free and records your intention to attend. On the day, scan the venue QR code to check in. RSVP is not the same as attendance.', 3),
     ('faq-bring', 'what_to_bring', 'What should I bring?', 'Bring a Bible if you use one, water, and a heart ready to sing. Photography for personal memory is welcome during permitted moments. Full event photography will be shared in the gallery after the day.', 4),
     ('faq-children', 'children', 'Can I come with children?', 'Families are welcome. There is no separate children''s programme in this edition, so parents remain responsible for their children throughout the gathering. If that plan changes, we will say so clearly before the event.', 5),

@@ -17,7 +17,7 @@ export const faqs: FaqItem[] = [
     category: "time",
     question: "What time should I arrive?",
     answer:
-      "Doors are planned for 8:00 AM West Africa Time. The gathering begins at 9:00 AM. Arrive early if you want a seat near the front or if you are serving on a volunteer team.",
+      "Doors are planned for 4:00 PM West Africa Time. The gathering begins at 5:00 PM. Arrive early if you want a seat near the front or if you are serving on a volunteer team.",
     order: 2,
   },
   {
