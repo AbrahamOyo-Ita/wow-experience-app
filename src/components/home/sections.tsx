@@ -58,18 +58,18 @@ export function FlyerPromoSection() {
       <div className="container-site grid gap-10 lg:grid-cols-12 lg:items-center">
         <SlideUp className="lg:col-span-6">
           <span className="text-xs font-bold uppercase tracking-widest text-red">
-            Attendance Flyer Studio • Coming Soon
+            Attendance Flyer Studio • Now Live
           </span>
           <h2 className="mt-3 font-display text-4xl sm:text-6xl font-bold leading-tight text-ink">
-            Official Attending Flyer <span className="text-red">Coming Soon</span>
+            Official Attending Flyer <span className="text-red">Now Live</span>
           </h2>
           <p className="mt-4 text-base sm:text-lg text-muted font-light leading-relaxed">
-            The official Wonders of Worship Experience 2026 event artwork is currently being finalized by our media team. Customized attendee flyer creation will open immediately after the official artwork drops. Subscribe to get notified on launch!
+            The official Wonders of Worship Experience 2026 attending flyer is now available! Customize your own flyer with your photo and name, then download your high-resolution badge to share across socials.
           </p>
           <div className="mt-8">
             <HoverCard scale={1.03} className="inline-block">
               <Button href="/flyer" size="lg" className="gap-2">
-                Get Notified On Drop &rarr;
+                Create Your Flyer &rarr;
               </Button>
             </HoverCard>
           </div>
@@ -77,36 +77,24 @@ export function FlyerPromoSection() {
 
         <ScaleIn delay={0.2} className="lg:col-span-6 flex justify-center">
           <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border bg-ink p-6 text-white shadow-xl">
-            <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-b from-ink via-ink/90 to-ink p-6 flex flex-col justify-between text-center">
-              <div className="absolute inset-0 bg-cover bg-center opacity-40" style={{ backgroundImage: `url('/images/IMG_2311.jpg')` }} />
-              <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/70 to-transparent" />
-
-              <div className="relative z-10">
-                <span className="inline-block rounded-full bg-red px-3 py-1 text-[0.65rem] font-bold uppercase tracking-widest text-white shadow-sm">
-                  Official Artwork Dropping Soon
+            <Link
+              href="/flyer"
+              className="group relative block aspect-[4/5] overflow-hidden rounded-2xl border border-white/15 bg-ink shadow-lg"
+            >
+              <Image
+                src="/images/WOW%20EXPERIENCE%20ATTENDING.png"
+                alt="WOW Experience 2026 Official Attending Flyer"
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                sizes="(max-width: 768px) 100vw, 400px"
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-end justify-center p-4">
+                <span className="rounded-full bg-red px-4 py-1.5 text-xs font-bold text-white shadow-md">
+                  Click to Customize &rarr;
                 </span>
-                <h3 className="mt-3 font-display text-2xl font-bold tracking-tight text-white uppercase">
-                  I Will Be <span className="text-red">Attending</span>
-                </h3>
               </div>
-
-              <div className="relative z-10 my-auto mx-auto flex flex-col items-center">
-                <div className="relative h-24 w-24 overflow-hidden rounded-full border-2 border-red bg-white/10 p-1 shadow-lg flex items-center justify-center">
-                  <div className="flex h-full w-full items-center justify-center rounded-full bg-white/15 text-white/80">
-                    <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                </div>
-                <p className="mt-3 text-xs font-bold text-white tracking-widest uppercase">STAY TUNED FOR LAUNCH</p>
-              </div>
-
-              <div className="relative z-10 border-t border-white/15 pt-3">
-                <p className="text-[0.68rem] font-semibold text-white/80 uppercase tracking-widest">
-                  October 18, 2026 • Doors Open 4:00 PM
-                </p>
-              </div>
-            </div>
+            </Link>
             <div className="mt-4 flex items-center justify-between">
               <div>
                 <p className="text-sm font-bold text-white">Attendance Flyer Studio</p>
