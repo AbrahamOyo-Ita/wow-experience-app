@@ -554,6 +554,8 @@ export async function updateVolunteerStatusAction(id: string, status: VolunteerS
     return { status: "error", message: error?.message ?? "Application not found." } as MockSubmitResult<VolunteerApplication>;
   }
 
+  revalidatePath("/admin/volunteers");
+
   const row = data as Record<string, unknown>;
   const nested = row.volunteer_teams as { team_key?: string } | null;
   return {
@@ -575,6 +577,29 @@ export async function updateVolunteerStatusAction(id: string, status: VolunteerS
       updatedAt: String(row.updated_at),
     },
   } satisfies MockSubmitResult<VolunteerApplication>;
+}
+
+export async function batchUpdateVolunteerStatusAction(ids: string[], status: VolunteerStatus) {
+  if (!ids.length) return { status: "error" as const, message: "No applications selected." };
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub as string | undefined;
+  const { data, error } = await supabase
+    .from("volunteer_applications")
+    .update({
+      status,
+      reviewed_by: userId ?? null,
+      reviewed_at: new Date().toISOString(),
+    })
+    .in("id", ids)
+    .select("id, status");
+
+  if (error) {
+    return { status: "error" as const, message: error.message };
+  }
+
+  revalidatePath("/admin/volunteers");
+  return { status: "success" as const, count: data?.length ?? 0 };
 }
 
 export async function toggleAutomationAction(id: string, enabled: boolean) {

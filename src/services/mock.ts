@@ -126,6 +126,19 @@ export const volunteerService: VolunteerService = {
     found.reviewedBy = "u-nkechi";
     return { status: "success", data: found };
   },
+  async batchUpdateStatus(ids, status) {
+    await sleep(500);
+    ids.forEach((id) => {
+      const found = volunteerStore.find((item) => item.id === id);
+      if (found) {
+        found.status = status;
+        found.updatedAt = new Date().toISOString();
+        found.reviewedAt = new Date().toISOString();
+        found.reviewedBy = "u-nkechi";
+      }
+    });
+    return { status: "success", data: { count: ids.length } };
+  },
 };
 
 export const attendanceService: AttendanceService & {

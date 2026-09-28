@@ -123,6 +123,18 @@ on conflict (profile_id, role) do nothing;
 - Ran `npm run seed:attending-flyer` to seed the active template and upload artwork to Supabase Storage.
 - Verified PostgREST schema cache recognizes `base_height`, resolving the "Could not find 'base_height' column in schema cache" error.
 
+## Volunteers Admin Dynamic Review & Approval Overhaul
+
+- Upgraded `src/app/admin/(console)/volunteers/page.tsx` into a fully interactive review & triage hub:
+  - Added dedicated **Actions** column with "Review" button, quick 1-click **Accept** and **Decline** triggers.
+  - Enabled row-click navigation to open the detailed application drawer.
+  - Added multi-select batch actions toolbar (Accept, Mark Under Review, Waitlist, Decline selected applicants) in `DataTable`.
+  - Added interactive metric cards that filter the table by pipeline stage with clear active filters.
+  - Built comprehensive application review drawer displaying full contact details (email with copy, phone with direct WhatsApp link), occupation, location, and full candidate responses (experience, availability, motivation).
+  - Added color-coded status decision workflow buttons (Accept, Under Review, Waitlist, Decline) with optimistic updates and toast feedback.
+  - Added WhatsApp onboarding card with customized text interpolation, copy-to-clipboard, and one-tap "Open in WhatsApp With Note" link.
+- Implemented `batchUpdateVolunteerStatusAction` in `src/actions/admin.ts` and wired through `VolunteerService`.
+
 ## Remaining Production Items
 
 - Connect Resend for email sending.

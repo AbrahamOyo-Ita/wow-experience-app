@@ -1,5 +1,6 @@
 import {
   adminCheckIn,
+  batchUpdateVolunteerStatusAction,
   loadAdminBundle,
   saveEditionAction,
   scheduleCampaignAction,
@@ -46,6 +47,11 @@ export const volunteerService: VolunteerService = {
     return bundle.volunteers.filter((row) => row.eventId === eventId);
   },
   updateStatus: (id: string, status: VolunteerStatus) => updateVolunteerStatusAction(id, status),
+  batchUpdateStatus: async (ids: string[], status: VolunteerStatus) => {
+    const res = await batchUpdateVolunteerStatusAction(ids, status);
+    if (res.status === "error") return { status: "error", message: res.message };
+    return { status: "success", data: { count: res.count } };
+  },
 };
 
 export const attendanceService: AttendanceService & { submit: AttendanceService["checkIn"] } = {

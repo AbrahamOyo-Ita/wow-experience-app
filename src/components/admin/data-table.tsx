@@ -18,6 +18,8 @@ export function DataTable<T extends { id?: string }>({
   searchPlaceholder = "Search",
   searchFilter,
   filters,
+  batchActions,
+  onRowClick,
   emptyTitle = "Nothing here",
   emptyBody = "No records match the current filters.",
   pageSize = 8,
@@ -29,6 +31,8 @@ export function DataTable<T extends { id?: string }>({
   searchPlaceholder?: string;
   searchFilter?: (row: T, query: string) => boolean;
   filters?: React.ReactNode;
+  batchActions?: (selectedRows: T[], clearSelection: () => void) => React.ReactNode;
+  onRowClick?: (row: T) => void;
   emptyTitle?: string;
   emptyBody?: string;
   pageSize?: number;
@@ -94,6 +98,12 @@ export function DataTable<T extends { id?: string }>({
     });
   };
 
+  const selectedRows = useMemo(() => {
+    return Array.from(selected)
+      .map((idx) => sorted[idx])
+      .filter((item): item is T => Boolean(item));
+  }, [selected, sorted]);
+
   if (loading) {
     return (
       <div className="grid gap-2 border border-border bg-white p-4" aria-busy>
@@ -126,9 +136,21 @@ export function DataTable<T extends { id?: string }>({
         <div className="flex flex-wrap items-center gap-2">{filters}</div>
       </div>
       {selected.size > 0 ? (
-        <p className="border-b border-border bg-paper px-3 py-2 text-sm">
-          {selected.size} selected
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-red-soft/30 px-3 py-2 text-sm">
+          <p className="font-semibold text-ink">
+            {selected.size} record{selected.size === 1 ? "" : "s"} selected
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            {batchActions ? batchActions(selectedRows, () => setSelected(new Set())) : null}
+            <button
+              type="button"
+              onClick={() => setSelected(new Set())}
+              className="text-xs font-semibold text-muted underline hover:text-ink"
+            >
+              Clear selection
+            </button>
+          </div>
+        </div>
       ) : null}
       {pageRows.length === 0 ? (
         <EmptyState title={emptyTitle} body={emptyBody} className="border-0" />
@@ -171,8 +193,15 @@ export function DataTable<T extends { id?: string }>({
                 return (
                   <tr
                     key={row.id ?? index}
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      if (onRowClick && !target.closest("input, button, a, select, textarea")) {
+                        onRowClick(row);
+                      }
+                    }}
                     className={cn(
-                      "border-b border-border last:border-0",
+                      "border-b border-border last:border-0 transition-colors",
+                      onRowClick && "cursor-pointer hover:bg-paper/70",
                       selected.has(index) && "bg-red-soft/40",
                     )}
                   >

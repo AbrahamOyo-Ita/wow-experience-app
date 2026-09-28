@@ -96,6 +96,10 @@ export interface VolunteerService {
     id: string,
     status: VolunteerStatus,
   ): Promise<MockSubmitResult<VolunteerApplication>>;
+  batchUpdateStatus?(
+    ids: string[],
+    status: VolunteerStatus,
+  ): Promise<MockSubmitResult<{ count: number }>>;
 }
 
 export interface AttendanceService {
