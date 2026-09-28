@@ -2,6 +2,21 @@
 
 This file keeps a short running summary of fixes and verification notes so you do not need to scroll through the terminal history.
 
+## Branded Door Attendance QR Code with Integrated Logo
+
+- **Level H Redundancy (30%)**: Upgraded QR code generation in `src/components/admin/attendance-qr.tsx` to Reed-Solomon Error Correction Level `H`, enabling safe embedding of a central brand mark without reducing scanability.
+- **Embedded WOW Experience Logo**:
+  - Implemented automatic Base64 encoding and SVG injection of `/images/wow-logo-black.webp` with a rounded protective white centerpiece badge (`rx` corner rounding and subtle border).
+  - Centered badge is sized precisely at 24% of the QR matrix width, staying well within the 30% redundancy threshold and keeping all 3 corner finder patterns completely clear.
+- **Print & Design Exports**:
+  - Added **Download SVG**: High-resolution vector file with fully embedded standalone base64 logo.
+  - Added **Download PNG (1600×1600px)**: Offscreen HTML5 canvas rasterization providing ultra-crisp print-ready files for physical roll-ups, check-in desks, badges, and social graphics.
+- **Interactive UI**:
+  - Added an interactive toggle between *"Branded with WOW Logo (Active)"* and *"Plain QR Matrix"*.
+  - Added a status indicator confirming `Level H · 30% Redundancy`.
+- **Verification**: Confirmed `npm test` (8/8 pass), `npm run lint` (0 errors), and `npm run build` (38/38 routes compiled).
+
+
 ## What We're All About - Core Pillars Update
 
 - **Section Rebrand**: Transformed the "What We Refuse to Compromise" section on `/about` into **"WHAT WE’RE ALL ABOUT"**.
