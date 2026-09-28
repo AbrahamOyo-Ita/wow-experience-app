@@ -114,6 +114,15 @@ on conflict (profile_id, role) do nothing;
 - Current network URL shown by Next.js:
   - `http://192.168.137.1:3000`
 
+## Attending Flyer Editor Migration & Seed Applied
+
+- Pushed migration `20260928090000_attending_flyer_editor.sql` to remote Supabase via `supabase db push`.
+- Added required columns `base_width`, `base_height`, `config_version`, and `config` to `public.flyer_templates`.
+- Added constraints `flyer_templates_dimensions_check` and `flyer_templates_config_check`.
+- Configured RLS policies for `super_admin` on `public.flyer_templates` and `storage.objects` (`flyer-templates` bucket).
+- Ran `npm run seed:attending-flyer` to seed the active template and upload artwork to Supabase Storage.
+- Verified PostgREST schema cache recognizes `base_height`, resolving the "Could not find 'base_height' column in schema cache" error.
+
 ## Remaining Production Items
 
 - Connect Resend for email sending.
