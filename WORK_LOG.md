@@ -2,6 +2,20 @@
 
 This file keeps a short running summary of fixes and verification notes so you do not need to scroll through the terminal history.
 
+## Volunteer Approval Email Automation
+
+- **Bug Spot & Fix**: Spotted that `updateVolunteerStatusAction` and `batchUpdateVolunteerStatusAction` in `src/actions/admin.ts` updated `volunteer_applications.status` in the database, but lacked any email dispatch mechanism, leaving applicants without confirmation emails upon approval.
+- **Transactional Email Dispatch**:
+  - Implemented `renderVolunteerStatusUpdateEmail` in `src/lib/notifications/email-template.ts` adhering to the brand design system for `accepted`, `waitlisted`, and `declined` states.
+  - Implemented `sendVolunteerStatusEmail` in `src/actions/admin.ts` to automatically send styled emails via `sendEmail` (Resend) upon individual or batch approval.
+  - Added audit logging to `public.notifications` and `public.notification_attempts` with provider metadata.
+- **UI & Toast Feedback**:
+  - Enhanced `/admin/volunteers` toast notifications to display real-time confirmation containing recipient email address (e.g. *"Application accepted and confirmation email sent to ...'*).
+  - Added automated email delivery status card and updated application decision copy in the admin volunteer details drawer.
+- **Test & Build Verification**:
+  - Added unit test suite `tests/volunteer-email.test.ts` covering all status email templates (8/8 tests passing).
+  - Confirmed `npm run lint` and `npm run build` pass cleanly with zero errors.
+
 ## 2026 Event Details Updated
 
 - Set the 2026 event date to Sunday, October 18, 2026.

@@ -14,8 +14,12 @@ import { mapMinister } from "@/lib/ministers";
 import { createAdminClient, hasServiceRole } from "@/lib/supabase/admin";
 import { authorizeAdmin } from "@/lib/supabase/admin-access";
 import { getAppOrigin } from "@/lib/app-origin";
-import { renderRichEmailHtml } from "@/lib/notifications/email-template";
+import {
+  renderRichEmailHtml,
+  renderVolunteerStatusUpdateEmail,
+} from "@/lib/notifications/email-template";
 import { sendEmail } from "@/lib/notifications/providers";
+import { formatDateTime } from "@/lib/utils";
 import { labelRole, ROLE_DEFINITIONS } from "@/lib/admin";
 import { flyerTemplateConfigSchema } from "@/lib/flyer-template";
 import type { AttendanceInput, MockSubmitResult } from "@/services/contracts";
@@ -535,6 +539,141 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
   };
 }
 
+type VolunteerApplicationJoinedRow = {
+  id: string;
+  edition_id: string;
+  contact_id: string;
+  team_id: string;
+  experience: string;
+  availability: string;
+  motivation: string;
+  occupation?: string | null;
+  location?: string | null;
+  status: VolunteerStatus;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  volunteer_teams?: {
+    id?: string;
+    name?: string;
+    team_key?: string;
+  } | null;
+  contacts?: {
+    id?: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    email_normalized?: string;
+    phone?: string;
+    phone_normalized?: string;
+  } | null;
+  event_editions?: {
+    id?: string;
+    name?: string;
+    year?: number;
+    starts_at?: string;
+    venue_name?: string;
+    venue_address?: string;
+  } | null;
+};
+
+async function sendVolunteerStatusEmail(
+  row: VolunteerApplicationJoinedRow,
+  newStatus: VolunteerStatus,
+  adminClient?: ReturnType<typeof createAdminClient>,
+): Promise<{ dispatched: boolean; recipientEmail?: string; reason?: string }> {
+  if (newStatus !== "accepted" && newStatus !== "waitlisted" && newStatus !== "declined") {
+    return { dispatched: false, reason: `No email required for status ${newStatus}` };
+  }
+
+  const recipientEmail = row.contacts?.email_normalized?.trim() || row.contacts?.email?.trim();
+  if (!recipientEmail || !recipientEmail.includes("@")) {
+    return { dispatched: false, reason: "No valid recipient email address on contact" };
+  }
+
+  const firstName = row.contacts?.first_name?.trim() || "Beloved";
+  const eventName = row.event_editions?.name?.trim() || "WOW Experience 2026";
+  const volunteerTeam = row.volunteer_teams?.name?.trim() || "Workforce Ministry";
+  const eventDate = row.event_editions?.starts_at
+    ? formatDateTime(row.event_editions.starts_at)
+    : "Friday, Nov 20, 2026";
+  const venueName = row.event_editions?.venue_name || undefined;
+  const venueAddress = row.event_editions?.venue_address || undefined;
+
+  try {
+    const { subject, html, text } = renderVolunteerStatusUpdateEmail({
+      status: newStatus,
+      firstName,
+      eventName,
+      volunteerTeam,
+      eventDate,
+      venueName,
+      venueAddress,
+      recipientEmail,
+    });
+
+    const sendRes = await sendEmail({
+      id: row.id,
+      channel: "email",
+      to: recipientEmail,
+      subject,
+      body: text,
+      html,
+    });
+
+    if (adminClient) {
+      try {
+        const { data: notifRow } = await adminClient
+          .from("notifications")
+          .insert({
+            edition_id: row.edition_id,
+            contact_id: row.contact_id,
+            channel: "email",
+            template_key: `volunteer_status_${newStatus}`,
+            to_address: recipientEmail,
+            payload: {
+              volunteer_application_id: row.id,
+              status: newStatus,
+              team_name: volunteerTeam,
+              event_name: eventName,
+              recipient_name: firstName,
+            },
+            status: sendRes.status === "sent" ? "sent" : sendRes.status === "failed" ? "failed" : "skipped",
+            skip_reason: sendRes.reason ?? null,
+            error_message: sendRes.status === "failed" ? sendRes.reason : null,
+            sent_at: sendRes.status === "sent" ? new Date().toISOString() : null,
+            provider_message_id: sendRes.providerMessageId ?? null,
+          })
+          .select("id")
+          .maybeSingle();
+
+        if (notifRow?.id) {
+          await adminClient.from("notification_attempts").insert({
+            notification_id: notifRow.id,
+            channel: "email",
+            provider: "resend",
+            provider_message_id: sendRes.providerMessageId ?? null,
+            event_type: sendRes.status,
+            success: sendRes.status === "sent",
+            response_preview: sendRes.preview ?? sendRes.reason ?? null,
+          });
+        }
+      } catch (logErr) {
+        console.error("Failed to log volunteer status notification:", logErr);
+      }
+    }
+
+    if (sendRes.status === "sent") {
+      return { dispatched: true, recipientEmail };
+    }
+    return { dispatched: false, recipientEmail, reason: sendRes.reason || `Email status: ${sendRes.status}` };
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : "Failed to dispatch email";
+    return { dispatched: false, recipientEmail, reason };
+  }
+}
+
 export async function updateVolunteerStatusAction(id: string, status: VolunteerStatus) {
   const supabase = await createClient();
   const { data: claimsData } = await supabase.auth.getClaims();
@@ -547,19 +686,35 @@ export async function updateVolunteerStatusAction(id: string, status: VolunteerS
       reviewed_at: new Date().toISOString(),
     })
     .eq("id", id)
-    .select("*, volunteer_teams(team_key)")
+    .select(
+      "*, volunteer_teams(id, name, team_key), contacts(id, first_name, last_name, email, email_normalized, phone, phone_normalized), event_editions(id, name, year, starts_at, venue_name, venue_address)",
+    )
     .maybeSingle();
 
   if (error || !data) {
     return { status: "error", message: error?.message ?? "Application not found." } as MockSubmitResult<VolunteerApplication>;
   }
 
+  const row = data as unknown as VolunteerApplicationJoinedRow;
+  let emailDeliveryMessage = "";
+
+  if (status === "accepted" || status === "waitlisted" || status === "declined") {
+    const adminClient = hasServiceRole() ? createAdminClient() : undefined;
+    const sendResult = await sendVolunteerStatusEmail(row, status, adminClient);
+    if (sendResult.dispatched) {
+      emailDeliveryMessage = ` and confirmation email sent to ${sendResult.recipientEmail}`;
+    } else if (sendResult.reason) {
+      emailDeliveryMessage = ` (${sendResult.reason})`;
+    }
+  }
+
   revalidatePath("/admin/volunteers");
 
-  const row = data as Record<string, unknown>;
-  const nested = row.volunteer_teams as { team_key?: string } | null;
+  const nested = row.volunteer_teams;
+  const statusLabel = status.replace("_", " ");
   return {
     status: "success",
+    message: `Application ${statusLabel}${emailDeliveryMessage}.`,
     data: {
       id: String(row.id),
       eventId: String(row.edition_id),
@@ -592,14 +747,33 @@ export async function batchUpdateVolunteerStatusAction(ids: string[], status: Vo
       reviewed_at: new Date().toISOString(),
     })
     .in("id", ids)
-    .select("id, status");
+    .select(
+      "*, volunteer_teams(id, name, team_key), contacts(id, first_name, last_name, email, email_normalized, phone, phone_normalized), event_editions(id, name, year, starts_at, venue_name, venue_address)",
+    );
 
   if (error) {
     return { status: "error" as const, message: error.message };
   }
 
+  let sentEmails = 0;
+  if (data && (status === "accepted" || status === "waitlisted" || status === "declined")) {
+    const adminClient = hasServiceRole() ? createAdminClient() : undefined;
+    const sendPromises = data.map((item) =>
+      sendVolunteerStatusEmail(item as unknown as VolunteerApplicationJoinedRow, status, adminClient),
+    );
+    const results = await Promise.allSettled(sendPromises);
+    sentEmails = results.filter((r) => r.status === "fulfilled" && r.value.dispatched).length;
+  }
+
   revalidatePath("/admin/volunteers");
-  return { status: "success" as const, count: data?.length ?? 0 };
+  const count = data?.length ?? 0;
+  const statusLabel = status.replace("_", " ");
+  const message =
+    sentEmails > 0
+      ? `Updated ${count} volunteer applications to ${statusLabel} and sent ${sentEmails} email notification${sentEmails > 1 ? "s" : ""}.`
+      : `Updated ${count} volunteer applications to ${statusLabel}.`;
+
+  return { status: "success" as const, count, emailsSent: sentEmails, message };
 }
 
 export async function toggleAutomationAction(id: string, enabled: boolean) {

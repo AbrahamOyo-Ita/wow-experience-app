@@ -2,8 +2,8 @@ import type { NotificationStatus } from "@/types";
 import { Resend } from "resend";
 
 export type OutboundMessage = {
-  id: string;
-  channel: "email" | "whatsapp";
+  id?: string;
+  channel?: "email" | "whatsapp";
   to: string;
   subject?: string | null;
   body: string;

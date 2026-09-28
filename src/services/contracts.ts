@@ -74,9 +74,9 @@ export interface NewsletterSubscribeInput {
 }
 
 export type MockSubmitResult<T> =
-  | { status: "success"; data: T }
-  | { status: "existing"; data: T }
-  | { status: "duplicate"; data: T }
+  | { status: "success"; data: T; message?: string }
+  | { status: "existing"; data: T; message?: string }
+  | { status: "duplicate"; data: T; message?: string }
   | { status: "validation"; errors: FieldError[] }
   | { status: "validation_error"; errors: FieldError[] }
   | { status: "outside_window"; message: string }

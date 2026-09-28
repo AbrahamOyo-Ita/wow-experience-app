@@ -50,7 +50,7 @@ export const volunteerService: VolunteerService = {
   batchUpdateStatus: async (ids: string[], status: VolunteerStatus) => {
     const res = await batchUpdateVolunteerStatusAction(ids, status);
     if (res.status === "error") return { status: "error", message: res.message };
-    return { status: "success", data: { count: res.count } };
+    return { status: "success", data: { count: res.count }, message: res.message };
   },
 };
 

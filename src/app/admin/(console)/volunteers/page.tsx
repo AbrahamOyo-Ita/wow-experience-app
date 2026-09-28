@@ -113,9 +113,10 @@ export default function AdminVolunteersPage() {
       if (result.status === "success") {
         setRows((list) => list.map((row) => (row.id === id ? result.data : row)));
         setSelected((row) => (row && row.id === id ? result.data : row));
-        showToast(
-          `${applicantName ?? "Volunteer"} application updated to ${STATUS_CONFIG[status].label}`,
-        );
+        const toastMsg =
+          ("message" in result && result.message) ||
+          `${applicantName ?? "Volunteer"} application updated to ${STATUS_CONFIG[status].label}`;
+        showToast(toastMsg);
         await refresh();
       } else {
         showToast(`Failed to update status: ${'message' in result ? result.message : "Validation error"}`);
@@ -144,7 +145,10 @@ export default function AdminVolunteersPage() {
           if (selected && ids.includes(selected.id)) {
             setSelected((cur) => (cur ? { ...cur, status } : null));
           }
-          showToast(`Updated ${ids.length} volunteer applications to ${STATUS_CONFIG[status].label}`);
+          const toastMsg =
+            ("message" in result && result.message) ||
+            `Updated ${ids.length} volunteer applications to ${STATUS_CONFIG[status].label}`;
+          showToast(toastMsg);
           clearSelection();
           await refresh();
         } else {
@@ -648,7 +652,7 @@ export default function AdminVolunteersPage() {
                 <div>
                   <h4 className="text-sm font-bold text-ink">Application Decision</h4>
                   <p className="text-xs text-muted">
-                    Update status to approve or advance the volunteer in the workforce pipeline.
+                    Approving automatically dispatches an official workforce acceptance email to the applicant.
                   </p>
                 </div>
                 {updating && (
@@ -736,18 +740,35 @@ export default function AdminVolunteersPage() {
               )}
             </div>
 
-            {/* WhatsApp Group Onboarding Workflow when Accepted */}
+            {/* Email Notification & WhatsApp Group Onboarding Workflow when Accepted */}
             {selected.status === "accepted" && (
-              <div className="rounded-2xl border border-emerald-300 bg-emerald-50/50 p-5 shadow-xs">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-emerald-900">
-                    <MessageSquare className="h-5 w-5 text-emerald-700" />
-                    <h4 className="font-bold">WhatsApp Group Onboarding Note</h4>
+              <>
+                <div className="rounded-2xl border border-emerald-300 bg-emerald-50/70 p-5 shadow-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-emerald-900">
+                      <Mail className="h-5 w-5 text-emerald-700" />
+                      <h4 className="font-bold">Workforce Acceptance Email</h4>
+                    </div>
+                    <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                      Automated Email Active
+                    </span>
                   </div>
-                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
-                    Ready to send
-                  </span>
+                  <p className="mt-2 text-xs text-emerald-900">
+                    Official acceptance notice with team role (<strong>{teamLabel(selected.teamId)}</strong>), event date, and orientation guidelines is sent to{" "}
+                    <strong>{contactEmail(selected.contactId)}</strong> upon approval.
+                  </p>
                 </div>
+
+                <div className="rounded-2xl border border-emerald-300 bg-emerald-50/50 p-5 shadow-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-emerald-900">
+                      <MessageSquare className="h-5 w-5 text-emerald-700" />
+                      <h4 className="font-bold">WhatsApp Group Onboarding Note</h4>
+                    </div>
+                    <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                      Ready to send
+                    </span>
+                  </div>
 
                 <p className="mt-1 text-xs text-emerald-800">
                   This note is customized for {contactName(selected.contactId).split(" ")[0]} with team details.
@@ -784,7 +805,8 @@ export default function AdminVolunteersPage() {
                   )}
                 </div>
               </div>
-            )}
+            </>
+          )}
           </div>
         ) : null}
       </Drawer>

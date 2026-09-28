@@ -203,7 +203,7 @@ export default function AdminAttendancePage() {
                 await refresh();
                 return;
               }
-              setBanner("message" in result ? result.message : "Check-in could not be saved.");
+              setBanner("message" in result && result.message ? result.message : "Check-in could not be saved.");
             }}
           >
             Record attendance

@@ -680,6 +680,111 @@ export function renderVolunteerEmail(params: {
   });
 }
 
+export function renderVolunteerStatusUpdateEmail(params: {
+  status: "accepted" | "waitlisted" | "declined";
+  firstName: string;
+  eventName: string;
+  volunteerTeam: string;
+  eventDate?: string;
+  eventTime?: string;
+  venueName?: string;
+  venueAddress?: string;
+  recipientEmail?: string;
+  onboardingUrl?: string;
+}): { subject: string; html: string; text: string } {
+  if (params.status === "accepted") {
+    const subject = `Congratulations! You're Approved to Serve: ${params.eventName} (${params.volunteerTeam})`;
+    const html = renderRichEmailHtml({
+      title: subject,
+      preheader: `Your volunteer application for ${params.eventName} has been approved. Welcome to the workforce!`,
+      badgeText: "WORKFORCE • APPLICATION ACCEPTED",
+      headline: `Welcome to the Workforce, ${params.firstName}!`,
+      leadParagraph: `We are delighted to confirm that your application to serve at <strong>${escapeHtml(params.eventName)}</strong> has been officially approved! You have been accepted to serve with the <strong>${escapeHtml(params.volunteerTeam)}</strong> team.`,
+      detailsGrid: [
+        { label: "Assigned Team", value: params.volunteerTeam, badge: "Approved" },
+        { label: "Role Status", value: "Accepted / Workforce", badge: "Confirmed" },
+        { label: "Event", value: params.eventName },
+        {
+          label: "Event Date",
+          value: params.eventDate ? `${params.eventDate}${params.eventTime ? ` • ${params.eventTime}` : ""}` : "Friday, Nov 20, 2026",
+        },
+      ],
+      callout: {
+        type: "gold",
+        title: "NEXT STEPS & TEAM BRIEFING",
+        text: "Your department lead will reach out with the orientation schedule, rehearsal timelines, and event-day call times. Please ensure you arrive promptly for workforce consecration and accreditation.",
+      },
+      primaryAction: params.onboardingUrl
+        ? {
+            text: "Join Team WhatsApp Group",
+            url: params.onboardingUrl,
+          }
+        : {
+            text: "View Event Schedule & Details",
+            url: "https://www.wowexperience.com.ng",
+          },
+      venueCard: true,
+      scriptureQuote: true,
+      recipientEmail: params.recipientEmail,
+    });
+    const text = `Hi ${params.firstName},\n\nCongratulations! Your application to serve at ${params.eventName} has been approved. You are assigned to the ${params.volunteerTeam} team.\n\nYour team lead will be in touch with briefing schedules, rehearsals, and arrival guidelines.\n\nEvent: ${params.eventName}\n${params.eventDate ? `Date: ${params.eventDate}\n` : ""}${params.venueName ? `Venue: ${params.venueName}\n` : ""}\nWe look forward to serving together in His presence!\n\nWonders of Worship Experience Team\nhttps://www.wowexperience.com.ng`;
+    return { subject, html, text };
+  }
+
+  if (params.status === "waitlisted") {
+    const subject = `Volunteer Application Update: ${params.eventName} (${params.volunteerTeam})`;
+    const html = renderRichEmailHtml({
+      title: subject,
+      preheader: `Update on your volunteer application for ${params.eventName}.`,
+      badgeText: "WORKFORCE • WAITLIST NOTIFICATION",
+      headline: `Application Update, ${params.firstName}`,
+      leadParagraph: `Thank you for your willingness and desire to serve at <strong>${escapeHtml(params.eventName)}</strong>. Due to roster limits on the <strong>${escapeHtml(params.volunteerTeam)}</strong> team, your application has currently been placed on our priority waitlist.`,
+      detailsGrid: [
+        { label: "Team Applied", value: params.volunteerTeam },
+        { label: "Status", value: "Waitlisted", badge: "Standby" },
+        { label: "Event", value: params.eventName },
+      ],
+      callout: {
+        type: "slate",
+        title: "STANDBY STATUS",
+        text: "If a slot becomes available or workforce capacity expands in your department, our coordinators will reach out immediately. In the meantime, we warmly invite you to join us as an attendee in worship!",
+      },
+      primaryAction: {
+        text: "Visit WOW Experience Website",
+        url: "https://www.wowexperience.com.ng",
+      },
+      venueCard: true,
+      scriptureQuote: true,
+      recipientEmail: params.recipientEmail,
+    });
+    const text = `Hi ${params.firstName},\n\nThank you for offering your heart and hands to serve at ${params.eventName}. Due to roster limits on the ${params.volunteerTeam} team, your application has been placed on our priority waitlist.\n\nIf an opening becomes available, we will contact you immediately. We look forward to worshipping with you!\n\nWonders of Worship Experience Team\nhttps://www.wowexperience.com.ng`;
+    return { subject, html, text };
+  }
+
+  const subject = `Volunteer Application Update: ${params.eventName}`;
+  const html = renderRichEmailHtml({
+    title: subject,
+    preheader: `Update regarding your volunteer application for ${params.eventName}.`,
+    badgeText: "WORKFORCE • APPLICATION UPDATE",
+    headline: `Thank You for Your Heart to Serve, ${params.firstName}`,
+    leadParagraph: `We sincerely appreciate your application to serve with the <strong>${escapeHtml(params.volunteerTeam)}</strong> team at <strong>${escapeHtml(params.eventName)}</strong>. At this time, our volunteer allocations for this department have been filled, and we are unable to accommodate additional team members for this edition.`,
+    callout: {
+      type: "slate",
+      title: "JOIN US IN WORSHIP",
+      text: "Even though workforce rosters are complete, we would love to have you with us as an honored guest and attendee. Your worship and presence will be a blessing to the entire gathering.",
+    },
+    primaryAction: {
+      text: "Reserve Attendee Pass",
+      url: "https://www.wowexperience.com.ng#rsvp",
+    },
+    venueCard: true,
+    scriptureQuote: true,
+    recipientEmail: params.recipientEmail,
+  });
+  const text = `Hi ${params.firstName},\n\nThank you so much for your heart to serve at ${params.eventName}. Volunteer rosters for the ${params.volunteerTeam} team are now full for this edition.\n\nWe warmly invite you to join us as an attendee and experience this atmosphere of worship.\n\nWonders of Worship Experience Team\nhttps://www.wowexperience.com.ng`;
+  return { subject, html, text };
+}
+
 export function renderCampaignEmail(params: {
   title: string;
   preheader?: string;

@@ -45,7 +45,7 @@ export default function AdminEventsPage() {
       setBanner("Edition saved.");
       setEditing(null);
       await refresh();
-    } else if ("message" in result) {
+    } else if ("message" in result && result.message) {
       setBanner(result.message);
     }
   };
