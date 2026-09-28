@@ -2,6 +2,23 @@
 
 This file keeps a short running summary of fixes and verification notes so you do not need to scroll through the terminal history.
 
+## What We're All About - Core Pillars Update
+
+- **Section Rebrand**: Transformed the "What We Refuse to Compromise" section on `/about` into **"WHAT WE’RE ALL ABOUT"**.
+- **6 Core Pillars**: Added the 6 newly defined core pillars in `src/data/content.ts`:
+  1. *CHRIST, ALWAYS AT THE CENTER*
+  2. *WORSHIP BEYOND PERFORMANCE*
+  3. *ONE ROOM. ONE HEART.*
+  4. *EXCELLENCE WITH PURPOSE*
+  5. *PEOPLE BEFORE NUMBERS*
+  6. *WE LEAVE CHANGED*
+- **Visual & Layout Enhancements**:
+  - Upgraded the card grid from 2-column to a balanced 3-column responsive layout (`md:grid-cols-2 lg:grid-cols-3`).
+  - Added clean mono-styled numbering indices (`01` through `06`) to guide attendees through each pillar.
+  - Updated the hero section anchor CTA button label to `"What we’re all about"`.
+- **Verification**: Confirmed `npm test` (8/8 pass), `npm run lint` (0 errors), and `npm run build` (38/38 routes compiled).
+
+
 ## Attending Flyer Viral Sharing & Invitation Link
 
 - **Enriched Share Message & Link**: Updated the flyer generator share workflow in `src/components/flyer/flyer-generator.tsx` from generic `"I'm attending!"` to an engaging, descriptive invitation message with direct call-to-action:

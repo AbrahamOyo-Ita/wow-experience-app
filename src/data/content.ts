@@ -110,20 +110,28 @@ export function getAlbumsByEdition(editionId: string | "all") {
 
 export const values = [
   {
-    title: "Christ at the Center",
-    body: "Our platform and gatherings exist solely to behold Jesus. Music, design, and media are dedicated servants of worship, never the spectacle.",
+    title: "Christ, Always at the Center",
+    body: "It has always been Jesus. Beyond the lights, music, stage and moments we capture, our greatest desire is that hearts see Him, know Him and encounter Him.",
   },
   {
-    title: "Authentic Congregational Singing",
-    body: "We prioritize songs the whole room can sing together over complex platform performances. Every voice matters.",
+    title: "Worship Beyond Performance",
+    body: "You’re not coming to watch from the sidelines. You’re part of the worship. Every voice, every lifted hand and every heart surrendered matters here.",
   },
   {
-    title: "Warm & Prepared Hospitality",
-    body: "Welcoming people with genuine care sets the tone for worship. Every attendee is treated as a honored guest of Christ.",
+    title: "One Room. One Heart.",
+    body: "Different churches. Different schools. Different generations. One room, gathered with one desire, to lift Jesus and experience His presence together.",
   },
   {
-    title: "Honesty & Respect with Data",
-    body: "An RSVP is a relationship of trust. We request only essential details, strictly honor notification preferences, and protect your privacy.",
+    title: "Excellence with Purpose",
+    body: "We give our best because worship deserves intentionality. From the sound to the stage, media, hospitality and every unseen detail, everything serves the encounter.",
+  },
+  {
+    title: "People Before Numbers",
+    body: "There’s room for you here. Whether worship feels familiar or you’re still discovering what it means, you are welcome to come, experience God and respond freely.",
+  },
+  {
+    title: "We Leave Changed",
+    body: "The night may end, but the encounter shouldn’t. Our prayer is that you leave with more than memories. A heart awakened, faith strengthened and a deeper hunger for God.",
   },
 ];
 

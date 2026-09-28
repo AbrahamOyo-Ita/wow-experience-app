@@ -43,7 +43,7 @@ export default function AboutPage() {
               <div className="mt-8 flex flex-wrap gap-4">
                 <HoverCard scale={1.03}>
                   <Button href="#values" variant="outlineLight">
-                    Our core philosophy
+                    What we’re all about
                   </Button>
                 </HoverCard>
                 <HoverCard scale={1.03}>
@@ -99,22 +99,31 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Values Section */}
+      {/* Values Section - WHAT WE’RE ALL ABOUT */}
       <section id="values" className="bg-paper py-20 sm:py-24 border-b border-border/40">
         <div className="container-site">
           <FadeIn>
-            <span className="text-xs font-bold uppercase tracking-widest text-red">Core Commitments</span>
-            <h2 className="mt-2 max-w-2xl font-display text-3xl font-bold sm:text-4xl text-ink">
-              What We Refuse to Compromise
+            <span className="text-xs font-bold uppercase tracking-widest text-red">Core Pillars</span>
+            <h2 className="mt-2 max-w-2xl font-display text-3xl font-bold sm:text-4xl text-ink uppercase">
+              What We’re All About
             </h2>
           </FadeIn>
 
-          <StaggerContainer staggerDelay={0.12} className="mt-12 grid gap-8 md:grid-cols-2">
-            {values.map((value) => (
+          <StaggerContainer staggerDelay={0.08} className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {values.map((value, index) => (
               <StaggerItem key={value.title}>
-                <HoverCard lift={-4} className="h-full rounded-2xl border border-border bg-white p-6 shadow-2xs">
-                  <h3 className="font-display text-2xl font-bold text-ink">{value.title}</h3>
-                  <p className="mt-3 leading-relaxed text-muted text-base">{value.body}</p>
+                <HoverCard lift={-4} className="h-full flex flex-col justify-between rounded-2xl border border-border bg-white p-6 sm:p-7 shadow-2xs">
+                  <div>
+                    <span className="text-xs font-mono font-bold tracking-wider text-red">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <h3 className="mt-2 font-display text-lg sm:text-xl font-bold text-ink uppercase tracking-tight">
+                      {value.title}
+                    </h3>
+                    <p className="mt-3 leading-relaxed text-muted text-sm sm:text-base font-light">
+                      {value.body}
+                    </p>
+                  </div>
                 </HoverCard>
               </StaggerItem>
             ))}
