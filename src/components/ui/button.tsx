@@ -36,9 +36,11 @@ const buttonVariants = cva(
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
   VariantProps<typeof buttonVariants> & {
     href?: string;
+    target?: string;
+    rel?: string;
   };
 
-function Button({ className, variant, size, href, type = "button", ...props }: ButtonProps) {
+function Button({ className, variant, size, href, target, rel, type = "button", ...props }: ButtonProps) {
   const classes = cn(buttonVariants({ variant, size, className }));
   if (href) {
     const external =
@@ -51,8 +53,8 @@ function Button({ className, variant, size, href, type = "button", ...props }: B
         <a
           href={href}
           className={classes}
-          target={href.startsWith("http") ? "_blank" : undefined}
-          rel={href.startsWith("http") ? "noreferrer" : undefined}
+          target={target ?? (href.startsWith("http") ? "_blank" : undefined)}
+          rel={rel ?? (href.startsWith("http") ? "noreferrer" : undefined)}
         >
           {props.children}
         </a>
