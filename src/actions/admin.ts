@@ -9,7 +9,7 @@ import {
   processNewsletterBroadcast,
   processNotificationQueue,
 } from "@/lib/notifications/process";
-import { campaignScheduleSchema, ministerSchema, newsletterPublishSchema } from "@/lib/validation";
+import { campaignScheduleSchema, customAutomationSchema, ministerSchema, newsletterPublishSchema } from "@/lib/validation";
 import { mapMinister } from "@/lib/ministers";
 import { createAdminClient, hasServiceRole } from "@/lib/supabase/admin";
 import { authorizeAdmin } from "@/lib/supabase/admin-access";
@@ -780,6 +780,139 @@ export async function toggleAutomationAction(id: string, enabled: boolean) {
   const supabase = await createClient();
   const { error } = await supabase.from("automation_rules").update({ enabled }).eq("id", id);
   if (error) return { status: "error" as const, message: error.message };
+  return { status: "success" as const };
+}
+
+export async function scheduleCustomAutomationAction(input: {
+  eventId: string;
+  name: string;
+  channelMode: Campaign["channelMode"];
+  audienceLabel: string;
+  subject?: string;
+  body: string;
+  whatsappBody?: string;
+  emailBody?: string;
+  scheduledAt?: string;
+  sendNow?: boolean;
+  targetContactIds?: string[];
+}) {
+  const parsed = customAutomationSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      status: "validation" as const,
+      errors: parsed.error.issues.map((issue) => ({
+        field: String(issue.path[0] ?? "form"),
+        message: issue.message,
+      })),
+    };
+  }
+
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = (claimsData?.claims?.sub as string | undefined) ?? currentAdmin.id;
+
+  const valid = parsed.data;
+  const { data: edition } = await supabase
+    .from("event_editions")
+    .select("id, legacy_key, name")
+    .or(`legacy_key.eq.${valid.eventId},slug.eq.${valid.eventId},year.eq.${valid.eventId}`)
+    .maybeSingle();
+
+  if (!edition) {
+    return { status: "error" as const, message: "Event edition not found." };
+  }
+
+  const scheduledAt = valid.sendNow ? new Date().toISOString() : valid.scheduledAt;
+  const whatsappBody = valid.whatsappBody || valid.body;
+  const emailBody = valid.emailBody || valid.body;
+
+  const insert = {
+    edition_id: edition.id,
+    name: valid.name,
+    type: "automation",
+    status: valid.sendNow ? "queueing" : "scheduled",
+    channel_mode: valid.channelMode,
+    audience_label: valid.audienceLabel,
+    subject: valid.subject ?? null,
+    whatsapp_body: whatsappBody,
+    email_body: emailBody,
+    scheduled_at: scheduledAt,
+    target_contact_ids: valid.targetContactIds ?? [],
+    attachments: [],
+    eligible_count: 0,
+    excluded_count: 0,
+    created_by: userId,
+  };
+
+  const { data, error } = await supabase.from("campaigns").insert(insert).select("*").maybeSingle();
+  if (error || !data) {
+    return { status: "error" as const, message: error?.message ?? "Could not schedule custom automation." };
+  }
+
+  if (valid.sendNow) {
+    await processCampaignQueue(10);
+    await processNotificationQueue(50);
+  }
+
+  await supabase.from("audit_logs").insert({
+    actor_id: userId,
+    actor_name: "Admin",
+    action: valid.sendNow ? "custom_automation.triggered" : "custom_automation.scheduled",
+    entity_type: "campaign",
+    entity_id: String(data.id),
+    metadata_preview: `Scheduled custom automation: "${valid.name}" for ${valid.audienceLabel} (${valid.channelMode})`,
+  });
+
+  revalidatePath("/admin/automations");
+  revalidatePath("/admin/campaigns");
+
+  return { status: "success" as const, data };
+}
+
+export async function toggleCustomAutomationAction(id: string, enabled: boolean) {
+  const supabase = await createClient();
+  const nextStatus = enabled ? "scheduled" : "cancelled";
+  const { error } = await supabase
+    .from("campaigns")
+    .update({ status: nextStatus })
+    .eq("id", id)
+    .eq("type", "automation");
+
+  if (error) return { status: "error" as const, message: error.message };
+
+  revalidatePath("/admin/automations");
+  return { status: "success" as const };
+}
+
+export async function triggerCustomAutomationNowAction(id: string) {
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("campaigns")
+    .update({ status: "scheduled", scheduled_at: now })
+    .eq("id", id)
+    .eq("type", "automation");
+
+  if (error) return { status: "error" as const, message: error.message };
+
+  await processCampaignQueue(10);
+  await processNotificationQueue(50);
+
+  revalidatePath("/admin/automations");
+  return { status: "success" as const };
+}
+
+export async function deleteCustomAutomationAction(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("campaigns")
+    .delete()
+    .eq("id", id)
+    .eq("type", "automation");
+
+  if (error) return { status: "error" as const, message: error.message };
+
+  revalidatePath("/admin/automations");
   return { status: "success" as const };
 }
 

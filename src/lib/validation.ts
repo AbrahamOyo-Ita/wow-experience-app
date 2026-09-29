@@ -147,6 +147,37 @@ export const campaignScheduleSchema = z
     }
   });
 
+export const customAutomationSchema = z
+  .object({
+    eventId: z.string().trim().min(1, "Choose an edition."),
+    name: z.string().trim().min(2, "Enter an automation rule name."),
+    channelMode: z.enum(["whatsapp", "email", "both", "fallback"]),
+    audienceLabel: z.string().trim().min(2, "Choose a target audience."),
+    subject: z.string().trim().max(180, "Keep the subject under 180 characters.").optional(),
+    body: z.string().trim().min(2, "Write a message body for the automation."),
+    whatsappBody: z.string().trim().optional(),
+    emailBody: z.string().trim().optional(),
+    scheduledAt: z.string().trim().optional(),
+    sendNow: z.boolean().optional(),
+    targetContactIds: z.array(z.string().uuid()).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.channelMode !== "whatsapp" && !value.subject) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["subject"],
+        message: "Email subject is required for email delivery.",
+      });
+    }
+    if (!value.sendNow && !value.scheduledAt) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["scheduledAt"],
+        message: "Specify a schedule date and time or choose Run Immediately.",
+      });
+    }
+  });
+
 export const newsletterPublishSchema = z.object({
   id: z.string().uuid().optional(),
   title: z.string().trim().min(2, "Enter a newsletter title."),

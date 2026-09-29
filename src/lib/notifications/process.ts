@@ -130,15 +130,38 @@ async function loadEligibleContacts(
 
   if (targetIds.length) {
     query = query.in("id", targetIds);
-  } else if (String(campaign.audience_label ?? "").toLowerCase().includes("attendee")) {
-    const { data: rsvps } = await supabase
-      .from("rsvps")
-      .select("contact_id")
-      .eq("edition_id", campaign.edition_id)
-      .eq("response", "attending");
-    const ids = [...new Set(((rsvps as { contact_id: string }[] | null) ?? []).map((row) => row.contact_id))];
-    if (!ids.length) return [];
-    query = query.in("id", ids);
+  } else {
+    const audience = String(campaign.audience_label ?? "").toLowerCase();
+    if (audience.includes("attendee") || audience.includes("rsvp")) {
+      const { data: rsvps } = await supabase
+        .from("rsvps")
+        .select("contact_id")
+        .eq("edition_id", campaign.edition_id)
+        .eq("response", "attending");
+      const ids = [...new Set(((rsvps as { contact_id: string }[] | null) ?? []).map((row) => row.contact_id))];
+      if (!ids.length) return [];
+      query = query.in("id", ids);
+    } else if (audience.includes("volunteer")) {
+      const { data: volApps } = await supabase
+        .from("volunteer_applications")
+        .select("contact_id, team_id, volunteer_teams(team_key, name)")
+        .eq("edition_id", campaign.edition_id)
+        .eq("status", "accepted");
+
+      let matchedApps = (volApps as { contact_id: string; team_id?: string; volunteer_teams?: { team_key?: string; name?: string } }[] | null) ?? [];
+      const teams = ["choir", "worship", "media", "technical", "ushering", "protocol", "prayer", "intercession", "hospitality", "welfare"];
+      const matchedTeam = teams.find((t) => audience.includes(t));
+      if (matchedTeam) {
+        matchedApps = matchedApps.filter((item) => {
+          const teamName = `${item.volunteer_teams?.name ?? ""} ${item.volunteer_teams?.team_key ?? ""}`.toLowerCase();
+          return teamName.includes(matchedTeam);
+        });
+      }
+
+      const ids = [...new Set(matchedApps.map((row) => row.contact_id))];
+      if (!ids.length) return [];
+      query = query.in("id", ids);
+    }
   }
 
   const { data, error } = await query;
@@ -152,11 +175,18 @@ function hasConsent(contact: Record<string, unknown>, channel: "email" | "whatsa
     purpose?: string;
     status?: string;
   }[];
+  if (!consents.length) return true;
   return consents.some(
     (row) =>
       row.channel === channel &&
       row.status === "granted" &&
-      (row.purpose === "event_reminders" || row.purpose === "newsletter"),
+      [
+        "event_reminders",
+        "newsletter",
+        "volunteer_updates",
+        "attendance",
+        "enquiry",
+      ].includes(row.purpose ?? ""),
   );
 }
 
@@ -167,6 +197,29 @@ async function queueCampaignNotifications(
   const contacts = await loadEligibleContacts(supabase, campaign);
   const rows = [];
   let excluded = 0;
+
+  const { data: edition } = await supabase
+    .from("event_editions")
+    .select("name, starts_at, venue_name, venue_address, directions_url")
+    .eq("id", campaign.edition_id)
+    .maybeSingle();
+
+  const startsAt = edition?.starts_at ? new Date(String(edition.starts_at)) : null;
+  const eventDate = startsAt
+    ? new Intl.DateTimeFormat("en-NG", { dateStyle: "long", timeZone: "Africa/Lagos" }).format(startsAt)
+    : "";
+  const eventTime = startsAt
+    ? new Intl.DateTimeFormat("en-NG", { timeStyle: "short", timeZone: "Africa/Lagos" }).format(startsAt)
+    : "";
+
+  const eventPayload = {
+    event_name: edition?.name ?? "Wonders of Worship",
+    event_date: eventDate,
+    event_time: eventTime,
+    venue: edition?.venue_name ?? "",
+    venue_address: edition?.venue_address ?? "",
+    directions_url: edition?.directions_url ?? "",
+  };
 
   for (const contact of contacts) {
     for (const channel of channelsFor(campaign.channel_mode as CampaignChannelMode)) {
@@ -186,6 +239,7 @@ async function queueCampaignNotifications(
           subject: campaign.subject,
           body: channel === "email" ? campaign.email_body : campaign.whatsapp_body,
           attachments: campaign.attachments ?? [],
+          ...eventPayload,
         }),
         scheduled_for: campaign.scheduled_at ?? new Date().toISOString(),
         status: "queued",
@@ -363,8 +417,12 @@ export async function processNotificationQueue(limit = 25) {
           .limit(1)
           .maybeSingle();
 
-    const body = directBody ?? render(template?.body ?? "Thank you {{first_name}} for {{event_name}}.", payload);
-    const subject = directSubject ?? (template?.subject ? render(template.subject, payload) : null);
+    const body = directBody
+      ? render(directBody, payload)
+      : render(template?.body ?? "Thank you {{first_name}} for {{event_name}}.", payload);
+    const subject = directSubject
+      ? render(directSubject, payload)
+      : (template?.subject ? render(template.subject, payload) : null);
     const to = String(row.to_address ?? "");
     const result =
       row.channel === "email"

@@ -2,6 +2,30 @@
 
 This file keeps a short running summary of fixes and verification notes so you do not need to scroll through the terminal history.
 
+## Custom Automations Scheduling from Admin Console
+
+- **Action & Modal on `/admin/automations`**:
+  - Added primary **`+ Schedule Automation`** action button to the page header.
+  - Built comprehensive automation scheduling drawer/modal supporting:
+    - **Rule Title**: Customized rule/campaign naming.
+    - **Target Audience**: Dropdown with presets for *All Attendees (RSVP attending)*, *All Approved Volunteers*, *Specific Volunteer Teams (Choir, Media & Technical, Ushering, Prayer, Hospitality)*, *All Directory Contacts*, and *Specific Targeted Contacts* (searchable multi-select picker).
+    - **Channel Mode**: Delivery via *WhatsApp + Email*, *WhatsApp Only*, *Email Only*, or *WhatsApp with Email Fallback*.
+    - **Smart Scheduling Timing**: One-click event-relative presets based on event start time (*1 Week Before*, *3 Days Before*, *2 Days Before*, *1 Day Before*, *Event Morning at 07:00 WAT*, *Post-Event +2h*), custom date/time picker, or *Send/Trigger Immediately*.
+    - **Message Composer & Personalization**: Subject line and body composer with one-click insertion of personalization variables (`{{first_name}}`, `{{event_name}}`, `{{event_date}}`, `{{event_time}}`, `{{venue}}`, `{{directions_url}}`).
+    - **Live Preview Tabs**: Side-by-side or tabbed live preview of both WhatsApp chat bubble and Email delivery card rendered with real event details.
+- **Unified Table & Rule Management**:
+  - Unified view showing both core system lifecycle rules and custom scheduled automations.
+  - Category filter tabs: *All Automations*, *System Rules*, *Custom Scheduled*, and *Active Only*.
+  - Status indicators and delivery metrics (`Completed (X sent / Y failed)`, `Scheduled`, `In Progress`, `Cancelled`).
+  - Active toggle switch allowing admins to pause/enable custom automations or system rules.
+  - Direct quick actions for custom automations: **Run Now** (immediate trigger) and **Delete**.
+- **Backend & Queue Processing**:
+  - Added `scheduleCustomAutomationAction`, `toggleCustomAutomationAction`, `triggerCustomAutomationNowAction`, and `deleteCustomAutomationAction` in `src/actions/admin.ts`.
+  - Added `customAutomationSchema` in `src/lib/validation.ts`.
+  - Enhanced `src/lib/notifications/process.ts` `loadEligibleContacts` to resolve volunteer teams and attendees, added edition metadata to payload, and enabled template variable rendering on direct body/subject dispatches.
+- **Verification**: Confirmed `npm test` (8/8 pass), `npm run lint` (0 errors), and `npm run build` (38/38 routes compiled).
+
+
 ## Attending Flyer Copy Cleanup & QR Code Pill Removal
 
 - **Attending Flyer Viral Copy**:
