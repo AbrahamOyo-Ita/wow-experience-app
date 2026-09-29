@@ -92,11 +92,11 @@ export function FlyerGenerator() {
       ? `${attendeeName} is Attending WOW Experience 2026!`
       : "I'm Attending WOW Experience 2026!";
 
-    const caption = `I'm attending Wonders of Worship Experience 2026! 🔥 Join me for an extraordinary encounter in worship.\n\n✨ Create your own personalized attending flyer here: ${flyerUrl}`;
+    const caption = `I'm attending Wonders of Worship Experience 2026! Join me for an extraordinary encounter in worship.\n\nCreate your own personalized attending flyer here:\n${flyerUrl}`;
 
-    const whatsappCaption = `*I'm attending Wonders of Worship Experience 2026!* 🔥\n\nJoin me for an unforgettable atmosphere of praise and encounter in His presence.\n\n👉 *Create your personalized attending flyer here:*\n${flyerUrl}`;
+    const whatsappCaption = `*I'm attending Wonders of Worship Experience 2026!*\n\nJoin me for an extraordinary encounter in worship.\n\n*Create your personalized attending flyer here:*\n${flyerUrl}`;
 
-    const twitterCaption = `I'm attending Wonders of Worship Experience 2026! 🔥 Create your own personalized attending flyer and join me: ${flyerUrl} #WOWExperience2026 #WondersOfWorship`;
+    const twitterCaption = `I'm attending Wonders of Worship Experience 2026! Create your own personalized attending flyer and join me: ${flyerUrl} #WOWExperience2026 #WondersOfWorship`;
 
     return { flyerUrl, title, caption, whatsappCaption, twitterCaption };
   }
@@ -131,30 +131,37 @@ export function FlyerGenerator() {
       const blob = await canvasToBlob(canvasRef.current);
       const filename = `wow-attending-${flyerFileSlug(name)}.png`;
       const file = new File([blob], filename, { type: "image/png" });
-      const { flyerUrl, title, caption } = getShareContent();
+      const { title, caption } = getShareContent();
 
       let sharedViaNative = false;
 
       if (share && typeof navigator !== "undefined" && typeof navigator.share === "function") {
         try {
-          const payloadWithUrl: ShareData = {
+          // Do not pass `url` separately when `text` already contains the flyer link,
+          // because mobile apps like WhatsApp append `url` to `text`, duplicating the link.
+          const payloadWithFile: ShareData = {
             title,
             text: caption,
-            url: flyerUrl,
             files: [file],
           };
-          if (navigator.canShare?.(payloadWithUrl)) {
-            await navigator.share(payloadWithUrl);
+          if (navigator.canShare?.(payloadWithFile)) {
+            await navigator.share(payloadWithFile);
             sharedViaNative = true;
             setMessage("Share sheet opened with your flyer and link!");
           } else if (navigator.canShare?.({ files: [file] })) {
             await navigator.share({
               title,
-              text: caption,
               files: [file],
             });
             sharedViaNative = true;
-            setMessage("Share sheet opened with your flyer and link!");
+            setMessage("Share sheet opened with your flyer!");
+          } else if (navigator.canShare?.({ title, text: caption })) {
+            await navigator.share({
+              title,
+              text: caption,
+            });
+            sharedViaNative = true;
+            setMessage("Share sheet opened with your invitation!");
           }
         } catch (shareError) {
           if (shareError instanceof DOMException && shareError.name === "AbortError") {
@@ -343,7 +350,7 @@ export function FlyerGenerator() {
                 </div>
                 <div className="rounded-2xl border border-white/15 bg-white/5 p-4 text-xs sm:text-sm leading-relaxed text-white/90">
                   <p className="font-semibold text-white">
-                    I&apos;m attending Wonders of Worship Experience 2026! 🔥
+                    I&apos;m attending Wonders of Worship Experience 2026!
                   </p>
                   <p className="mt-1 text-white/80">
                     Join me for an extraordinary encounter in worship.
@@ -416,7 +423,7 @@ export function FlyerGenerator() {
               </div>
 
               <p className="text-[11px] text-white/50 text-center leading-normal pt-1">
-                💡 Tip: Attach your downloaded flyer image when posting to your WhatsApp Status, Instagram, or Facebook story along with this link!
+                Tip: Attach your downloaded flyer image when posting to your WhatsApp Status, Instagram, or Facebook story along with this link!
               </p>
             </div>
           </div>

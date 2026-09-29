@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, Download, ExternalLink, ShieldCheck } from "lucide-react";
 import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import type { EventEdition } from "@/types";
 
 const LIVE_PROD_URL = "https://www.wowexperience.com.ng";
@@ -128,7 +127,6 @@ function injectBrandedLogo(rawSvg: string, logoDataUri: string): string {
 export function AttendanceQr({ edition }: { edition: EventEdition }) {
   const [baseSvg, setBaseSvg] = useState("");
   const [logoUri, setLogoUri] = useState("");
-  const [withLogo, setWithLogo] = useState(true);
   const [copied, setCopied] = useState(false);
 
   const targetPath = edition.qrTargetUrl || edition.attendanceUrl || `/attend/${edition.year}`;
@@ -168,11 +166,11 @@ export function AttendanceQr({ edition }: { edition: EventEdition }) {
 
   const activeSvg = useMemo(() => {
     if (!baseSvg) return "";
-    if (withLogo && logoUri) {
+    if (logoUri) {
       return injectBrandedLogo(baseSvg, logoUri);
     }
     return baseSvg;
-  }, [baseSvg, withLogo, logoUri]);
+  }, [baseSvg, logoUri]);
 
   const displayUrl = useMemo(() => {
     const value = activeSvg ? absoluteTarget(targetPath) : targetPath;
@@ -214,23 +212,6 @@ export function AttendanceQr({ edition }: { edition: EventEdition }) {
           {edition.shortName} attendance
         </h2>
         <p className="mt-1 break-all text-sm text-muted font-mono">{displayUrl}</p>
-
-        {/* Logo Toggle */}
-        <div className="mt-3">
-          <button
-            type="button"
-            onClick={() => setWithLogo(!withLogo)}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors border",
-              withLogo
-                ? "bg-red/10 text-red border-red/30 hover:bg-red/20"
-                : "bg-paper text-muted border-border hover:bg-paper/80"
-            )}
-          >
-            <ShieldCheck size={13} className={withLogo ? "text-red" : "text-muted"} />
-            <span>{withLogo ? "Branded with WOW Logo (Active)" : "Plain QR Matrix"}</span>
-          </button>
-        </div>
 
         {/* Action Buttons */}
         <div className="mt-4 flex flex-wrap gap-2">

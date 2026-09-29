@@ -2,6 +2,15 @@
 
 This file keeps a short running summary of fixes and verification notes so you do not need to scroll through the terminal history.
 
+## Attending Flyer Copy Cleanup & QR Code Pill Removal
+
+- **Attending Flyer Viral Copy**:
+  - Removed all emojis (`🔥`, `✨`, `👉`) from the invitation caption across clipboard copy, modal preview, WhatsApp, and X/Twitter sharing in `src/components/flyer/flyer-generator.tsx`.
+  - Fixed duplicate link bug in `navigator.share`: eliminated redundant `url: flyerUrl` parameter when `text: caption` already contains the single flyer link, preventing WhatsApp on Android and iOS from appending the URL twice.
+- **Attendance QR Code UI**:
+  - Removed the unnecessary `"Branded with WOW Logo (Active)"` pill toggle from `src/components/admin/attendance-qr.tsx`. The QR code remains permanently and cleanly branded with the official WOW Experience center logo badge under Level H error correction.
+
+
 ## Our First Chapter 2022 (WOW Experience 1.0) Update
 
 - **Section Rebrand on `/about`**: Updated the historical impact section to highlight the genuine origin of the movement: **OUR FIRST CHAPTER • 2022 (WOW EXPERIENCE 1.0)**.
