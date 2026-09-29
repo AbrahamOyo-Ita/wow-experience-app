@@ -7,12 +7,26 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { EventEdition } from "@/types";
 
-const DEFAULT_PROD_URL = "https://wow-experience-app.vercel.app";
+const LIVE_PROD_URL = "https://www.wowexperience.com.ng";
 
 function absoluteTarget(path: string) {
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
+
+  // In the browser, if already on the custom domain, respect it
+  if (typeof window !== "undefined" && window.location.origin) {
+    const origin = window.location.origin;
+    if (origin.includes("wowexperience.com.ng")) {
+      return new URL(path.startsWith("/") ? path : `/${path}`, origin).toString();
+    }
+  }
+
+  // Check env url, but override any vercel.app or localhost with the official live domain
   const envUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
-  const base = envUrl && !envUrl.includes("localhost") ? envUrl : DEFAULT_PROD_URL;
+  const base =
+    envUrl && !envUrl.includes("localhost") && !envUrl.includes("vercel.app")
+      ? envUrl
+      : LIVE_PROD_URL;
+
   return new URL(path.startsWith("/") ? path : `/${path}`, base).toString();
 }
 

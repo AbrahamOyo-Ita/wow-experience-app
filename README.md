@@ -96,7 +96,7 @@ npm start
 | `RESEND_FROM` | Yes for email | Verified sender, e.g. `WOW Experience <updates@wowexperience.com.ng>` |
 | `OPENWA_BASE_URL` | Optional | WhatsApp provider endpoint |
 | `OPENWA_API_KEY` | Optional | WhatsApp provider API key |
-| `APP_URL` | Yes for auth redirects | Public app URL (`https://wow-experience-app.vercel.app`) |
+| `APP_URL` | Yes for auth redirects | Public app URL (`https://www.wowexperience.com.ng`) |
 | `CRON_SECRET` | Yes for cron | Protects notification cron endpoint |
 
 Current owner default:
@@ -118,7 +118,7 @@ NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
 SUPER_ADMIN_EMAILS=oyoitaabraham@gmail.com
-APP_URL=https://wow-experience-app.vercel.app
+APP_URL=https://www.wowexperience.com.ng
 ```
 
 For deployed environments, set `APP_URL` to the deployed domain.

@@ -2,6 +2,29 @@
 
 This file keeps a short running summary of fixes and verification notes so you do not need to scroll through the terminal history.
 
+## Our First Chapter 2022 (WOW Experience 1.0) Update
+
+- **Section Rebrand on `/about`**: Updated the historical impact section to highlight the genuine origin of the movement: **OUR FIRST CHAPTER • 2022 (WOW EXPERIENCE 1.0)**.
+- **Narrative Copy Updated**:
+  - Title: `WOW EXPERIENCE 1.0`
+  - Story: *"We gathered with one desire, to lift Jesus louder than everything competing for our hearts. What happened in that room became more than our first edition. It became the heartbeat of WOW Experience."*
+  - Key Pillars:
+    - *A room filled with young hearts hungry for God.*
+    - *Worship, prayer and moments that drew us closer to Jesus.*
+    - *The first chapter of a story we’re still living in today.*
+- **Data & Navigation**: Updated `previousImpact` in `src/data/content.ts` and updated the photo gallery CTA link and badge in `src/app/(site)/about/page.tsx`.
+
+
+## QR Code Live Domain Fix (wowexperience.com.ng)
+
+- **Root Cause**: The QR code destination URL resolver defaulted to `https://wow-experience-app.vercel.app`, causing scanned attendance QR codes to open the Vercel deployment link rather than the official production domain.
+- **Fix Applied**:
+  - Updated `src/components/admin/attendance-qr.tsx` to strictly target the live domain `https://www.wowexperience.com.ng`, ignoring any `vercel.app` or `localhost` fallbacks.
+  - Updated `src/lib/app-origin.ts` `PRODUCTION_FALLBACK` to `https://www.wowexperience.com.ng` and bypassed `vercel.app` in production.
+  - Synchronized `src/app/layout.tsx`, `src/actions/auth.ts`, `src/components/polo/polo-details.tsx`, `.env.local`, `.env.example`, and `README.md` to use `https://www.wowexperience.com.ng`.
+- **Verification**: Confirmed `npm test` (8/8 pass), `npm run lint` (0 errors), and `npm run build` (38/38 routes compiled).
+
+
 ## Branded Door Attendance QR Code with Integrated Logo
 
 - **Level H Redundancy (30%)**: Upgraded QR code generation in `src/components/admin/attendance-qr.tsx` to Reed-Solomon Error Correction Level `H`, enabling safe embedding of a central brand mark without reducing scanability.

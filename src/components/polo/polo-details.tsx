@@ -18,7 +18,7 @@ function normalizePhoneNumber(phone: string) {
 }
 
 function getAbsoluteImageUrl(imageSrc: string) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://wow-experience-app.vercel.app";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.wowexperience.com.ng";
   return new URL(imageSrc, appUrl).toString();
 }
 

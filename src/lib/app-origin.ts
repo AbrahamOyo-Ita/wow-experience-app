@@ -1,4 +1,4 @@
-const PRODUCTION_FALLBACK = "https://wow-experience-app.vercel.app";
+const PRODUCTION_FALLBACK = "https://www.wowexperience.com.ng";
 
 function normalizeOrigin(value: string | undefined) {
   if (!value) return null;
@@ -18,7 +18,11 @@ export function getAppOrigin() {
     normalizeOrigin(process.env.VERCEL_PROJECT_PRODUCTION_URL) ??
     normalizeOrigin(process.env.VERCEL_URL);
 
-  if (configured && (process.env.NODE_ENV !== "production" || !configured.includes("localhost"))) {
+  if (
+    configured &&
+    (process.env.NODE_ENV !== "production" ||
+      (!configured.includes("localhost") && !configured.includes("vercel.app")))
+  ) {
     return configured;
   }
 

@@ -168,7 +168,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Previous Impact / Maiden Chapter Section */}
+      {/* Previous Impact / First Chapter Section */}
       <section className="bg-paper py-20 sm:py-28 border-t border-border/40">
         <div className="container-site">
           <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
@@ -177,15 +177,15 @@ export default function AboutPage() {
               <FadeIn>
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="text-xs font-bold uppercase tracking-widest text-red">
-                    Maiden Chapter &bull; {previousImpact.year}
+                    {previousImpact.chapter} &bull; {previousImpact.year}
                   </span>
                   <span className="rounded-full bg-red/10 px-3 py-1 text-xs font-semibold text-red">
-                    {previousImpact.scripture}
+                    {previousImpact.edition}
                   </span>
                 </div>
 
-                <h2 className="mt-3 font-display text-3xl font-bold sm:text-5xl text-ink">
-                  Theme: <span className="text-red">{previousImpact.theme}</span>
+                <h2 className="mt-3 font-display text-3xl font-bold sm:text-5xl text-ink uppercase">
+                  WOW Experience <span className="text-red">1.0</span>
                 </h2>
 
                 <p className="mt-5 text-lg leading-relaxed text-muted font-light max-w-2xl">
@@ -208,8 +208,8 @@ export default function AboutPage() {
 
                 <div className="mt-10">
                   <HoverCard scale={1.03} className="inline-block">
-                    <Button href="/gallery?year=2025" variant="primary">
-                      Browse 2025 Photo Gallery
+                    <Button href="/gallery" variant="primary">
+                      Browse Photo Gallery
                     </Button>
                   </HoverCard>
                 </div>
@@ -223,7 +223,7 @@ export default function AboutPage() {
                   <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-ink">
                     <Image
                       src="/images/gallery-gathering.jpg"
-                      alt="The 2025 congregation"
+                      alt="WOW Experience 1.0 gathering"
                       fill
                       sizes="(max-width: 1024px) 100vw, 40vw"
                       className="object-cover transition-transform duration-500 hover:scale-105"
@@ -231,7 +231,7 @@ export default function AboutPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent" />
                     <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white text-xs font-medium">
                       <span className="rounded-full bg-ink/80 px-3 py-1 backdrop-blur-xs">
-                        2025 Gathering Archive
+                        WOW Experience 1.0 Archive
                       </span>
                       <span className="text-white/80">Photo Highlights</span>
                     </div>

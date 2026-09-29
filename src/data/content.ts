@@ -169,14 +169,14 @@ export const organizingTeam = [
 ];
 
 export const previousImpact = {
-  year: 2025,
-  theme: "RESOUND",
-  scripture: "Revelation 19:6",
+  chapter: "Our First Chapter",
+  year: 2022,
+  edition: "WOW Experience 1.0",
   summary:
-    "Our inaugural gathering established our foundational pattern under theme RESOUND (Revelation 19:6): one room, a focused message, and hours dedicated to congregational worship.",
+    "We gathered with one desire, to lift Jesus louder than everything competing for our hearts. What happened in that room became more than our first edition. It became the heartbeat of WOW Experience.",
   notes: [
-    "Single-day focused worship gathering built around deep reverence.",
-    "Dedicated volunteer teams covering hospitality, intercession, media, and venue flow.",
-    "A lasting record preserved in gallery archives for the community.",
+    "A room filled with young hearts hungry for God.",
+    "Worship, prayer and moments that drew us closer to Jesus.",
+    "The first chapter of a story we’re still living in today.",
   ],
 };

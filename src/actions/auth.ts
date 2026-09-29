@@ -80,7 +80,7 @@ export async function sendAdminMagicLink(formData: FormData) {
     redirect(sentUrl);
   }
 
-  const appUrl = process.env.APP_URL || "https://wow-experience-app.vercel.app";
+  const appUrl = process.env.APP_URL || "https://www.wowexperience.com.ng";
   const supabase = await createClient();
   await supabase.auth.signInWithOtp({
     email,

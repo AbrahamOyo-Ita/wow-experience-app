@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.APP_URL || "https://wow-experience-app.vercel.app"),
+  metadataBase: new URL(process.env.APP_URL || "https://www.wowexperience.com.ng"),
   title: {
     default: "Wonders of Worship Experience 2026",
     template: "%s | Wonders of Worship Experience",
