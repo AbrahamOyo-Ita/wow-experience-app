@@ -7,13 +7,13 @@ import { Button } from "@/components/ui/button";
 
 const LIVE_PROD_URL = "https://www.wowexperience.com.ng";
 
-function prayerUrl() {
+function absoluteTarget(path: string) {
   if (typeof window !== "undefined" && window.location.origin.includes("wowexperience.com.ng")) {
-    return new URL("/prayer", window.location.origin).toString();
+    return new URL(path, window.location.origin).toString();
   }
   const envUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
   const base = envUrl && !envUrl.includes("localhost") && !envUrl.includes("vercel.app") ? envUrl : LIVE_PROD_URL;
-  return new URL("/prayer", base).toString();
+  return new URL(path, base).toString();
 }
 
 function downloadText(filename: string, text: string, type: string) {
@@ -25,7 +25,7 @@ function downloadText(filename: string, text: string, type: string) {
   URL.revokeObjectURL(url);
 }
 
-function downloadPng(svg: string) {
+function downloadPng(svg: string, prefix: string) {
   const size = 1600;
   const canvas = document.createElement("canvas");
   canvas.width = size;
@@ -44,7 +44,7 @@ function downloadPng(svg: string) {
       const downloadUrl = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = downloadUrl;
-      anchor.download = "wow-prayer-backdrop-qr-1600px.png";
+      anchor.download = `${prefix}-1600px.png`;
       anchor.click();
       URL.revokeObjectURL(downloadUrl);
     }, "image/png");
@@ -82,11 +82,11 @@ function brandSvg(svg: string, logo: string) {
   return svg.replace("</svg>", `<g id="wow-qr-centerpiece"><rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${size * 0.16}" fill="#fff" stroke="#e5e7eb" stroke-width="0.35"/><image href="${logo}" x="${x + pad}" y="${y + pad}" width="${size - pad * 2}" height="${size - pad * 2}" preserveAspectRatio="xMidYMid meet"/></g></svg>`);
 }
 
-export function PrayerQrDownload() {
+export function PrayerQrDownload({ targetPath = "/prayer", label = "Scan to share", downloadPrefix = "wow-prayer-backdrop-qr" }: { targetPath?: string; label?: string; downloadPrefix?: string }) {
   const [svg, setSvg] = useState("");
   const [logo, setLogo] = useState("");
   const [copied, setCopied] = useState(false);
-  const target = useMemo(() => prayerUrl(), []);
+  const target = useMemo(() => absoluteTarget(targetPath), [targetPath]);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,11 +111,11 @@ export function PrayerQrDownload() {
       </div>
       <div className="mt-3 flex items-center justify-between gap-2 text-[11px] font-semibold text-white/75">
         <span className="inline-flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5 text-red-soft" />Backdrop-ready · Level H</span>
-        <span>Scan to share</span>
+        <span>{label}</span>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        <Button type="button" variant="outline" className="h-8 gap-1.5 border-white/35 bg-white/10 px-2.5 text-[11px] text-white hover:bg-white/20" disabled={!brandedSvg} onClick={() => downloadText("wow-prayer-backdrop-qr.svg", brandedSvg, "image/svg+xml")}><Download className="h-3.5 w-3.5" />SVG</Button>
-        <Button type="button" variant="outline" className="h-8 gap-1.5 border-white/35 bg-white/10 px-2.5 text-[11px] text-white hover:bg-white/20" disabled={!brandedSvg} onClick={() => downloadPng(brandedSvg)}><Download className="h-3.5 w-3.5" />PNG 1600px</Button>
+        <Button type="button" variant="outline" className="h-8 gap-1.5 border-white/35 bg-white/10 px-2.5 text-[11px] text-white hover:bg-white/20" disabled={!brandedSvg} onClick={() => downloadText(`${downloadPrefix}.svg`, brandedSvg, "image/svg+xml")}><Download className="h-3.5 w-3.5" />SVG</Button>
+        <Button type="button" variant="outline" className="h-8 gap-1.5 border-white/35 bg-white/10 px-2.5 text-[11px] text-white hover:bg-white/20" disabled={!brandedSvg} onClick={() => downloadPng(brandedSvg, downloadPrefix)}><Download className="h-3.5 w-3.5" />PNG 1600px</Button>
         <Button type="button" variant="ghost" className="h-8 gap-1.5 px-2.5 text-[11px] text-white/80 hover:bg-white/10 hover:text-white" onClick={copy}>{copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}{copied ? "Copied" : "Copy link"}</Button>
       </div>
     </div>
