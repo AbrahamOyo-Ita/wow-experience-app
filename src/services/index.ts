@@ -8,6 +8,9 @@ export const rsvpService = useLive ? live.rsvpService : mock.rsvpService;
 export const volunteerService = useLive ? live.volunteerService : mock.volunteerService;
 export const attendanceService = useLive ? live.attendanceService : mock.attendanceService;
 export const contactService = useLive ? live.contactService : mock.contactService;
+export const prayerRequestService = useLive
+  ? live.prayerRequestService
+  : mock.prayerRequestService;
 export const editionService = useLive ? live.editionService : mock.editionService;
 export const campaignService = useLive ? live.campaignService : mock.campaignService;
 export const newsletterService = useLive ? live.newsletterService : mock.newsletterService;

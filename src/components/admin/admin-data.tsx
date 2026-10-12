@@ -18,6 +18,7 @@ const empty: AdminBundle = {
   rsvps: [],
   attendance: [],
   volunteers: [],
+  prayerRequests: [],
   campaigns: [],
   newsletters: [],
   newsletterSubscribers: [],

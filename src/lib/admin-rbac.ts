@@ -7,6 +7,7 @@ export type AdminPermission =
   | "rsvps.view"
   | "attendance.manage"
   | "volunteers.manage"
+  | "prayers.view"
   | "team.invite"
   | "team.manage"
   | "campaigns.manage"
@@ -22,14 +23,14 @@ export type AdminPermission =
 const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
   super_admin: [
     "dashboard.view", "events.manage", "audience.view", "rsvps.view",
-    "attendance.manage", "volunteers.manage", "team.invite", "team.manage",
+    "attendance.manage", "volunteers.manage", "prayers.view", "team.invite", "team.manage",
     "campaigns.manage", "templates.manage", "automations.manage", "content.manage",
     "flyer.manage", "analytics.view", "settings.manage", "audit.view", "profile.update",
   ],
   event_admin: [
     "dashboard.view", "events.manage", "audience.view", "rsvps.view",
-    "attendance.manage", "volunteers.manage", "team.invite", "campaigns.manage",
-    "automations.manage", "analytics.view", "profile.update",
+    "attendance.manage", "volunteers.manage", "prayers.view", "team.invite", "campaigns.manage",
+    "automations.manage", "analytics.view", "prayers.view", "profile.update",
   ],
   communications_manager: [
     "dashboard.view", "audience.view", "campaigns.manage", "templates.manage",
@@ -53,6 +54,7 @@ const ROUTE_PERMISSIONS: ReadonlyArray<readonly [string, AdminPermission]> = [
   ["/admin/rsvps", "rsvps.view"],
   ["/admin/attendance", "attendance.manage"],
   ["/admin/volunteers", "volunteers.manage"],
+  ["/admin/prayers", "prayers.view"],
   ["/admin/campaigns", "campaigns.manage"],
   ["/admin/templates", "templates.manage"],
   ["/admin/automations", "automations.manage"],
@@ -80,4 +82,3 @@ export function canAccessAdminPath(role: AdminRole, pathname: string) {
   const permission = permissionForAdminPath(pathname);
   return permission ? hasAdminPermission(role, permission) : false;
 }
-

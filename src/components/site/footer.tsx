@@ -168,6 +168,9 @@ export function SiteFooter() {
             <h3 className="font-display text-lg font-bold text-ink tracking-wide">Community</h3>
             <ul className="mt-4 space-y-2.5 text-sm text-muted">
               <li>
+                <Link href="/prayer" className="transition-colors hover:text-red">Share a Prayer</Link>
+              </li>
+              <li>
                 <Link href="/volunteer" className="transition-colors hover:text-red">Volunteer Intake</Link>
               </li>
               <li>

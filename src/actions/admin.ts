@@ -39,6 +39,7 @@ import type {
   Minister,
   Newsletter,
   NewsletterSubscriber,
+  PrayerRequest,
   Rsvp,
   VolunteerApplication,
   VolunteerStatus,
@@ -70,6 +71,7 @@ export type AdminBundle = {
   rsvps: Rsvp[];
   attendance: AttendanceRecord[];
   volunteers: VolunteerApplication[];
+  prayerRequests: PrayerRequest[];
   campaigns: Campaign[];
   newsletters: Newsletter[];
   newsletterSubscribers: NewsletterSubscriber[];
@@ -226,6 +228,7 @@ function emptyBundle(error?: string): AdminBundle {
     rsvps: [],
     attendance: [],
     volunteers: [],
+    prayerRequests: [],
     campaigns: [],
     newsletters: [],
     newsletterSubscribers: [],
@@ -258,6 +261,7 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
       rsvps: mockRsvps,
       attendance: mockAttendance,
       volunteers: mockVolunteers,
+      prayerRequests: [],
       campaigns: mockCampaigns,
       newsletters: [],
       newsletterSubscribers: [],
@@ -282,6 +286,7 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
     rsvpsRes,
     attendanceRes,
     volunteersRes,
+    prayerRequestsRes,
     campaignsRes,
     newslettersRes,
     newsletterSubscribersRes,
@@ -303,6 +308,7 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
     supabase.from("rsvps").select("*").order("created_at", { ascending: false }),
     supabase.from("attendance_records").select("*").order("checked_in_at", { ascending: false }),
     supabase.from("volunteer_applications").select("*, volunteer_teams(team_key)").order("created_at", { ascending: false }),
+    supabase.from("prayer_requests").select("*").order("created_at", { ascending: false }),
     supabase.from("campaigns").select("*").order("created_at", { ascending: false }),
     supabase.from("newsletters").select("*").order("created_at", { ascending: false }),
     supabase.from("newsletter_subscribers").select("*").order("subscribed_at", { ascending: false }),
@@ -413,6 +419,17 @@ export async function loadAdminBundle(): Promise<AdminBundle> {
       reviewedAt: row.reviewed_at ? String(row.reviewed_at) : null,
       createdAt: String(row.created_at),
       updatedAt: String(row.updated_at),
+    })),
+    prayerRequests: ((prayerRequestsRes.data as Record<string, unknown>[] | null) ?? []).map((row) => ({
+      id: String(row.id),
+      name: row.name ? String(row.name) : null,
+      prayerPoint: String(row.prayer_point ?? row.prayer ?? ""),
+      desiredOutcome: String(row.desired_outcome ?? ""),
+      isAnonymous: Boolean(row.is_anonymous),
+      isUrgent: Boolean(row.is_urgent),
+      source: String(row.source ?? "prayer-page"),
+      status: row.status as PrayerRequest["status"],
+      createdAt: String(row.created_at),
     })),
     campaigns: ((campaignsRes.data as Record<string, unknown>[] | null) ?? []).map((row) => ({
       id: String(row.id),

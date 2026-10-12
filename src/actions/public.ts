@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { newsletterSubscribeSchema, rsvpSchema } from "@/lib/validation";
+import { newsletterSubscribeSchema, prayerRequestSchema, rsvpSchema } from "@/lib/validation";
 import { getArticleBySlug, getPublishedArticles } from "@/data/articles";
 import { faqs as staticFaqs, getFaqsByEdition } from "@/data/faqs";
 import type {
@@ -12,6 +12,7 @@ import type {
   EnquiryInput,
   MockSubmitResult,
   NewsletterSubscribeInput,
+  PrayerRequestInput,
   RsvpInput,
   UnsubscribeInput,
   VolunteerInput,
@@ -123,6 +124,21 @@ export async function checkInAttendance(input: AttendanceInput & { source?: "qr"
 
 export async function submitEnquiry(input: EnquiryInput) {
   return callRpc<{ id: string }>("submit_enquiry", { ...input });
+}
+
+export async function submitPrayerRequest(input: PrayerRequestInput) {
+  const parsed = prayerRequestSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      status: "validation" as const,
+      errors: parsed.error.issues.map((issue) => ({
+        field: String(issue.path[0] ?? "form"),
+        message: issue.message,
+      })),
+    };
+  }
+
+  return callRpc<{ id: string }>("submit_prayer_request", parsed.data);
 }
 
 export async function unsubscribeContact(input: UnsubscribeInput) {
@@ -337,4 +353,3 @@ export async function fetchPublishedFaqs(editionId?: string): Promise<FaqItem[]>
     return editionId ? getFaqsByEdition(editionId) : staticFaqs;
   }
 }
-

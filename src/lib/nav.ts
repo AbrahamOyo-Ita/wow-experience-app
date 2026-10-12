@@ -37,6 +37,7 @@ export const adminNav: ReadonlyArray<{ href: string; label: string; permission: 
   { href: "/admin/attendance", label: "Attendance", permission: "attendance.manage" },
   { href: "/admin/flyer", label: "Flyer", permission: "flyer.manage" },
   { href: "/admin/volunteers", label: "Volunteers", permission: "volunteers.manage" },
+  { href: "/admin/prayers", label: "Prayer requests", permission: "prayers.view" },
   { href: "/admin/team", label: "Team & RBAC", permission: "team.invite" },
   { href: "/admin/campaigns", label: "Campaigns", permission: "campaigns.manage" },
   { href: "/admin/templates", label: "Templates", permission: "templates.manage" },

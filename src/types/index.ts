@@ -243,6 +243,18 @@ export interface VolunteerApplication {
   updatedAt: string;
 }
 
+export interface PrayerRequest {
+  id: string;
+  name: string | null;
+  prayerPoint: string;
+  desiredOutcome: string;
+  isAnonymous: boolean;
+  isUrgent: boolean;
+  source: string;
+  status: "received" | "praying" | "answered" | "archived";
+  createdAt: string;
+}
+
 export interface MessageTemplate {
   id: string;
   eventId: string | null;

@@ -61,6 +61,19 @@ export interface EnquiryInput {
   message: string;
 }
 
+export interface PrayerRequestInput {
+  name?: string;
+  prayerPoint: string;
+  desiredOutcome: string;
+  isAnonymous: boolean;
+  isUrgent: boolean;
+  source?: string;
+}
+
+export interface PrayerRequestService {
+  submit(input: PrayerRequestInput): Promise<MockSubmitResult<{ id: string }>>;
+}
+
 export interface UnsubscribeInput {
   email?: string;
   phone?: string;
@@ -141,6 +154,7 @@ export interface PublicServices {
   volunteer: VolunteerService;
   attendance: AttendanceService;
   contacts: ContactService;
+  prayerRequests: PrayerRequestService;
   editions: EditionService;
   campaigns: CampaignService;
   newsletters: NewsletterService;

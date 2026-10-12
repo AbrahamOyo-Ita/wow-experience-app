@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { normalizeNgPhone } from "@/lib/phone";
+export { prayerRequestSchema } from "@/lib/prayer-validation";
 
 export const rsvpSchema = z
   .object({

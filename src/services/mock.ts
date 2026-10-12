@@ -11,6 +11,8 @@ import type {
   NewsletterService,
   NewsletterSubscribeInput,
   PublicServices,
+  PrayerRequestInput,
+  PrayerRequestService,
   RsvpInput,
   RsvpService,
   SessionService,
@@ -228,6 +230,33 @@ export const enquiryService = {
   submit: (input: EnquiryInput) => contactService.enquiry(input),
 };
 
+export const prayerRequestService: PrayerRequestService = {
+  async submit(input: PrayerRequestInput) {
+    await sleep(LATENCY);
+    if (isOffline()) {
+      return {
+        status: "offline",
+        message: "You appear to be offline. Your prayer request has not been sent yet.",
+      };
+    }
+    if (input.prayerPoint.trim().length < 10 || input.desiredOutcome.trim().length < 5) {
+      return {
+        status: "validation",
+        errors: [
+          {
+            field: input.prayerPoint.trim().length < 10 ? "prayerPoint" : "desiredOutcome",
+            message:
+              input.prayerPoint.trim().length < 10
+                ? "Please write a little more so we can pray with understanding."
+                : "Tell us what you are trusting God to do at the event.",
+          },
+        ],
+      };
+    }
+    return { status: "success", data: { id: `prayer-${Date.now()}` } };
+  },
+};
+
 export const unsubscribeService = {
   submit: (input: UnsubscribeInput) => contactService.unsubscribe(input),
 };
@@ -333,6 +362,7 @@ export const services: PublicServices = {
   volunteer: volunteerService,
   attendance: attendanceService,
   contacts: contactService,
+  prayerRequests: prayerRequestService,
   editions: editionService,
   campaigns: campaignService,
   newsletters: newsletterService,

@@ -13,6 +13,7 @@ import {
   listPublishedNewsletters,
   subscribeNewsletter,
   submitEnquiry,
+  submitPrayerRequest,
   submitRsvp,
   submitVolunteer,
   unsubscribeContact,
@@ -23,6 +24,7 @@ import type {
   ContactService,
   EditionService,
   NewsletterService,
+  PrayerRequestService,
   PublicServices,
   RsvpService,
   SessionService,
@@ -74,6 +76,10 @@ export const contactService: ContactService = {
 
 export const enquiryService = {
   submit: submitEnquiry,
+};
+
+export const prayerRequestService: PrayerRequestService = {
+  submit: submitPrayerRequest,
 };
 
 export const unsubscribeService = {
@@ -144,6 +150,7 @@ export const services: PublicServices = {
   volunteer: volunteerService,
   attendance: attendanceService,
   contacts: contactService,
+  prayerRequests: prayerRequestService,
   editions: editionService,
   campaigns: campaignService,
   newsletters: newsletterService,
