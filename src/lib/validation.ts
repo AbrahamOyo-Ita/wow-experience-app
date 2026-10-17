@@ -160,6 +160,7 @@ export const customAutomationSchema = z
     emailBody: z.string().trim().optional(),
     scheduledAt: z.string().trim().optional(),
     sendNow: z.boolean().optional(),
+    dryRun: z.boolean().optional(),
     targetContactIds: z.array(z.string().uuid()).optional(),
   })
   .superRefine((value, ctx) => {
@@ -170,7 +171,7 @@ export const customAutomationSchema = z
         message: "Email subject is required for email delivery.",
       });
     }
-    if (!value.sendNow && !value.scheduledAt) {
+    if (!value.dryRun && !value.sendNow && !value.scheduledAt) {
       ctx.addIssue({
         code: "custom",
         path: ["scheduledAt"],

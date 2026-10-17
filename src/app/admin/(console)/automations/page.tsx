@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { DataTable, type DataTableColumn } from "@/components/admin/data-table";
 import { PageHeader } from "@/components/admin/page-header";
 import { useEdition } from "@/components/admin/edition-context";
@@ -11,6 +11,7 @@ import {
   toggleCustomAutomationAction,
   triggerCustomAutomationNowAction,
   deleteCustomAutomationAction,
+  sendTestEmail,
 } from "@/actions/admin";
 import { inEdition, labelChannel } from "@/lib/admin";
 import { formatDateTime } from "@/lib/utils";
@@ -125,6 +126,27 @@ export default function AdminAutomationsPage() {
   const [contactSearchQuery, setContactSearchQuery] = useState("");
   const [previewTab, setPreviewTab] = useState<"composer" | "preview">("composer");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [recipientSummary, setRecipientSummary] = useState<{ total: number; deduplicated: number; invalid: number; skipped: number; recipients: { email: string; firstName: string; reason?: string }[] } | null>(null);
+  const [confirmSend, setConfirmSend] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [testMessage, setTestMessage] = useState<string | null>(null);
+  const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
+  const [runStatus, setRunStatus] = useState<{ campaign: { status: string }; counts: { sent: number; failed: number; skipped: number; pending: number }; recipients: { email: string; status: string; last_error?: string | null }[] } | null>(null);
+
+  useEffect(() => {
+    if (!activeCampaignId) return;
+    let stopped = false;
+    const poll = async () => {
+      const response = await fetch(`/api/admin/campaigns/${activeCampaignId}/status`, { cache: "no-store" });
+      if (!response.ok || stopped) return;
+      const next = await response.json();
+      setRunStatus(next);
+      if (!["queueing", "sending"].includes(next.campaign?.status)) stopped = true;
+    };
+    void poll();
+    const timer = window.setInterval(() => void poll(), 2000);
+    return () => { stopped = true; window.clearInterval(timer); };
+  }, [activeCampaignId]);
 
   // Compute timing presets based on event startsAt
   const presets = useMemo(() => {
@@ -253,6 +275,7 @@ export default function AdminAutomationsPage() {
       const res = await triggerCustomAutomationNowAction(row.id);
       if (res.status === "success") {
         setBanner({ type: "success", text: `Triggered "${row.name}". Dispatch in progress.` });
+        setActiveCampaignId(row.id);
         await refresh();
       } else {
         setBanner({ type: "error", text: res.message || "Failed to trigger automation." });
@@ -303,6 +326,41 @@ export default function AdminAutomationsPage() {
     setContactSearchQuery("");
     setErrors({});
     setPreviewTab("composer");
+    setRecipientSummary(null);
+    setConfirmSend(false);
+    setTestEmail("");
+    setTestMessage(null);
+  };
+
+  const previewRecipients = () => {
+    setErrors({});
+    startTransition(async () => {
+      const res = await scheduleCustomAutomationAction({
+        eventId: edition.id,
+        name: name || "Recipient preview",
+        channelMode,
+        audienceLabel,
+        subject: channelMode !== "whatsapp" ? subject || "Preview" : undefined,
+        body: body || "Preview",
+        sendNow: true,
+        dryRun: true,
+        targetContactIds: audienceLabel === "Specific targeted contacts" ? targetContactIds : [],
+      });
+      if (res.status === "success" && "summary" in res && res.summary) {
+        setRecipientSummary(res.summary);
+        setConfirmSend(false);
+      } else {
+        setBanner({ type: "error", text: res.message || "Could not calculate recipients." });
+      }
+    });
+  };
+
+  const handleSendTest = () => {
+    setTestMessage(null);
+    startTransition(async () => {
+      const res = await sendTestEmail({ email: testEmail, subject, body, eventId: edition.id });
+      setTestMessage(res.message);
+    });
   };
 
   // Submit custom automation
@@ -316,7 +374,7 @@ export default function AdminAutomationsPage() {
         audienceLabel,
         subject: channelMode !== "whatsapp" ? subject : undefined,
         body,
-        scheduledAt: sendNow ? undefined : scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+        scheduledAt: sendNow ? undefined : scheduledAt || undefined,
         sendNow,
         targetContactIds: audienceLabel === "Specific targeted contacts" ? targetContactIds : [],
       });
@@ -330,6 +388,7 @@ export default function AdminAutomationsPage() {
         });
         resetForm();
         setIsScheduleOpen(false);
+        if ("data" in res && res.data?.id) setActiveCampaignId(String(res.data.id));
         await refresh();
         return;
       }
@@ -344,6 +403,14 @@ export default function AdminAutomationsPage() {
         text: res.message || "Failed to schedule custom automation.",
       });
     });
+  };
+
+  const retryFailed = async (campaignId: string) => {
+    const response = await fetch(`/api/admin/campaigns/${campaignId}/retry`, { method: "POST" });
+    const result = await response.json();
+    if (!response.ok) setBanner({ type: "error", text: result.error || "Retry failed." });
+    else { setBanner({ type: "success", text: "Retry started for failed recipients." }); setActiveCampaignId(campaignId); }
+    await refresh();
   };
 
   // Live preview rendered text
@@ -529,6 +596,11 @@ export default function AdminAutomationsPage() {
               <Play className="h-3 w-3 text-emerald-600" />
               Run Now
             </button>
+            {row.status === "failed" && row.failedCount > 0 && (
+              <button type="button" title="Retry failed recipients" onClick={() => void retryFailed(row.id)} className="text-xs text-amber-700 hover:underline">
+                Retry failed
+              </button>
+            )}
             <button
               type="button"
               title="Delete custom automation"
@@ -588,6 +660,18 @@ export default function AdminAutomationsPage() {
             <X className="h-4 w-4" />
           </button>
         </div>
+      )}
+
+      {runStatus && activeCampaignId && (
+        <section className="border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950" aria-live="polite">
+          <div className="flex items-center justify-between gap-3">
+            <div className="font-bold">Campaign run: {runStatus.campaign.status}</div>
+            <button type="button" className="text-xs underline" onClick={() => setRunStatus(null)}>Hide</button>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-3 text-xs">Sent {runStatus.counts.sent} · Failed {runStatus.counts.failed} · Skipped {runStatus.counts.skipped} · Pending {runStatus.counts.pending}</div>
+          <div className="mt-3 h-2 bg-white"><div className="h-2 bg-blue-600 transition-all" style={{ width: `${Math.min(100, ((runStatus.counts.sent + runStatus.counts.failed + runStatus.counts.skipped) / Math.max(1, runStatus.counts.sent + runStatus.counts.failed + runStatus.counts.skipped + runStatus.counts.pending)) * 100)}%` }} /></div>
+          {runStatus.recipients.some((recipient) => recipient.status === "failed" || recipient.status === "skipped") && <div className="mt-3 max-h-32 overflow-y-auto text-xs">{runStatus.recipients.filter((recipient) => recipient.status === "failed" || recipient.status === "skipped").slice(0, 20).map((recipient) => <div key={`${recipient.email}-${recipient.status}`}>{recipient.email}: {recipient.status}{recipient.last_error ? ` — ${recipient.last_error}` : ""}</div>)}</div>}
+        </section>
       )}
 
       {/* Filter Tabs */}
@@ -802,7 +886,7 @@ export default function AdminAutomationsPage() {
                   )}
 
                   {/* Schedule & Timing */}
-                  <div className="space-y-2 border-t border-border pt-4">
+      <div className="space-y-2 border-t border-border pt-4">
                     <label className="block text-xs font-bold uppercase tracking-wider text-ink">
                       Schedule Timing
                     </label>
@@ -847,6 +931,8 @@ export default function AdminAutomationsPage() {
                         />
                       </Field>
 
+                      <p className="text-[11px] text-muted sm:col-span-2">Timezone: Africa/Lagos (WAT, UTC+1). Stored as UTC by the server.</p>
+
                       <label className="flex items-center gap-2.5 pt-4 text-xs font-medium text-ink cursor-pointer">
                         <input
                           type="checkbox"
@@ -883,6 +969,28 @@ export default function AdminAutomationsPage() {
                       onChange={(e) => setBody(e.target.value)}
                     />
                   </Field>
+
+                  {channelMode !== "whatsapp" && (
+                    <div className="border border-border bg-stone-50 p-3 space-y-2">
+                      <div className="text-xs font-bold text-ink">Send test email</div>
+                      <div className="flex gap-2">
+                        <TextInput aria-label="Test email address" placeholder="you@example.com" value={testEmail} onChange={(e) => setTestEmail(e.target.value)} />
+                        <Button type="button" variant="outline" onClick={handleSendTest} disabled={isPending || !testEmail.trim()}>Send test</Button>
+                      </div>
+                      {testMessage && <p className="text-xs text-muted">{testMessage}</p>}
+                    </div>
+                  )}
+
+                  {recipientSummary && (
+                    <div className="border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950 space-y-2">
+                      <div className="font-bold">Recipient confirmation</div>
+                      <div>Total: {recipientSummary.total} · Deduplicated: {recipientSummary.deduplicated} · Invalid/skipped: {recipientSummary.invalid}</div>
+                      {recipientSummary.recipients.some((recipient) => recipient.reason) && (
+                        <div className="max-h-24 overflow-y-auto">{recipientSummary.recipients.filter((recipient) => recipient.reason).slice(0, 20).map((recipient) => <div key={`${recipient.email}-${recipient.firstName}`}>{recipient.email || "(missing email)"}: {recipient.reason}</div>)}</div>
+                      )}
+                      <label className="flex items-center gap-2 font-semibold"><input type="checkbox" checked={confirmSend} onChange={(e) => setConfirmSend(e.target.checked)} /> I confirm these recipients and want to proceed.</label>
+                    </div>
+                  )}
 
                   {/* Insert Variable Helper Tags */}
                   <div className="space-y-1.5 bg-stone-50 p-2.5 border border-border">
@@ -970,6 +1078,9 @@ export default function AdminAutomationsPage() {
                   : "Pick a date/time or send immediately"}
               </span>
               <div className="flex items-center gap-2">
+                <Button type="button" variant="outline" onClick={previewRecipients} disabled={isPending || !body.trim()}>
+                  {isPending ? "Checking..." : "Dry run / Review recipients"}
+                </Button>
                 <Button
                   type="button"
                   variant="outline"
@@ -982,7 +1093,7 @@ export default function AdminAutomationsPage() {
                   type="button"
                   className="bg-ink text-white hover:bg-ink/90"
                   onClick={handleScheduleSubmit}
-                  disabled={isPending || !name.trim() || !body.trim()}
+                  disabled={isPending || !name.trim() || !body.trim() || !recipientSummary || !confirmSend}
                 >
                   {isPending ? (
                     "Processing..."

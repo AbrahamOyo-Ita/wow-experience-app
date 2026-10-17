@@ -1,5 +1,6 @@
 import { hasServiceRole, createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail, sendWhatsApp } from "@/lib/notifications/providers";
+import { enqueueCampaignSend, processCampaign } from "@/lib/notifications/campaign-pipeline";
 import type { CampaignChannelMode, MessageAttachment } from "@/types";
 
 function render(template: string, payload: Record<string, unknown>) {
@@ -106,166 +107,6 @@ async function processAutomationQueue(supabase: ReturnType<typeof createAdminCli
   return { processed };
 }
 
-function payloadForContact(contact: Record<string, unknown>, extra: Record<string, unknown> = {}) {
-  return {
-    first_name: contact.first_name,
-    last_name: contact.last_name,
-    email: contact.email_normalized,
-    phone: contact.phone_normalized,
-    ...extra,
-  };
-}
-
-async function loadEligibleContacts(
-  supabase: ReturnType<typeof createAdminClient>,
-  campaign: Record<string, unknown>,
-) {
-  const targetIds = Array.isArray(campaign.target_contact_ids)
-    ? (campaign.target_contact_ids as string[])
-    : [];
-
-  let query = supabase
-    .from("contacts")
-    .select("id, first_name, last_name, email_normalized, phone_normalized, preferred_channel, contact_consents(channel, purpose, status)");
-
-  if (targetIds.length) {
-    query = query.in("id", targetIds);
-  } else {
-    const audience = String(campaign.audience_label ?? "").toLowerCase();
-    if (audience.includes("attendee") || audience.includes("rsvp")) {
-      const { data: rsvps } = await supabase
-        .from("rsvps")
-        .select("contact_id")
-        .eq("edition_id", campaign.edition_id)
-        .eq("response", "attending");
-      const ids = [...new Set(((rsvps as { contact_id: string }[] | null) ?? []).map((row) => row.contact_id))];
-      if (!ids.length) return [];
-      query = query.in("id", ids);
-    } else if (audience.includes("volunteer")) {
-      const { data: volApps } = await supabase
-        .from("volunteer_applications")
-        .select("contact_id, team_id, volunteer_teams(team_key, name)")
-        .eq("edition_id", campaign.edition_id)
-        .eq("status", "accepted");
-
-      let matchedApps = (volApps as { contact_id: string; team_id?: string; volunteer_teams?: { team_key?: string; name?: string } }[] | null) ?? [];
-      const teams = ["choir", "worship", "media", "technical", "ushering", "protocol", "prayer", "intercession", "hospitality", "welfare"];
-      const matchedTeam = teams.find((t) => audience.includes(t));
-      if (matchedTeam) {
-        matchedApps = matchedApps.filter((item) => {
-          const teamName = `${item.volunteer_teams?.name ?? ""} ${item.volunteer_teams?.team_key ?? ""}`.toLowerCase();
-          return teamName.includes(matchedTeam);
-        });
-      }
-
-      const ids = [...new Set(matchedApps.map((row) => row.contact_id))];
-      if (!ids.length) return [];
-      query = query.in("id", ids);
-    }
-  }
-
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return (data as Record<string, unknown>[] | null) ?? [];
-}
-
-function hasConsent(contact: Record<string, unknown>, channel: "email" | "whatsapp") {
-  const consents = (contact.contact_consents ?? []) as {
-    channel?: string;
-    purpose?: string;
-    status?: string;
-  }[];
-  if (!consents.length) return true;
-  return consents.some(
-    (row) =>
-      row.channel === channel &&
-      row.status === "granted" &&
-      [
-        "event_reminders",
-        "newsletter",
-        "volunteer_updates",
-        "attendance",
-        "enquiry",
-      ].includes(row.purpose ?? ""),
-  );
-}
-
-async function queueCampaignNotifications(
-  supabase: ReturnType<typeof createAdminClient>,
-  campaign: Record<string, unknown>,
-) {
-  const contacts = await loadEligibleContacts(supabase, campaign);
-  const rows = [];
-  let excluded = 0;
-
-  const { data: edition } = await supabase
-    .from("event_editions")
-    .select("name, starts_at, venue_name, venue_address, directions_url")
-    .eq("id", campaign.edition_id)
-    .maybeSingle();
-
-  const startsAt = edition?.starts_at ? new Date(String(edition.starts_at)) : null;
-  const eventDate = startsAt
-    ? new Intl.DateTimeFormat("en-NG", { dateStyle: "long", timeZone: "Africa/Lagos" }).format(startsAt)
-    : "";
-  const eventTime = startsAt
-    ? new Intl.DateTimeFormat("en-NG", { timeStyle: "short", timeZone: "Africa/Lagos" }).format(startsAt)
-    : "";
-
-  const eventPayload = {
-    event_name: edition?.name ?? "Wonders of Worship",
-    event_date: eventDate,
-    event_time: eventTime,
-    venue: edition?.venue_name ?? "",
-    venue_address: edition?.venue_address ?? "",
-    directions_url: edition?.directions_url ?? "",
-  };
-
-  for (const contact of contacts) {
-    for (const channel of channelsFor(campaign.channel_mode as CampaignChannelMode)) {
-      const to = channel === "email" ? contact.email_normalized : contact.phone_normalized;
-      if (!to || !hasConsent(contact, channel)) {
-        excluded += 1;
-        continue;
-      }
-      rows.push({
-        edition_id: campaign.edition_id,
-        contact_id: contact.id,
-        campaign_id: campaign.id,
-        channel,
-        template_key: "campaign_broadcast",
-        to_address: to,
-        payload: payloadForContact(contact, {
-          subject: campaign.subject,
-          body: channel === "email" ? campaign.email_body : campaign.whatsapp_body,
-          attachments: campaign.attachments ?? [],
-          ...eventPayload,
-        }),
-        scheduled_for: campaign.scheduled_at ?? new Date().toISOString(),
-        status: "queued",
-      });
-    }
-  }
-
-  if (rows.length) {
-    const { error } = await supabase.from("notifications").insert(rows);
-    if (error) throw new Error(error.message);
-  }
-
-  await supabase
-    .from("campaigns")
-    .update({
-      status: rows.length ? "sending" : "completed",
-      eligible_count: rows.length,
-      excluded_count: excluded,
-      started_at: new Date().toISOString(),
-      completed_at: rows.length ? null : new Date().toISOString(),
-    })
-    .eq("id", campaign.id);
-
-  return rows.length;
-}
-
 export async function processCampaignQueue(limit = 10) {
   if (!hasServiceRole()) {
     return {
@@ -288,8 +129,9 @@ export async function processCampaignQueue(limit = 10) {
   let processed = 0;
   for (const campaign of (campaigns as Record<string, unknown>[] | null) ?? []) {
     try {
-      await supabase.from("campaigns").update({ status: "queueing" }).eq("id", campaign.id);
-      await queueCampaignNotifications(supabase, campaign);
+      await supabase.from("campaigns").update({ status: "queueing" }).eq("id", campaign.id).eq("status", "scheduled");
+      await enqueueCampaignSend(String(campaign.id));
+      await processCampaign(String(campaign.id));
       processed += 1;
     } catch (error) {
       await supabase

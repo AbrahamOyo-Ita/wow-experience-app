@@ -9,6 +9,13 @@ import {
   processNewsletterBroadcast,
   processNotificationQueue,
 } from "@/lib/notifications/process";
+import {
+  enqueueCampaignSend,
+  parseLagosDateTime,
+  previewCampaignInput,
+  processCampaign,
+  renderCampaignTemplate,
+} from "@/lib/notifications/campaign-pipeline";
 import { campaignScheduleSchema, customAutomationSchema, ministerSchema, newsletterPublishSchema } from "@/lib/validation";
 import { mapMinister } from "@/lib/ministers";
 import { createAdminClient, hasServiceRole } from "@/lib/supabase/admin";
@@ -812,6 +819,7 @@ export async function scheduleCustomAutomationAction(input: {
   scheduledAt?: string;
   sendNow?: boolean;
   targetContactIds?: string[];
+  dryRun?: boolean;
 }) {
   const parsed = customAutomationSchema.safeParse(input);
   if (!parsed.success) {
@@ -839,7 +847,20 @@ export async function scheduleCustomAutomationAction(input: {
     return { status: "error" as const, message: "Event edition not found." };
   }
 
-  const scheduledAt = valid.sendNow ? new Date().toISOString() : valid.scheduledAt;
+  const draftCampaign = {
+    edition_id: edition.id,
+    audience_label: valid.audienceLabel,
+    target_contact_ids: valid.targetContactIds ?? [],
+  };
+  if (valid.dryRun) {
+    try {
+      return { status: "success" as const, dryRun: true, summary: await previewCampaignInput(draftCampaign) };
+    } catch (error) {
+      return { status: "error" as const, message: error instanceof Error ? error.message : "Could not preview recipients." };
+    }
+  }
+
+  const scheduledAt = valid.sendNow ? new Date().toISOString() : parseLagosDateTime(valid.scheduledAt ?? "")?.toISOString();
   const whatsappBody = valid.whatsappBody || valid.body;
   const emailBody = valid.emailBody || valid.body;
 
@@ -867,8 +888,13 @@ export async function scheduleCustomAutomationAction(input: {
   }
 
   if (valid.sendNow) {
-    await processCampaignQueue(10);
-    await processNotificationQueue(50);
+    try {
+      await enqueueCampaignSend(String(data.id));
+      await processCampaign(String(data.id));
+    } catch (error) {
+      await supabase.from("campaigns").update({ status: "failed", completed_at: new Date().toISOString() }).eq("id", data.id);
+      return { status: "error" as const, message: error instanceof Error ? error.message : "Campaign processing failed.", data };
+    }
   }
 
   await supabase.from("audit_logs").insert({
@@ -904,19 +930,52 @@ export async function toggleCustomAutomationAction(id: string, enabled: boolean)
 export async function triggerCustomAutomationNowAction(id: string) {
   const supabase = await createClient();
   const now = new Date().toISOString();
-  const { error } = await supabase
+  const { data: campaign, error } = await supabase
     .from("campaigns")
-    .update({ status: "scheduled", scheduled_at: now })
+    .update({ status: "queueing", scheduled_at: now })
     .eq("id", id)
-    .eq("type", "automation");
+    .eq("type", "automation")
+    .select("id")
+    .maybeSingle();
 
-  if (error) return { status: "error" as const, message: error.message };
+  if (error || !campaign) return { status: "error" as const, message: error?.message ?? "Automation not found." };
 
-  await processCampaignQueue(10);
-  await processNotificationQueue(50);
+  try {
+    await enqueueCampaignSend(String(campaign.id));
+    await processCampaign(String(campaign.id));
+  } catch (processingError) {
+    return { status: "error" as const, message: processingError instanceof Error ? processingError.message : "Campaign processing failed." };
+  }
 
   revalidatePath("/admin/automations");
   return { status: "success" as const };
+}
+
+export async function sendTestEmail(input: { email: string; subject: string; body: string; eventId: string }) {
+  const email = input.email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { status: "validation" as const, message: "Enter a valid test email address." };
+  if (!input.body.trim() || !input.subject.trim()) return { status: "validation" as const, message: "Subject and body are required." };
+  const supabase = await createClient();
+  const { data: edition } = await supabase.from("event_editions").select("name, starts_at, venue_name, venue_address, directions_url").or(`legacy_key.eq.${input.eventId},slug.eq.${input.eventId},year.eq.${input.eventId}`).maybeSingle();
+  const startsAt = edition?.starts_at ? new Date(edition.starts_at) : new Date();
+  const payload = {
+    first_name: "Test",
+    event_name: edition?.name ?? "Wonders of Worship",
+    event_date: new Intl.DateTimeFormat("en-NG", { dateStyle: "long", timeZone: "Africa/Lagos" }).format(startsAt),
+    event_time: new Intl.DateTimeFormat("en-NG", { timeStyle: "short", timeZone: "Africa/Lagos" }).format(startsAt),
+    venue: edition?.venue_name ?? "",
+  };
+  const subject = renderCampaignTemplate(input.subject, payload);
+  const body = renderCampaignTemplate(input.body, payload);
+  const result = await sendEmail({
+    to: email,
+    subject,
+    body,
+    html: renderRichEmailHtml({ headline: subject, bodyMarkdown: body, recipientEmail: email, venueCard: true, scriptureQuote: true }),
+  });
+  return result.status === "sent"
+    ? { status: "success" as const, message: "Test email sent." }
+    : { status: "error" as const, message: result.reason ?? "Test email was not sent." };
 }
 
 export async function deleteCustomAutomationAction(id: string) {
