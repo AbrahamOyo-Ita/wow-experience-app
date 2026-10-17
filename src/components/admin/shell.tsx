@@ -51,6 +51,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   "/admin/campaigns": Send,
   "/admin/templates": FileText,
   "/admin/automations": Timer,
+  "/admin/timer": Timer,
   "/admin/content": Newspaper,
   "/admin/analytics": BarChart3,
   "/admin/settings": Settings,

@@ -98,6 +98,9 @@ npm start
 | `OPENWA_API_KEY` | Optional | WhatsApp provider API key |
 | `APP_URL` | Yes for auth redirects | Public app URL (`https://www.wowexperience.com.ng`) |
 | `CRON_SECRET` | Yes for cron | Protects notification cron endpoint |
+| `EMAIL_BATCH_SIZE` | No | Automation email batch size; defaults to `100` |
+| `EMAIL_BATCH_DELAY_MS` | No | Delay between automation batches; defaults to `1000` |
+| `EMAIL_MAX_RETRIES` | No | Maximum transient delivery attempts; defaults to `3` |
 
 Current owner default:
 
@@ -315,6 +318,15 @@ src/lib/notifications/process.ts
 src/app/api/cron/notifications/route.ts
 ```
 
+Automation reminders use `campaign_recipients` for per-recipient idempotency, retries, and run logs. Apply migration `20261018090000_campaign_recipients.sql` before enabling the feature. The due-campaign endpoint is:
+
+```text
+POST /api/admin/run-due-campaigns
+Authorization: Bearer $CRON_SECRET
+```
+
+For Vercel Cron, add a schedule such as `*/5 * * * *` (Vercel schedules are UTC). The server compares `scheduled_at` with UTC `now()`, while the admin UI accepts and displays Africa/Lagos (WAT, UTC+1). Campaign status and recipient details are available at `/api/admin/campaigns/{id}/status`; failed recipients can be retried at `/api/admin/campaigns/{id}/retry`.
+
 ## Supabase
 
 Migrations live in:
@@ -334,6 +346,27 @@ The database includes:
 - Notification attempts and audit logs.
 
 RLS is enabled across public tables. Admin reads and writes are controlled through `profile_roles` and helper functions in the `app_private` schema.
+
+### Event timer
+
+The timer uses `timer_sessions`, `timer_segments`, `timer_templates`, `timer_action_log`, and the sanitized `timer_display_state` view. Apply migrations in filename order:
+
+```bash
+./.tools/supabase/supabase db push
+```
+
+If applying manually in the Supabase SQL Editor, run `20261018090000_campaign_recipients.sql` first, then `20261018120000_event_timer.sql`. Do not edit or rerun earlier migrations out of order. The timer requires the existing Supabase URL/publishable key/service-role key and existing admin roles; it adds no new secret.
+
+Manual timer checklist:
+
+- Open `/admin/timer` as an active admin and click Present; move only `/timer/present?session=...` to the projector display.
+- Confirm the control preview and audience screen show the same segment and countdown.
+- Test Start, Pause, Resume, Reset, Previous, Next, jump/select, reorder, duplicate, delete, and Save agenda.
+- Test positive/negative adjustments, exact remaining time, warning/under-one-minute/overtime colors, auto-advance, blackout, freeze, and screen messages.
+- Enable sound on the Present screen and verify the warning/zero chimes after a user gesture.
+- Refresh both windows and confirm the current state survives; disconnect/reconnect the network and confirm the offline indicator and polling recovery.
+- Save/load a template and export the session CSV. Verify planned, actual, adjustment, and action-log columns.
+- Test keyboard shortcuts while focused outside inputs; confirm typing in inputs is not intercepted.
 
 ## Quality Checks
 

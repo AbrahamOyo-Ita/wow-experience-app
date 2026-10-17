@@ -18,23 +18,24 @@ export type AdminPermission =
   | "analytics.view"
   | "settings.manage"
   | "audit.view"
-  | "profile.update";
+  | "profile.update"
+  | "timer.manage";
 
 const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
   super_admin: [
     "dashboard.view", "events.manage", "audience.view", "rsvps.view",
     "attendance.manage", "volunteers.manage", "prayers.view", "team.invite", "team.manage",
     "campaigns.manage", "templates.manage", "automations.manage", "content.manage",
-    "flyer.manage", "analytics.view", "settings.manage", "audit.view", "profile.update",
+    "flyer.manage", "analytics.view", "settings.manage", "audit.view", "profile.update", "timer.manage",
   ],
   event_admin: [
     "dashboard.view", "events.manage", "audience.view", "rsvps.view",
     "attendance.manage", "volunteers.manage", "prayers.view", "team.invite", "campaigns.manage",
-    "automations.manage", "analytics.view", "prayers.view", "profile.update",
+    "automations.manage", "analytics.view", "prayers.view", "profile.update", "timer.manage",
   ],
   communications_manager: [
     "dashboard.view", "audience.view", "campaigns.manage", "templates.manage",
-    "automations.manage", "analytics.view", "profile.update",
+    "automations.manage", "analytics.view", "profile.update", "timer.manage",
   ],
   content_editor: [
     "dashboard.view", "content.manage", "flyer.manage", "profile.update",
@@ -58,6 +59,7 @@ const ROUTE_PERMISSIONS: ReadonlyArray<readonly [string, AdminPermission]> = [
   ["/admin/campaigns", "campaigns.manage"],
   ["/admin/templates", "templates.manage"],
   ["/admin/automations", "automations.manage"],
+  ["/admin/timer", "timer.manage"],
   ["/admin/content", "content.manage"],
   ["/admin/flyer", "flyer.manage"],
   ["/admin/analytics", "analytics.view"],

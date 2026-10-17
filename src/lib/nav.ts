@@ -42,6 +42,7 @@ export const adminNav: ReadonlyArray<{ href: string; label: string; permission: 
   { href: "/admin/campaigns", label: "Campaigns", permission: "campaigns.manage" },
   { href: "/admin/templates", label: "Templates", permission: "templates.manage" },
   { href: "/admin/automations", label: "Automations", permission: "automations.manage" },
+  { href: "/admin/timer", label: "Event timer", permission: "timer.manage" },
   { href: "/admin/content", label: "Content", permission: "content.manage" },
   { href: "/admin/analytics", label: "Analytics", permission: "analytics.view" },
   { href: "/admin/settings", label: "Settings", permission: "settings.manage" },
